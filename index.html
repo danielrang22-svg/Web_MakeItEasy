@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="es-CO" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO Primary -->
+  <title>Make it Easy | Automatización Inteligente para Empresas en Colombia</title>
+  <meta name="description" content="Automatizamos los procesos de tu empresa con IA. CRM, logística, finanzas y más. Diagnóstico gratuito sin compromiso. Bogotá, Colombia." />
+  <meta name="keywords" content="automatización empresas Colombia, CRM Bogotá, automatización procesos, inteligencia artificial empresas, n8n Make Zapier Colombia" />
+  <meta name="author" content="Make it Easy — Intelligent Automation" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://makeiteasy.com.co/" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Make it Easy — Intelligent Automation" />
+  <meta property="og:description" content="Hacemos que tu equipo sea más productivo con IA. Integramos ERPs, CRMs y automatizaciones." />
+  <meta property="og:image" content="https://makeiteasy.com.co/public/og-image.png" />
+  <meta property="og:url" content="https://makeiteasy.com.co/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CO" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Make it Easy — Intelligent Automation" />
+  <meta name="twitter:description" content="Hacemos que tu equipo sea más productivo con IA. Diagnóstico gratuito." />
+  <meta name="twitter:image" content="https://makeiteasy.com.co/public/og-image.png" />
+
+  <!-- Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Make it Easy",
+    "description": "Automatización inteligente e integración de ERPs, CRMs y sistemas para empresas de todo el mundo",
+    "url": "https://makeiteasy.com.co",
+    "logo": "https://makeiteasy.com.co/public/logo.svg",
+    "image": "https://makeiteasy.com.co/public/og-image.png",
+    "telephone": "+573181154477",
+    "email": "daniel.makeiteasy@gmail.com",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Bogotá",
+      "addressCountry": "CO"
+    },
+    "areaServed": ["CO", "US", "EU"],
+    "sameAs": [],
+    "priceRange": "$$"
+  }
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+
+  <!-- Styles -->
+  <!-- Font preload for LCP/FOUT prevention -->
+  <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" />
+  <link rel="stylesheet" href="styles/globals.css" />
+  <link rel="stylesheet" href="styles/components.css" />
+
+  <!-- Favicon & Icons -->
+  <link rel="icon" type="image/svg+xml" href="public/favicon.svg" />
+  <link rel="apple-touch-icon" href="public/og-image.png" />
+</head>
+<body class="loading">
+
+<!-- Skip to content -->
+<a href="#hero" class="skip-link">Saltar al contenido</a>
+
+<!-- ======================= NAVBAR ======================= -->
+<header id="navbar" role="banner">
+  <nav class="nav-inner container" aria-label="Navegación principal">
+    <!-- Logo -->
+    <a href="#hero" class="nav-logo" aria-label="Make it Easy — inicio">
+      <img src="public/logo.svg" alt="Make it Easy" class="nav-logo-icon"
+           style="height:2rem;width:auto;mix-blend-mode:screen;filter:brightness(1.1) contrast(1.1)" />
+      <span class="nav-logo-text">Make it Easy</span>
+    </a>
+
+    <!-- Desktop links -->
+    <ul class="nav-links" role="list">
+      <li><a href="#nosotros" class="nav-link" data-i18n="nav.about">Nosotros</a></li>
+      <li><a href="#equipo" class="nav-link" data-i18n="nav.team">Equipo</a></li>
+      <li><a href="#servicios" class="nav-link" data-i18n="nav.services">Servicios</a></li>
+      <li><a href="#proceso" class="nav-link" data-i18n="nav.process">Proceso</a></li>
+      <li><a href="#planes" class="nav-link" data-i18n="nav.plans">Cotizar</a></li>
+      <li><a href="#faq" class="nav-link" data-i18n="nav.faq">FAQ</a></li>
+      <li><a href="#contacto" class="nav-link" data-i18n="nav.contact">Contacto</a></li>
+    </ul>
+
+    <!-- Right: lang switcher + CTA -->
+    <div class="nav-actions">
+      <div id="lang-switcher" class="lang-switcher-wrap" aria-label="Cambiar idioma"></div>
+      <a href="#contacto" class="btn btn-primary btn-sm hide-mobile" data-i18n="nav.cta" data-track="cta_click" data-track-label="nav_cta">
+        Diagnóstico Gratuito
+      </a>
+      <button id="hamburger" class="hamburger show-mobile" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-menu">
+        <span class="bar bar1"></span>
+        <span class="bar bar2"></span>
+        <span class="bar bar3"></span>
+      </button>
+    </div>
+  </nav>
+</header>
+
+<!-- Mobile Menu -->
+<div id="menu-overlay" class="menu-overlay" aria-hidden="true"></div>
+<nav id="mobile-menu" class="mobile-menu" aria-label="Menú móvil">
+  <ul role="list">
+    <li><a href="#nosotros" class="nav-link" data-i18n="nav.about">Nosotros</a></li>
+    <li><a href="#equipo" class="nav-link" data-i18n="nav.team">Equipo</a></li>
+    <li><a href="#servicios" class="nav-link" data-i18n="nav.services">Servicios</a></li>
+    <li><a href="#proceso" class="nav-link" data-i18n="nav.process">Proceso</a></li>
+    <li><a href="#planes" class="nav-link" data-i18n="nav.plans">Cotizar</a></li>
+    <li><a href="#faq" class="nav-link" data-i18n="nav.faq">FAQ</a></li>
+    <li><a href="#contacto" class="nav-link" data-i18n="nav.contact">Contacto</a></li>
+    <li>
+      <a href="#contacto" class="btn btn-primary" data-i18n="nav.cta" data-track="cta_click" data-track-label="nav_cta_mobile">
+        Diagnóstico Gratuito
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<main id="main-content">
+
+<!-- ======================= HERO ======================= -->
+<section id="hero" class="hero-section" aria-label="Hero">
+  <canvas id="hero-canvas" class="hero-canvas" aria-hidden="true"></canvas>
+  <div class="hero-gradient" aria-hidden="true"></div>
+
+  <div class="container hero-inner">
+    <div class="hero-content">
+      <div class="chip chip-primary fade-in-up fade-in-up-1">
+        <span class="material-symbols-outlined" style="font-size:0.9rem">auto_awesome</span>
+        <span data-i18n="hero.chip">Automatización con IA · Resultados Reales</span>
+      </div>
+
+      <h1 class="display-lg hero-headline fade-in-up fade-in-up-2">
+        <span data-i18n="hero.headline1">Haz crecer tu negocio</span>
+        <span class="text-primary glow-text-primary" data-i18n="hero.headline2"> sin crecer tu carga de trabajo.</span>
+      </h1>
+
+      <p class="body-lg body-muted hero-sub fade-in-up fade-in-up-3" data-i18n="hero.sub">
+        Hacemos que tu equipo sea más productivo automatizando lo repetitivo con IA. Conectamos tus sistemas, CRM y ERPs para que todo fluya — tu gente se enfoca en lo que realmente importa.
+      </p>
+
+      <div class="hero-ctas fade-in-up fade-in-up-4">
+        <a href="#contacto" class="btn btn-primary" data-i18n="hero.cta_primary" data-track="cta_click" data-track-label="hero_primary">
+          Agenda tu Diagnóstico Gratis
+        </a>
+        <a href="#servicios" class="btn btn-secondary" data-i18n="hero.cta_secondary" data-track="cta_click" data-track-label="hero_secondary">
+          Ver Servicios
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-visual fade-in-up fade-in-up-3" aria-hidden="true">
+      <div class="hero-visual-glow"></div>
+      <div class="hero-visual-card">
+        <div class="hero-visual-header">
+          <div class="hero-vis-dot" style="background:var(--error)"></div>
+          <div class="hero-vis-dot" style="background:var(--warning)"></div>
+          <div class="hero-vis-dot" style="background:var(--success)"></div>
+          <span style="font-size:0.7rem;color:var(--on-surface-variant);margin-left:auto">automation.flow</span>
+        </div>
+        <div class="hero-flow" id="hero-flow-1">
+          <div class="flow-node flow-node-primary flow-animated" style="--flow-delay:0s"><span class="material-symbols-outlined">hub</span><span>CRM</span></div>
+          <div class="flow-arrow flow-arrow-animated" style="--flow-delay:0.4s">→</div>
+          <div class="flow-node flow-node-secondary flow-animated" style="--flow-delay:0.8s"><span class="material-symbols-outlined">smart_toy</span><span>AI Agent</span></div>
+          <div class="flow-arrow flow-arrow-animated" style="--flow-delay:1.2s">→</div>
+          <div class="flow-node flow-node-tertiary flow-animated" style="--flow-delay:1.6s"><span class="material-symbols-outlined">send</span><span>WhatsApp</span></div>
+        </div>
+        <div class="hero-flow" style="margin-top:1rem">
+          <div class="flow-node flow-node-secondary flow-animated" style="--flow-delay:0.3s"><span class="material-symbols-outlined">inventory</span><span>Stock</span></div>
+          <div class="flow-arrow flow-arrow-animated" style="--flow-delay:0.7s">→</div>
+          <div class="flow-node flow-node-primary flow-animated" style="--flow-delay:1.1s"><span class="material-symbols-outlined">notifications</span><span>Alerta</span></div>
+          <div class="flow-arrow flow-arrow-animated" style="--flow-delay:1.5s">→</div>
+          <div class="flow-node flow-animated" style="background:rgba(74,222,128,0.1);color:#4ade80;--flow-delay:1.9s"><span class="material-symbols-outlined">check_circle</span><span>✓ OK</span></div>
+        </div>
+        <div class="hero-metrics">
+          <div class="hero-metric"><span class="text-primary" style="font-weight:800;font-size:1.4rem" data-i18n="hero.stat1_val">−40%</span><span class="body-muted" style="font-size:0.7rem" data-i18n="hero.stat1_label">Ciclo de ventas</span></div>
+          <div class="hero-metric"><span class="text-secondary" style="font-weight:800;font-size:1.4rem" data-i18n="hero.stat2_val">−60%</span><span class="body-muted" style="font-size:0.7rem" data-i18n="hero.stat2_label">Errores operativos</span></div>
+          <div class="hero-metric"><span class="text-tertiary" style="font-weight:800;font-size:1.4rem" data-i18n="hero.stat3_val">−70%</span><span class="body-muted" style="font-size:0.7rem" data-i18n="hero.stat3_label">Tiempo facturación</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats marquee -->
+<div class="marquee-section" aria-hidden="true">
+  <div class="marquee-wrap">
+    <div class="marquee-track">
+      <div class="marquee-items">
+        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900" data-i18n="hero.stat4_val">3.5x</span><p data-i18n="hero.stat4_label">ROI anual</p></div>
+        <div class="marquee-sep" aria-hidden="true">—</div>
+        <div class="marquee-stat"><span class="text-secondary glow-pulse" style="font-size:2.5rem;font-weight:900" data-i18n="hero.stat5_val">+85%</span><p data-i18n="hero.stat5_label">Atracción de clientes</p></div>
+        <div class="marquee-sep" aria-hidden="true">—</div>
+        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900" data-i18n="hero.stat6_val">&lt;2 min</span><p data-i18n="hero.stat6_label">Tiempo de respuesta</p></div>
+        <div class="marquee-sep" aria-hidden="true">—</div>
+        <div class="marquee-stat"><span class="text-secondary glow-pulse" style="font-size:2.5rem;font-weight:900" data-i18n="hero.stat1_val">−40%</span><p data-i18n="hero.stat1_label">Ciclo de ventas</p></div>
+        <div class="marquee-sep" aria-hidden="true">—</div>
+        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900" data-i18n="hero.stat2_val">−60%</span><p data-i18n="hero.stat2_label">Errores operativos</p></div>
+        <div class="marquee-sep" aria-hidden="true">—</div>
+        <div class="marquee-stat"><span class="text-tertiary glow-pulse" style="font-size:2.5rem;font-weight:900" data-i18n="hero.stat3_val">−70%</span><p data-i18n="hero.stat3_label">Tiempo facturación</p></div>
+        <div class="marquee-sep" aria-hidden="true">—</div>
+      </div>
+      <!-- duplicate for seamless loop -->
+      <div class="marquee-items" aria-hidden="true">
+        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900">3.5x</span><p>ROI anual</p></div>
+        <div class="marquee-sep">—</div>
+        <div class="marquee-stat"><span class="text-secondary glow-pulse" style="font-size:2.5rem;font-weight:900">+85%</span><p>Atracción de clientes</p></div>
+        <div class="marquee-sep">—</div>
+        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900">&lt;2 min</span><p>Tiempo de respuesta</p></div>
+        <div class="marquee-sep">—</div>
+        <div class="marquee-stat"><span class="text-secondary glow-pulse" style="font-size:2.5rem;font-weight:900">−40%</span><p>Ciclo de ventas</p></div>
+        <div class="marquee-sep">—</div>
+        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900">−60%</span><p>Errores operativos</p></div>
+        <div class="marquee-sep">—</div>
+        <div class="marquee-stat"><span class="text-tertiary glow-pulse" style="font-size:2.5rem;font-weight:900">−70%</span><p>Tiempo facturación</p></div>
+        <div class="marquee-sep">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= ABOUT ======================= -->
+<section id="nosotros" class="section bg-surface-low" aria-labelledby="about-headline">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="overline" data-i18n="about.overline">Quiénes Somos</p>
+      <h2 id="about-headline" class="display-md" data-i18n="about.headline">Tu aliado para escalar con tecnología</h2>
+      <p class="body-lg body-muted" style="max-width:640px;margin:0 auto" data-i18n="about.body">Make it Easy es tu socio estratégico en automatización e integración de sistemas. No reemplazamos personas — hacemos que tu equipo sea más productivo conectando ERPs, CRMs y herramientas de automatización.</p>
+    </div>
+
+    <!-- Mission & Vision -->
+    <div class="about-mv-grid reveal reveal-delay-2">
+      <div class="bento-card about-mv-card">
+        <div class="icon-box icon-box-primary" style="margin-bottom:1.5rem"><span class="material-symbols-outlined">rocket_launch</span></div>
+        <p class="overline" data-i18n="about.mission_label">Misión</p>
+        <p class="body-lg" style="margin-top:0.75rem" data-i18n="about.mission">Potenciar el talento humano en cada empresa integrando sus sistemas y automatizando lo operativo.</p>
+      </div>
+      <div class="bento-card about-mv-card">
+        <div class="icon-box icon-box-secondary" style="margin-bottom:1.5rem"><span class="material-symbols-outlined">visibility</span></div>
+        <p class="overline" style="color:var(--secondary)" data-i18n="about.vision_label">Visión</p>
+        <p class="body-lg" style="margin-top:0.75rem" data-i18n="about.vision">Ser el aliado tecnológico de referencia para empresas que quieren escalar conectando sus ERPs, CRMs y procesos con IA.</p>
+      </div>
+    </div>
+
+    <!-- Differentiators Bento -->
+    <div class="diff-grid">
+      <div class="bento-card diff-card reveal reveal-delay-1">
+        <div class="icon-box icon-box-primary"><span class="material-symbols-outlined">tune</span></div>
+        <h3 class="diff-title" data-i18n="about.diff1_title">100% a medida</h3>
+        <p class="body-muted" data-i18n="about.diff1_body">Ninguna solución es copia de otra.</p>
+      </div>
+      <div class="bento-card diff-card reveal reveal-delay-2">
+        <div class="icon-box icon-box-secondary"><span class="material-symbols-outlined">map</span></div>
+        <h3 class="diff-title" data-i18n="about.diff2_title">Alcance global</h3>
+        <p class="body-muted" data-i18n="about.diff2_body">Trabajamos con empresas de todo el mundo, de forma remota y sin fricciones.</p>
+      </div>
+      <div class="bento-card diff-card reveal reveal-delay-3">
+        <div class="icon-box icon-box-tertiary"><span class="material-symbols-outlined">all_inclusive</span></div>
+        <h3 class="diff-title" data-i18n="about.diff3_title">End-to-end</h3>
+        <p class="body-muted" data-i18n="about.diff3_body">Desde el diagnóstico hasta el soporte.</p>
+      </div>
+      <div class="bento-card diff-card reveal reveal-delay-4">
+        <div class="icon-box icon-box-primary"><span class="material-symbols-outlined">support_agent</span></div>
+        <h3 class="diff-title" data-i18n="about.diff4_title">Soporte continuo</h3>
+        <p class="body-muted" data-i18n="about.diff4_body">Acompañamiento post-implementación.</p>
+      </div>
+      <div class="bento-card diff-card reveal reveal-delay-5">
+        <div class="icon-box icon-box-secondary"><span class="material-symbols-outlined">trending_up</span></div>
+        <h3 class="diff-title" data-i18n="about.diff5_title">ROI medible</h3>
+        <p class="body-muted" data-i18n="about.diff5_body">KPIs claros y métricas comprobables.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= TEAM ======================= -->
+<section id="equipo" class="section bg-surface-low" aria-labelledby="team-headline">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="overline" data-i18n="team.overline">El Equipo</p>
+      <h2 id="team-headline" class="display-md" data-i18n="team.headline">Las personas detrás de la automatización</h2>
+      <p class="body-lg body-muted" style="max-width:560px;margin:0 auto" data-i18n="team.sub">Tres fundadores, una misión: hacer que la tecnología trabaje para las personas.</p>
+    </div>
+
+    <!-- Carousel wrapper -->
+    <div class="team-carousel reveal" id="team-carousel" role="region" aria-label="Equipo">
+
+      <!-- Track: slides move horizontally inside this -->
+      <div class="team-carousel-track" id="team-carousel-track">
+
+        <!-- Slide 0 — Daniel -->
+        <article class="team-slide bento-card glow-card" data-index="0" aria-label="Daniel Rangel López">
+          <div class="team-slide-accent team-slide-accent-cyan"></div>
+          <div class="team-slide-left">
+            <div class="team-avatar-wrap team-avatar-wrap-cyan" aria-hidden="true">
+              <svg viewBox="0 0 96 96" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="tav1" cx="50%" cy="40%" r="60%">
+                    <stop offset="0%" stop-color="rgba(143,245,255,0.4)"/>
+                    <stop offset="100%" stop-color="rgba(143,245,255,0.05)"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="48" cy="48" r="48" fill="url(#tav1)"/>
+                <circle cx="48" cy="36" r="17" fill="rgba(143,245,255,0.25)" stroke="rgba(143,245,255,0.5)" stroke-width="1.5"/>
+                <ellipse cx="48" cy="82" rx="26" ry="20" fill="rgba(143,245,255,0.18)"/>
+                <text x="48" y="43" text-anchor="middle" fill="#8FF5FF" font-weight="900" font-size="18" font-family="sans-serif" letter-spacing="-0.5">DR</text>
+              </svg>
+              <div class="team-ring team-ring-cyan"></div>
+            </div>
+            <span class="team-counter">1 / 3</span>
+          </div>
+          <div class="team-slide-body">
+            <div class="team-slide-header">
+              <div>
+                <h3 class="team-row-name">Daniel Rangel López</h3>
+                <p class="team-row-role" data-i18n="team.daniel_role">Fundador &amp; Arquitecto de Procesos</p>
+              </div>
+              <div class="team-row-chips">
+                <span class="chip chip-primary chip-sm">IA &amp; n8n</span>
+                <span class="chip chip-primary chip-sm">Project Manager</span>
+                <span class="chip chip-primary chip-sm">Vibe Coding</span>
+              </div>
+            </div>
+            <p class="team-row-bio" data-i18n="team.daniel_bio">Ingeniero Ambiental y especialista en Gestión de la Productividad, Daniel combina el rigor analítico de la ingeniería con una visión disruptiva de la tecnología. Con una sólida trayectoria como Project Manager, con conocimientos en automatización y "vibe coding", lidera Make It Easy con un propósito claro: rediseñar la arquitectura operativa de las empresas para que la tecnología trabaje para las personas, y no al revés. Su enfoque no solo busca automatizar tareas, sino optimizar ecosistemas empresariales completos a través de IA y n8n.</p>
+          </div>
+        </article>
+
+        <!-- Slide 1 — Cristian -->
+        <article class="team-slide bento-card glow-card" data-index="1" aria-label="Cristian Cuéllar">
+          <div class="team-slide-accent team-slide-accent-purple"></div>
+          <div class="team-slide-left">
+            <div class="team-avatar-wrap team-avatar-wrap-purple" aria-hidden="true">
+              <svg viewBox="0 0 96 96" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="tav2" cx="50%" cy="40%" r="60%">
+                    <stop offset="0%" stop-color="rgba(175,136,255,0.4)"/>
+                    <stop offset="100%" stop-color="rgba(175,136,255,0.05)"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="48" cy="48" r="48" fill="url(#tav2)"/>
+                <circle cx="48" cy="36" r="17" fill="rgba(175,136,255,0.25)" stroke="rgba(175,136,255,0.5)" stroke-width="1.5"/>
+                <ellipse cx="48" cy="82" rx="26" ry="20" fill="rgba(175,136,255,0.18)"/>
+                <text x="48" y="43" text-anchor="middle" fill="#AF88FF" font-weight="900" font-size="18" font-family="sans-serif" letter-spacing="-0.5">CC</text>
+              </svg>
+              <div class="team-ring team-ring-purple"></div>
+            </div>
+            <span class="team-counter" style="color:var(--secondary)">2 / 3</span>
+          </div>
+          <div class="team-slide-body">
+            <div class="team-slide-header">
+              <div>
+                <h3 class="team-row-name">Cristian Cuéllar</h3>
+                <p class="team-row-role" data-i18n="team.cristian_role">Co-Fundador · Desarrollo &amp; Estrategia</p>
+              </div>
+              <div class="team-row-chips">
+                <span class="chip chip-sm" style="background:rgba(175,136,255,0.12);color:var(--secondary);border-color:rgba(175,136,255,0.3)">Software</span>
+                <span class="chip chip-sm" style="background:rgba(175,136,255,0.12);color:var(--secondary);border-color:rgba(175,136,255,0.3)">Integraciones</span>
+                <span class="chip chip-sm" style="background:rgba(175,136,255,0.12);color:var(--secondary);border-color:rgba(175,136,255,0.3)">Automatización</span>
+              </div>
+            </div>
+            <p class="team-row-bio" data-i18n="team.cristian_bio">Estratega digital y desarrollador enfocado en convertir ideas en sistemas robustos. Cristian se especializa en la arquitectura de software a medida e integraciones que conectan cada pieza de un negocio. Con dominio de la programación y la automatización, diseña infraestructuras digitales donde la eficiencia es la prioridad. Su enfoque combina lógica técnica y visión estratégica para crear experiencias digitales fluidas, escalables y orientadas a resultados reales.</p>
+          </div>
+        </article>
+
+        <!-- Slide 2 — Luis -->
+        <article class="team-slide bento-card glow-card" data-index="2" aria-label="Luis Ramírez">
+          <div class="team-slide-accent team-slide-accent-teal"></div>
+          <div class="team-slide-left">
+            <div class="team-avatar-wrap team-avatar-wrap-teal" aria-hidden="true">
+              <svg viewBox="0 0 96 96" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="tav3" cx="50%" cy="40%" r="60%">
+                    <stop offset="0%" stop-color="rgba(71,196,255,0.4)"/>
+                    <stop offset="100%" stop-color="rgba(71,196,255,0.05)"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="48" cy="48" r="48" fill="url(#tav3)"/>
+                <circle cx="48" cy="36" r="17" fill="rgba(71,196,255,0.25)" stroke="rgba(71,196,255,0.5)" stroke-width="1.5"/>
+                <ellipse cx="48" cy="82" rx="26" ry="20" fill="rgba(71,196,255,0.18)"/>
+                <text x="48" y="43" text-anchor="middle" fill="#47c4ff" font-weight="900" font-size="18" font-family="sans-serif" letter-spacing="-0.5">LR</text>
+              </svg>
+              <div class="team-ring team-ring-teal"></div>
+            </div>
+            <span class="team-counter" style="color:var(--tertiary)">3 / 3</span>
+          </div>
+          <div class="team-slide-body">
+            <div class="team-slide-header">
+              <div>
+                <h3 class="team-row-name">Luis Ramírez</h3>
+                <p class="team-row-role" data-i18n="team.luis_role">Co-Fundador · Estrategia Operativa &amp; Comercial</p>
+              </div>
+              <div class="team-row-chips">
+                <span class="chip chip-sm" style="background:rgba(71,196,255,0.12);color:var(--tertiary);border-color:rgba(71,196,255,0.3)">Ing. Industrial</span>
+                <span class="chip chip-sm" style="background:rgba(71,196,255,0.12);color:var(--tertiary);border-color:rgba(71,196,255,0.3)">Procesos</span>
+                <span class="chip chip-sm" style="background:rgba(71,196,255,0.12);color:var(--tertiary);border-color:rgba(71,196,255,0.3)">Comercial</span>
+              </div>
+            </div>
+            <p class="team-row-bio" data-i18n="team.luis_bio">Ingeniero Industrial con una visión integral en la optimización de procesos y el desarrollo comercial. Luis se especializa en diagnosticar y estructurar la columna vertebral de los negocios, asegurando que cada flujo operativo esté alineado con los objetivos de crecimiento. Su enfoque combina la eficiencia industrial con una fuerte ejecución comercial, logrando que la tecnología se traduzca en rentabilidad. Es el puente entre la estrategia de procesos y la expansión efectiva en el mercado.</p>
+          </div>
+        </article>
+
+      </div><!-- /track -->
+
+      <!-- Controls row -->
+      <div class="team-carousel-controls">
+        <!-- prev -->
+        <button class="team-carousel-btn" id="team-prev" aria-label="Anterior integrante">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+
+        <!-- dots -->
+        <div class="team-carousel-dots" role="tablist" aria-label="Seleccionar integrante">
+          <button class="team-dot team-dot-active" role="tab" aria-selected="true"  data-slide="0" aria-label="Daniel"></button>
+          <button class="team-dot"                 role="tab" aria-selected="false" data-slide="1" aria-label="Cristian"></button>
+          <button class="team-dot"                 role="tab" aria-selected="false" data-slide="2" aria-label="Luis"></button>
+        </div>
+
+        <!-- next -->
+        <button class="team-carousel-btn" id="team-next" aria-label="Siguiente integrante">
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+      </div>
+
+      <!-- Auto-progress bar -->
+      <div class="team-progress-bar" aria-hidden="true">
+        <div class="team-progress-fill" id="team-progress-fill"></div>
+      </div>
+
+    </div><!-- /carousel -->
+  </div>
+</section>
+
+
+
+
+
+<!-- ======================= SERVICES ======================= -->
+<section id="servicios" class="section" aria-labelledby="services-headline">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="overline" data-i18n="services.overline">Soluciones Enterprise</p>
+      <h2 id="services-headline" class="display-md" data-i18n="services.headline">Áreas de Impacto</h2>
+    </div>
+
+    <div class="services-bento">
+      <!-- 01 Sales - large -->
+      <article class="bento-card service-card reveal" aria-label="Ventas & CRM">
+        <div class="service-top">
+          <div class="service-number">01</div>
+          <div class="icon-box icon-box-primary"><span class="material-symbols-outlined">hub</span></div>
+        </div>
+        <h3 class="headline" data-i18n="services.s1_title">Ventas &amp; CRM</h3>
+        <p class="body-muted" data-i18n="services.s1_body">Sincronización masiva de leads, calificación automática y nutrición de prospectos mediante agentes de IA conversacional.</p>
+        <div class="service-tags">
+          <span class="chip">Leads</span><span class="chip">CRM</span><span class="chip chip-primary">IA</span>
+        </div>
+        <div class="service-expand">
+          <p class="body-muted" style="margin-top:1rem">Implementamos agentes IA en tu CRM para calificar leads automáticamente, responder prospectos en segundos, y sincronizar datos entre plataformas en tiempo real. Integramos con HubSpot, Salesforce, Pipedrive y más.</p>
+        </div>
+      </article>
+
+      <!-- 02 Logistics -->
+      <article class="bento-card service-card reveal reveal-delay-1" aria-label="Logística & Operaciones">
+        <div class="service-top">
+          <div class="service-number">02</div>
+          <div class="icon-box icon-box-secondary"><span class="material-symbols-outlined">local_shipping</span></div>
+        </div>
+        <h3 class="headline" data-i18n="services.s2_title">Logística &amp; Ops</h3>
+        <p class="body-muted" data-i18n="services.s2_body">Rastreo en tiempo real, gestión de inventarios inteligente y optimización automática de rutas de entrega.</p>
+        <div class="service-tags"><span class="chip">Inventario</span><span class="chip">Rutas</span></div>
+        <div class="service-expand">
+          <p class="body-muted" style="margin-top:1rem">Automatizamos el control de inventarios, alertas de stock crítico, y optimización de rutas de entrega. Integración con sistemas WMS y ERPs locales.</p>
+        </div>
+      </article>
+
+      <!-- 03 Finance -->
+      <article class="bento-card service-card reveal reveal-delay-2" aria-label="Finanzas & Compras">
+        <div class="service-top">
+          <div class="service-number">03</div>
+          <div class="icon-box icon-box-tertiary"><span class="material-symbols-outlined">account_balance</span></div>
+        </div>
+        <h3 class="headline" data-i18n="services.s3_title">Finanzas &amp; Compras</h3>
+        <p class="body-muted" data-i18n="services.s3_body">Conciliación bancaria automática, facturación masiva electrónica y reportes de rentabilidad en tiempo real.</p>
+        <div class="service-tags"><span class="chip">Facturación</span><span class="chip">DIAN</span></div>
+        <div class="service-expand">
+          <p class="body-muted" style="margin-top:1rem">Automatizamos facturación electrónica (DIAN), conciliaciones bancarias, y reportes de rentabilidad. Integración con Siigo, Alegra, Helisa y más.</p>
+        </div>
+      </article>
+
+      <!-- 04 AI - large -->
+      <article class="bento-card service-card reveal reveal-delay-1" aria-label="IA & Automatización">
+        <div class="service-top">
+          <div class="service-number">04</div>
+          <div class="icon-box icon-box-primary"><span class="material-symbols-outlined">smart_toy</span></div>
+        </div>
+        <h3 class="headline" data-i18n="services.s4_title">IA &amp; Automatización</h3>
+        <p class="body-muted" data-i18n="services.s4_body">Diseño e implementación de flujos de IA personalizados con n8n, Make, Zapier y modelos de lenguaje (GPT-4, Claude, Gemini).</p>
+        <div class="service-tags"><span class="chip chip-primary">n8n</span><span class="chip chip-primary">Make</span><span class="chip chip-primary">LLMs</span></div>
+        <div class="service-expand">
+          <p class="body-muted" style="margin-top:1rem">Construimos flujos de automatización con n8n, Make.com y Zapier, conectados a modelos de lenguaje (GPT-4, Claude, Gemini) para crear agentes inteligentes adaptados a tu operación.</p>
+        </div>
+      </article>
+
+      <!-- 05 Integration -->
+      <article class="bento-card service-card reveal reveal-delay-2" aria-label="Integración & Web">
+        <div class="service-top">
+          <div class="service-number">05</div>
+          <div class="icon-box icon-box-secondary"><span class="material-symbols-outlined">code</span></div>
+        </div>
+        <h3 class="headline" data-i18n="services.s5_title">Integración &amp; Web</h3>
+        <p class="body-muted" data-i18n="services.s5_body">Conexión de sistemas ERP, CRM y plataformas externas mediante APIs REST/GraphQL. Desarrollo de interfaces de alto rendimiento.</p>
+        <div class="service-tags"><span class="chip">API</span><span class="chip">ERP</span></div>
+        <div class="service-expand">
+          <p class="body-muted" style="margin-top:1rem">Conectamos cualquier sistema con APIs REST/GraphQL, y desarrollamos interfaces web de alto rendimiento optimizadas para conversión.</p>
+        </div>
+      </article>
+
+      <!-- 06 Legal -->
+      <article class="bento-card service-card reveal reveal-delay-3" aria-label="Legal & Administrativo">
+        <div class="service-top">
+          <div class="service-number">06</div>
+          <div class="icon-box" style="background:rgba(251,191,36,0.1);color:#fbbf24"><span class="material-symbols-outlined">gavel</span></div>
+        </div>
+        <h3 class="headline" data-i18n="services.s6_title">Legal &amp; Admin</h3>
+        <p class="body-muted" data-i18n="services.s6_body">Automatización de contratos, flujos de aprobación y gestión documental con trazabilidad completa y cumplimiento normativo.</p>
+        <div class="service-tags"><span class="chip">Contratos</span><span class="chip">Docs</span></div>
+        <div class="service-expand">
+          <p class="body-muted" style="margin-top:1rem">Automatizamos flujos de aprobación de contratos, firmas digitales, y gestión documental con trazabilidad completa y cumplimiento normativo.</p>
+        </div>
+      </article>
+
+      <!-- 07 Training -->
+      <article class="bento-card service-card reveal reveal-delay-4" aria-label="Capacitación en IA">
+        <div class="service-top">
+          <div class="service-number">07</div>
+          <div class="icon-box icon-box-primary"><span class="material-symbols-outlined">school</span></div>
+        </div>
+        <h3 class="headline" data-i18n="services.s7_title">Capacitación IA</h3>
+        <p class="body-muted" data-i18n="services.s7_body">Programas de formación práctica para equipos empresariales en herramientas de IA, automatización y productividad.</p>
+        <div class="service-tags"><span class="chip">Formación</span><span class="chip">Talleres</span></div>
+        <div class="service-expand">
+          <p class="body-muted" style="margin-top:1rem">Formamos a tu equipo en el uso de herramientas de IA, automatización y productividad. Desde directivos hasta operativos, con programas a medida.</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= TOOLS STRIP ======================= -->
+<div class="tools-strip" aria-label="Herramientas y plataformas">
+  <div class="container">
+    <p class="overline" style="text-align:center;margin-bottom:1.75rem">Integramos con las herramientas que ya usas</p>
+  </div>
+  <div class="tools-marquee-outer" aria-hidden="true">
+    <div class="tools-marquee-track">
+      <!-- First set -->
+      <div class="tools-marquee-items">
+        <!-- HubSpot -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 80 24" height="22" role="img" aria-label="HubSpot"><text y="20" fill="#FF7A59" font-family="sans-serif" font-weight="700" font-size="18">HubSpot</text></svg>
+        </div>
+        <!-- Salesforce -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 110 24" height="22" role="img" aria-label="Salesforce"><text y="20" fill="#00A1E0" font-family="sans-serif" font-weight="700" font-size="18">Salesforce</text></svg>
+        </div>
+        <!-- n8n -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 46 24" height="22" role="img" aria-label="n8n"><rect x="0" y="4" width="18" height="18" rx="4" fill="#EA4B71"/><text x="22" y="20" fill="#fff" font-family="sans-serif" font-weight="900" font-size="18">n8n</text></svg>
+        </div>
+        <!-- Make -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 56 24" height="22" role="img" aria-label="Make"><circle cx="10" cy="12" r="10" fill="#6D00CC"/><circle cx="28" cy="12" r="10" fill="#9B59B6"/><text x="42" y="20" fill="#fff" font-family="sans-serif" font-weight="700" font-size="18">Make</text></svg>
+        </div>
+        <!-- Zapier -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 66 24" height="22" role="img" aria-label="Zapier"><text y="20" fill="#FF4A00" font-family="sans-serif" font-weight="700" font-size="18">Zapier</text></svg>
+        </div>
+        <!-- SAP -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 40 24" height="22" role="img" aria-label="SAP"><text y="20" fill="#009FDB" font-family="sans-serif" font-weight="900" font-size="18">SAP</text></svg>
+        </div>
+        <!-- Odoo -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 52 24" height="22" role="img" aria-label="Odoo"><circle cx="10" cy="12" r="10" fill="#714B67"/><text x="24" y="20" fill="#fff" font-family="sans-serif" font-weight="700" font-size="18">Odoo</text></svg>
+        </div>
+        <!-- Siigo -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 52 24" height="22" role="img" aria-label="Siigo"><text y="20" fill="#00BCD4" font-family="sans-serif" font-weight="700" font-size="18">Siigo</text></svg>
+        </div>
+        <!-- Alegra -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 60 24" height="22" role="img" aria-label="Alegra"><text y="20" fill="#5F47ED" font-family="sans-serif" font-weight="700" font-size="18">Alegra</text></svg>
+        </div>
+        <!-- Google Sheets -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 20 24" height="22" role="img" aria-label="Google Sheets"><rect x="2" y="0" width="16" height="22" rx="2" fill="#34A853"/><rect x="5" y="5" width="10" height="2" fill="white"/><rect x="5" y="9" width="10" height="2" fill="white"/><rect x="5" y="13" width="7" height="2" fill="white"/></svg>
+          <span style="font-size:0.78rem;font-weight:700;color:var(--on-surface-variant)">Sheets</span>
+        </div>
+        <!-- WhatsApp -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 24 24" height="22" role="img" aria-label="WhatsApp"><circle cx="12" cy="12" r="12" fill="#25D366"/><path d="M6 18l1.5-4.5A6 6 0 1 1 9 15.5L6 18z" fill="white"/></svg>
+          <span style="font-size:0.78rem;font-weight:700;color:var(--on-surface-variant)">WhatsApp</span>
+        </div>
+        <!-- Shopify -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 70 24" height="22" role="img" aria-label="Shopify"><text y="20" fill="#96BF48" font-family="sans-serif" font-weight="700" font-size="18">Shopify</text></svg>
+        </div>
+        <!-- OpenAI -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 72 24" height="22" role="img" aria-label="OpenAI"><text y="20" fill="#ffffff" font-family="sans-serif" font-weight="700" font-size="18">OpenAI</text></svg>
+        </div>
+        <!-- Pipedrive -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 82 24" height="22" role="img" aria-label="Pipedrive"><text y="20" fill="#28A745" font-family="sans-serif" font-weight="700" font-size="18">Pipedrive</text></svg>
+        </div>
+        <!-- Slack -->
+        <div class="tool-logo-badge">
+          <svg viewBox="0 0 56 24" height="22" role="img" aria-label="Slack"><text y="20" fill="#E01E5A" font-family="sans-serif" font-weight="700" font-size="18">Slack</text></svg>
+        </div>
+      </div>
+      <!-- Duplicate for seamless loop -->
+      <div class="tools-marquee-items" aria-hidden="true">
+        <div class="tool-logo-badge"><svg viewBox="0 0 80 24" height="22"><text y="20" fill="#FF7A59" font-family="sans-serif" font-weight="700" font-size="18">HubSpot</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 110 24" height="22"><text y="20" fill="#00A1E0" font-family="sans-serif" font-weight="700" font-size="18">Salesforce</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 46 24" height="22"><rect x="0" y="4" width="18" height="18" rx="4" fill="#EA4B71"/><text x="22" y="20" fill="#fff" font-family="sans-serif" font-weight="900" font-size="18">n8n</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 56 24" height="22"><circle cx="10" cy="12" r="10" fill="#6D00CC"/><circle cx="28" cy="12" r="10" fill="#9B59B6"/><text x="42" y="20" fill="#fff" font-family="sans-serif" font-weight="700" font-size="18">Make</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 66 24" height="22"><text y="20" fill="#FF4A00" font-family="sans-serif" font-weight="700" font-size="18">Zapier</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 40 24" height="22"><text y="20" fill="#009FDB" font-family="sans-serif" font-weight="900" font-size="18">SAP</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 52 24" height="22"><circle cx="10" cy="12" r="10" fill="#714B67"/><text x="24" y="20" fill="#fff" font-family="sans-serif" font-weight="700" font-size="18">Odoo</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 52 24" height="22"><text y="20" fill="#00BCD4" font-family="sans-serif" font-weight="700" font-size="18">Siigo</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 60 24" height="22"><text y="20" fill="#5F47ED" font-family="sans-serif" font-weight="700" font-size="18">Alegra</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 20 24" height="22"><rect x="2" y="0" width="16" height="22" rx="2" fill="#34A853"/><rect x="5" y="5" width="10" height="2" fill="white"/><rect x="5" y="9" width="10" height="2" fill="white"/><rect x="5" y="13" width="7" height="2" fill="white"/></svg><span style="font-size:0.78rem;font-weight:700;color:var(--on-surface-variant)">Sheets</span></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 24 24" height="22"><circle cx="12" cy="12" r="12" fill="#25D366"/><path d="M6 18l1.5-4.5A6 6 0 1 1 9 15.5L6 18z" fill="white"/></svg><span style="font-size:0.78rem;font-weight:700;color:var(--on-surface-variant)">WhatsApp</span></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 70 24" height="22"><text y="20" fill="#96BF48" font-family="sans-serif" font-weight="700" font-size="18">Shopify</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 72 24" height="22"><text y="20" fill="#ffffff" font-family="sans-serif" font-weight="700" font-size="18">OpenAI</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 82 24" height="22"><text y="20" fill="#28A745" font-family="sans-serif" font-weight="700" font-size="18">Pipedrive</text></svg></div>
+        <div class="tool-logo-badge"><svg viewBox="0 0 56 24" height="22"><text y="20" fill="#E01E5A" font-family="sans-serif" font-weight="700" font-size="18">Slack</text></svg></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= PROCESS ======================= -->
+<section id="proceso" class="section bg-surface-low" aria-labelledby="process-headline">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="overline" data-i18n="process.overline">Metodología</p>
+      <h2 id="process-headline" class="display-md" data-i18n="process.headline">Proceso 360°</h2>
+      <p class="body-lg body-muted" data-i18n="process.sub">Un proceso refinado para garantizar el retorno de inversión.</p>
+    </div>
+
+    <div class="process-grid">
+      <div class="process-connector" aria-hidden="true"></div>
+
+      <div class="process-step reveal reveal-delay-1">
+        <div class="process-num">01</div>
+        <h3 class="process-title" data-i18n="process.s1_title">Diagnóstico</h3>
+        <p class="body-muted" data-i18n="process.s1_body">Análisis profundo de ineficiencias y mapeo de procesos. Siempre gratuito.</p>
+        <div class="process-badge"><span class="material-symbols-outlined" style="font-size:1rem">check</span> Free</div>
+      </div>
+      <div class="process-step reveal reveal-delay-2">
+        <div class="process-num">02</div>
+        <h3 class="process-title" data-i18n="process.s2_title">Diseño del Plan</h3>
+        <p class="body-muted" data-i18n="process.s2_body">Arquitectura técnica de flujos y selección de herramientas óptimas.</p>
+      </div>
+      <div class="process-step reveal reveal-delay-3">
+        <div class="process-num">03</div>
+        <h3 class="process-title" data-i18n="process.s3_title">Implementación</h3>
+        <p class="body-muted" data-i18n="process.s3_body">Despliegue ágil con pruebas rigurosas. Sin interrupciones a su operación.</p>
+      </div>
+      <div class="process-step reveal reveal-delay-4">
+        <div class="process-num">04</div>
+        <h3 class="process-title" data-i18n="process.s4_title">Soporte Continuo</h3>
+        <p class="body-muted" data-i18n="process.s4_body">Monitoreo constante y optimización continua. 24/7.</p>
+        <div class="process-badge process-badge-secondary"><span class="material-symbols-outlined" style="font-size:1rem">schedule</span> 24/7</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ======================= SERVICE PRICING ======================= -->
+<section id="planes" class="section" aria-labelledby="sp-headline">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="overline" data-i18n="services_pricing.overline">¿Qué necesitas?</p>
+      <h2 id="sp-headline" class="display-md" data-i18n="services_pricing.headline">Encuentra tu solución</h2>
+      <p class="body-lg body-muted">
+        <span data-i18n="services_pricing.sub">No vendemos paquetes fijos.</span>
+        <span class="currency-badge chip chip-primary" style="margin-left:0.5rem">COP</span>
+      </p>
+    </div>
+
+    <div class="sp-grid">
+
+      <!-- 1 — Agente IA -->
+      <div class="sp-card bento-card glow-card reveal reveal-delay-1">
+        <div class="sp-icon icon-box icon-box-primary"><span class="material-symbols-outlined">smart_toy</span></div>
+        <div class="sp-content">
+          <h3 class="sp-name" data-i18n="services_pricing.s1_name">Agente de IA 🤖</h3>
+          <p class="sp-question" data-i18n="services_pricing.s1_q">¿Quieres responder clientes sin estar todo el día pegado al teléfono?</p>
+          <p class="body-muted sp-body" data-i18n="services_pricing.s1_body">Creamos un agente inteligente que atiende a tus clientes por WhatsApp...</p>
+          <ul class="sp-examples">
+            <li data-i18n="services_pricing.s1_examples.0">Chatbot para WhatsApp Business</li>
+            <li data-i18n="services_pricing.s1_examples.1">Asistente web en tu sitio</li>
+            <li data-i18n="services_pricing.s1_examples.2">Agente para Instagram o Telegram</li>
+          </ul>
+        </div>
+        <div class="sp-footer">
+          <div id="sp-price-1" class="sp-price"><span class="sp-from">Desde</span> <strong>$300.000</strong></div>
+          <a href="#contacto" class="btn btn-primary btn-sm sp-cta" data-plan="Agente IA" data-track="cta_click" data-track-label="sp_agente_ia" data-i18n="services_pricing.cta">Cotizar gratis</a>
+        </div>
+      </div>
+
+      <!-- 2 — Página Web -->
+      <div class="sp-card bento-card glow-card reveal reveal-delay-2">
+        <div class="sp-icon icon-box icon-box-secondary"><span class="material-symbols-outlined">web</span></div>
+        <div class="sp-content">
+          <h3 class="sp-name" data-i18n="services_pricing.s2_name">Página Web ✨</h3>
+          <p class="sp-question" data-i18n="services_pricing.s2_q">¿Quieres que tus clientes te encuentren y confíen en ti desde el primer clic?</p>
+          <p class="body-muted sp-body" data-i18n="services_pricing.s2_body">Diseñamos sitios web rápidos, modernos y optimizados...</p>
+          <ul class="sp-examples">
+            <li data-i18n="services_pricing.s2_examples.0">Landing page de ventas</li>
+            <li data-i18n="services_pricing.s2_examples.1">Sitio corporativo</li>
+            <li data-i18n="services_pricing.s2_examples.2">Catálogo de productos</li>
+          </ul>
+        </div>
+        <div class="sp-footer">
+          <div id="sp-price-2" class="sp-price"><span class="sp-from">Desde</span> <strong>$500.000</strong></div>
+          <a href="#contacto" class="btn btn-primary btn-sm sp-cta" data-plan="Página Web" data-track="cta_click" data-track-label="sp_pagina_web" data-i18n="services_pricing.cta">Cotizar gratis</a>
+        </div>
+      </div>
+
+      <!-- 3 — Automatización -->
+      <div class="sp-card bento-card glow-card reveal reveal-delay-3">
+        <div class="sp-icon icon-box icon-box-tertiary"><span class="material-symbols-outlined">bolt</span></div>
+        <div class="sp-content">
+          <h3 class="sp-name" data-i18n="services_pricing.s3_name">Automatización de Procesos ⚡</h3>
+          <p class="sp-question" data-i18n="services_pricing.s3_q">¿Tu equipo pierde horas en tareas que podría hacer una máquina?</p>
+          <p class="body-muted sp-body" data-i18n="services_pricing.s3_body">Identificamos los procesos que más tiempo consumen y los automatizamos...</p>
+          <ul class="sp-examples">
+            <li data-i18n="services_pricing.s3_examples.0">Reportes automáticos diarios</li>
+            <li data-i18n="services_pricing.s3_examples.1">Envío masivo de correos/WhatsApp</li>
+            <li data-i18n="services_pricing.s3_examples.2">Actualización de hojas de cálculo</li>
+          </ul>
+        </div>
+        <div class="sp-footer">
+          <div id="sp-price-3" class="sp-price"><span class="sp-from">Desde</span> <strong>$800.000</strong></div>
+          <a href="#contacto" class="btn btn-primary btn-sm sp-cta" data-plan="Automatización" data-track="cta_click" data-track-label="sp_automatizacion" data-i18n="services_pricing.cta">Cotizar gratis</a>
+        </div>
+      </div>
+
+      <!-- 4 — CRM & Ventas -->
+      <div class="sp-card bento-card glow-card reveal reveal-delay-1">
+        <div class="sp-icon icon-box icon-box-primary"><span class="material-symbols-outlined">hub</span></div>
+        <div class="sp-content">
+          <h3 class="sp-name" data-i18n="services_pricing.s4_name">CRM &amp; Gestión de Ventas 💼</h3>
+          <p class="sp-question" data-i18n="services_pricing.s4_q">¿Pierdes clientes porque no haces seguimiento a tiempo?</p>
+          <p class="body-muted sp-body" data-i18n="services_pricing.s4_body">Implementamos y automatizamos tu CRM para que ningún cliente se escape...</p>
+          <ul class="sp-examples">
+            <li data-i18n="services_pricing.s4_examples.0">Configuración de HubSpot o Pipedrive</li>
+            <li data-i18n="services_pricing.s4_examples.1">Captura automática de leads</li>
+            <li data-i18n="services_pricing.s4_examples.2">Secuencias de seguimiento</li>
+          </ul>
+        </div>
+        <div class="sp-footer">
+          <div id="sp-price-4" class="sp-price"><span class="sp-from">Desde</span> <strong>$600.000</strong></div>
+          <a href="#contacto" class="btn btn-primary btn-sm sp-cta" data-plan="CRM" data-track="cta_click" data-track-label="sp_crm" data-i18n="services_pricing.cta">Cotizar gratis</a>
+        </div>
+      </div>
+
+      <!-- 5 — Integraciones -->
+      <div class="sp-card bento-card glow-card reveal reveal-delay-2">
+        <div class="sp-icon icon-box icon-box-secondary"><span class="material-symbols-outlined">lan</span></div>
+        <div class="sp-content">
+          <h3 class="sp-name" data-i18n="services_pricing.s5_name">Integraciones de Sistemas 🔗</h3>
+          <p class="sp-question" data-i18n="services_pricing.s5_q">¿Tus apps no se hablan entre sí y tienes que copiar datos a mano?</p>
+          <p class="body-muted sp-body" data-i18n="services_pricing.s5_body">Conectamos todas tus herramientas para que trabajen como una sola...</p>
+          <ul class="sp-examples">
+            <li data-i18n="services_pricing.s5_examples.0">Conectar WooCommerce con tu ERP</li>
+            <li data-i18n="services_pricing.s5_examples.1">Sincronizar CRM con facturación</li>
+            <li data-i18n="services_pricing.s5_examples.2">Formularios web a notificaciones</li>
+          </ul>
+        </div>
+        <div class="sp-footer">
+          <div id="sp-price-5" class="sp-price"><span class="sp-from">Desde</span> <strong>$500.000</strong></div>
+          <a href="#contacto" class="btn btn-primary btn-sm sp-cta" data-plan="Integraciones" data-track="cta_click" data-track-label="sp_integraciones" data-i18n="services_pricing.cta">Cotizar gratis</a>
+        </div>
+      </div>
+
+      <!-- 6 — Dashboards -->
+      <div class="sp-card bento-card glow-card reveal reveal-delay-3">
+        <div class="sp-icon" style="background:rgba(251,191,36,0.1);color:#fbbf24;width:3rem;height:3rem;border-radius:var(--radius-md);display:inline-flex;align-items:center;justify-content:center"><span class="material-symbols-outlined">bar_chart</span></div>
+        <div class="sp-content">
+          <h3 class="sp-name" data-i18n="services_pricing.s6_name">Dashboards &amp; Reportes 📊</h3>
+          <p class="sp-question" data-i18n="services_pricing.s6_q">¿Tomas decisiones sin datos claros porque juntarlos toma horas?</p>
+          <p class="body-muted sp-body" data-i18n="services_pricing.s6_body">Creamos paneles de control visuales y en tiempo real...</p>
+          <ul class="sp-examples">
+            <li data-i18n="services_pricing.s6_examples.0">Dashboard de ventas en tiempo real</li>
+            <li data-i18n="services_pricing.s6_examples.1">Reporte financiero automático</li>
+            <li data-i18n="services_pricing.s6_examples.2">KPIs de equipo operativo</li>
+          </ul>
+        </div>
+        <div class="sp-footer">
+          <div id="sp-price-6" class="sp-price"><span class="sp-from">Desde</span> <strong>$700.000</strong></div>
+          <a href="#contacto" class="btn btn-primary btn-sm sp-cta" data-plan="Dashboard" data-track="cta_click" data-track-label="sp_dashboard" data-i18n="services_pricing.cta">Cotizar gratis</a>
+        </div>
+      </div>
+
+      <!-- 8 — Sistemas a la medida -->
+      <div class="sp-card bento-card glow-card reveal reveal-delay-1">
+        <div class="sp-icon" style="background:rgba(99,102,241,0.1);color:#6366f1;width:3rem;height:3rem;border-radius:var(--radius-md);display:inline-flex;align-items:center;justify-content:center"><span class="material-symbols-outlined">code</span></div>
+        <div class="sp-content">
+          <h3 class="sp-name" data-i18n="services_pricing.s8_name">Sistemas a la Medida 💻</h3>
+          <p class="sp-question" data-i18n="services_pricing.s8_q">¿Necesitas una herramienta exacta que no existe en el mercado?</p>
+          <p class="body-muted sp-body" data-i18n="services_pricing.s8_body">Desarrollamos soluciones de software totalmente personalizadas...</p>
+          <ul class="sp-examples">
+            <li data-i18n="services_pricing.s8_examples.0">Plataformas o portales internos</li>
+            <li data-i18n="services_pricing.s8_examples.1">Sistemas de gestión personalizados</li>
+            <li data-i18n="services_pricing.s8_examples.2">Aplicaciones web dedicadas</li>
+          </ul>
+        </div>
+        <div class="sp-footer">
+          <div id="sp-price-8" class="sp-price"><span class="sp-from">Desde</span> <strong>$1.000.000</strong></div>
+          <a href="#contacto" class="btn btn-primary btn-sm sp-cta" data-plan="Sistemas a la medida" data-track="cta_click" data-track-label="sp_sistemas" data-i18n="services_pricing.cta">Cotizar gratis</a>
+        </div>
+      </div>
+
+      <!-- 7 — Capacitación -->
+      <div class="sp-card bento-card glow-card reveal reveal-delay-2">
+        <div class="sp-icon icon-box icon-box-primary"><span class="material-symbols-outlined">school</span></div>
+        <div class="sp-content">
+          <h3 class="sp-name" data-i18n="services_pricing.s7_name">Capacitación en IA 🎓</h3>
+          <p class="sp-question" data-i18n="services_pricing.s7_q">¿Tu equipo quiere aprender a usar la IA pero no sabe por dónde empezar?</p>
+          <p class="body-muted sp-body" data-i18n="services_pricing.s7_body">Formamos a tu equipo con talleres prácticos y personalizados...</p>
+          <ul class="sp-examples">
+            <li data-i18n="services_pricing.s7_examples.0">Taller de IA para no técnicos</li>
+            <li data-i18n="services_pricing.s7_examples.1">Uso de ChatGPT en el trabajo</li>
+            <li data-i18n="services_pricing.s7_examples.2">Automatización con n8n o Make</li>
+            <li data-i18n="services_pricing.s7_examples.3">Prompts y productividad con IA</li>
+          </ul>
+        </div>
+        <div class="sp-footer">
+          <div id="sp-price-7" class="sp-price"><span class="sp-from">Desde</span> <strong>$400.000</strong></div>
+          <a href="#contacto" class="btn btn-primary btn-sm sp-cta" data-plan="Capacitación IA" data-track="cta_click" data-track-label="sp_capacitacion" data-i18n="services_pricing.cta">Cotizar gratis</a>
+        </div>
+      </div>
+
+    </div><!-- /sp-grid -->
+
+    <div class="sp-note-row">
+      <p class="sp-complexity-note body-muted">
+        <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:middle">info</span>
+        <span data-i18n="services_pricing.complexity_note">El precio final depende de la complejidad del proceso.</span>
+      </p>
+      <p class="sp-note body-muted" data-i18n="services_pricing.note">Diagnóstico inicial siempre gratuito y sin compromiso.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= EXPERIENCIAS ======================= -->
+<section id="experiencias" class="section bg-surface-low" aria-labelledby="testimonials-headline">
+  <div class="container">
+    <div class="section-header reveal">
+      <p class="overline" data-i18n="testimonials.overline">Experiencias</p>
+      <h2 id="testimonials-headline" class="display-md" data-i18n="testimonials.headline">Empresas que ya escalan con nosotros</h2>
+    </div>
+
+    <div class="testimonials-grid">
+      
+      <!-- Vibrand -->
+      <div class="bento-card glow-card testimonial-card reveal reveal-delay-1">
+        <div class="testimonial-stars" aria-label="5 estrellas">
+          <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+        </div>
+        <div class="testimonial-content">
+          <span class="material-symbols-outlined quote-icon" aria-hidden="true">format_quote</span>
+          <p class="body-lg testimonial-text" data-i18n="testimonials.t1_body">Excelente página web, la atención y rapidez del equipo es increíble. Superaron nuestras expectativas.</p>
+        </div>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar testimonial-avatar-primary" aria-hidden="true">V</div>
+          <div>
+            <h4 class="testimonial-name" data-i18n="testimonials.t1_author">Vibrand</h4>
+            <p class="body-muted testimonial-role" data-i18n="testimonials.t1_role">Agencia Creativa</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ama Logistic -->
+      <div class="bento-card glow-card testimonial-card reveal reveal-delay-2">
+        <div class="testimonial-stars" aria-label="5 estrellas">
+          <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+        </div>
+        <div class="testimonial-content">
+          <span class="material-symbols-outlined quote-icon" aria-hidden="true">format_quote</span>
+          <p class="body-lg testimonial-text" data-i18n="testimonials.t2_body">Desarrollaron un ERP personalizado para nuestro sector logístico que nos permitió optimizar todas las rutas y envíos. Recomendados al 100%.</p>
+        </div>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar testimonial-avatar-secondary" aria-hidden="true">A</div>
+          <div>
+            <h4 class="testimonial-name" data-i18n="testimonials.t2_author">Ama Logistic Plus SAS</h4>
+            <p class="body-muted testimonial-role" data-i18n="testimonials.t2_role">Empresa de Logística</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generic CTA card -->
+      <div class="bento-card testimonial-cta-card reveal reveal-delay-3">
+        <span class="material-symbols-outlined" style="font-size:2.5rem;color:var(--primary);margin-bottom:1rem">emoji_events</span>
+        <h4 style="font-size:1.1rem;font-weight:800;margin-bottom:0.5rem">¿Tu empresa podría ser la siguiente?</h4>
+        <p class="body-muted" style="font-size:0.875rem;margin-bottom:1.5rem">Agenda un diagnóstico gratuito y descubre qué podemos automatizar en tu negocio.</p>
+        <a href="#contacto" class="btn btn-primary btn-sm" data-track="cta_click" data-track-label="testimonial_cta">Agendar diagnóstico</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ======================= FAQ ======================= -->
+<section id="faq" class="section bg-surface-low" aria-labelledby="faq-headline">
+  <div class="container" style="max-width:800px">
+    <div class="section-header reveal">
+      <p class="overline">Preguntas Frecuentes</p>
+      <h2 id="faq-headline" class="display-md">¿Tienes dudas?</h2>
+    </div>
+
+    <div class="faq-list">
+      <details class="faq-item bento-card reveal reveal-delay-1">
+        <summary class="faq-question">¿Van a reemplazar a mi equipo con IA?</summary>
+        <p class="faq-answer body-muted">No. Nuestro objetivo es hacer a tu equipo más productivo, no reemplazarlo. Automatizamos las tareas repetitivas (copiar datos, enviar correos, generar reportes) para que tu gente se dedique a lo estratégico y de mayor valor.</p>
+      </details>
+
+      <details class="faq-item bento-card reveal reveal-delay-1">
+        <summary class="faq-question">¿Cuánto cuesta un proyecto?</summary>
+        <p class="faq-answer body-muted">Depende del proceso. No tenemos paquetes fijos porque cada empresa es diferente. Por eso ofrecemos un diagnóstico gratuito donde evaluamos tu caso y te damos un presupuesto exacto sin compromiso.</p>
+      </details>
+
+      <details class="faq-item bento-card reveal reveal-delay-2">
+        <summary class="faq-question">¿Trabajan con empresas fuera de Colombia?</summary>
+        <p class="faq-answer body-muted">Sí. Trabajamos con empresas de todo el mundo de forma 100% remota. Nos adaptamos a tu zona horaria y usamos herramientas de colaboración para que la distancia no sea un obstáculo.</p>
+      </details>
+
+      <details class="faq-item bento-card reveal reveal-delay-2">
+        <summary class="faq-question">¿Qué ERPs y CRMs pueden integrar?</summary>
+        <p class="faq-answer body-muted">Integramos con la mayoría: HubSpot, Salesforce, Pipedrive, SAP, Odoo, Siigo, Alegra, Zoho, y cualquier sistema que tenga API. Si usas hojas de cálculo, también las conectamos.</p>
+      </details>
+
+      <details class="faq-item bento-card reveal reveal-delay-3">
+        <summary class="faq-question">¿Cuánto tiempo toma implementar una automatización?</summary>
+        <p class="faq-answer body-muted">Proyectos sencillos (chatbot, reportes automáticos) pueden estar listos en 1-2 semanas. Proyectos más complejos (integración ERP-CRM completa) pueden tomar 4-8 semanas. Todo depende del alcance que definimos juntos en el diagnóstico.</p>
+      </details>
+
+      <details class="faq-item bento-card reveal reveal-delay-3">
+        <summary class="faq-question">¿Qué pasa después de la implementación?</summary>
+        <p class="faq-answer body-muted">Te acompañamos con soporte continuo. Monitoreamos que todo funcione, optimizamos los flujos según los resultados, y capacitamos a tu equipo para que sea autosuficiente. No te dejamos solo.</p>
+      </details>
+
+      <details class="faq-item bento-card reveal reveal-delay-4">
+        <summary class="faq-question">¿Crean sistemas o software a la medida?</summary>
+        <p class="faq-answer body-muted">Sí. Además de integrar herramientas existentes, desarrollamos soluciones a medida: dashboards personalizados, portales internos, aplicaciones web y herramientas que se adaptan 100% a la lógica de tu negocio. Si ninguna herramienta del mercado resuelve tu problema, la construimos.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= ROI CALCULATOR ======================= -->
+<section id="roi-calculator" class="section" aria-labelledby="calc-headline">
+  <div class="container" style="max-width:800px">
+    <div class="bento-card glow-card calc-card reveal" style="padding: var(--space-8);">
+      <div class="section-header" style="text-align: center; margin-bottom: var(--space-6);">
+        <p class="overline" data-i18n="calculator.overline">Calculadora de ROI</p>
+        <h2 id="calc-headline" style="font-size: var(--text-2xl);" data-i18n="calculator.headline">¿Cuánto ahorrarías automatizando tareas repetitivas?</h2>
+      </div>
+      
+      <div class="calc-form" style="display: grid; gap: var(--space-4);">
+        <div class="form-group">
+          <label for="calc-employees" data-i18n="calculator.emp_label">Empleados en tareas operativas</label>
+          <input type="number" id="calc-employees" class="form-control" value="5" min="1" style="width: 100%;">
+        </div>
+        <div class="form-group">
+          <label for="calc-hours" data-i18n="calculator.hours_label">Horas semanales perdidas por empleado</label>
+          <input type="number" id="calc-hours" class="form-control" value="10" min="1" style="width: 100%;">
+        </div>
+        <div class="form-group">
+          <label for="calc-salary" data-i18n="calculator.salary_label">Salario mensual prom. (COP)</label>
+          <input type="number" id="calc-salary" class="form-control" value="2000000" min="0" step="100000" style="width: 100%;">
+        </div>
+        <button type="button" id="calc-btn" class="btn btn-primary" style="width: 100%; margin-top: 1rem;" data-i18n="calculator.calc_btn">Calcular mis ahorros</button>
+      </div>
+
+      <div id="calc-result" class="calc-result" style="display: none; text-align: center; margin-top: var(--space-6); padding-top: var(--space-6); border-top: 1px solid rgba(255,255,255,0.1);">
+        <h3 class="display-sm" style="color: var(--success); margin-bottom: 0.5rem;" id="calc-total">$0</h3>
+        <p class="body-muted"><span data-i18n="calculator.result_title">Ahorrarías aprox.</span> <strong data-i18n="calculator.result_sub">al mes en tareas repetitivas.</strong></p>
+        <a href="#contacto" class="btn btn-outline" style="margin-top: 1rem; width: 100%;" data-i18n="calculator.cta">Recupera este dinero agendando un diagnóstico</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= CONTACT ======================= -->
+<section id="contacto" class="section bg-surface-low" aria-labelledby="contact-headline">
+  <div class="container">
+    <div class="contact-layout">
+      <div class="contact-info reveal">
+        <p class="overline" data-i18n="contact.overline">Contacto</p>
+        <h2 id="contact-headline" class="display-md" data-i18n="contact.headline">Agenda tu Diagnóstico Gratuito</h2>
+        <p class="body-lg body-muted" data-i18n="contact.sub">Sin compromiso. Analizamos tus procesos y te mostramos exactamente qué podemos automatizar.</p>
+
+        <div class="contact-details">
+          <div class="contact-detail-item">
+            <span class="material-symbols-outlined text-primary">mail</span>
+            <div>
+              <p style="font-weight:600">Email</p>
+              <a href="mailto:daniel.makeiteasy@gmail.com" class="body-muted">daniel.makeiteasy@gmail.com</a>
+            </div>
+          </div>
+          <div class="contact-detail-item">
+            <span class="material-symbols-outlined text-secondary">phone</span>
+            <div>
+              <p style="font-weight:600">WhatsApp</p>
+              <a href="https://wa.me/573181154477" class="body-muted" target="_blank" rel="noopener">+57 318 115 4477</a>
+            </div>
+          </div>
+          <div class="contact-detail-item">
+            <span class="material-symbols-outlined text-tertiary">location_on</span>
+            <div>
+              <p style="font-weight:600" data-i18n="footer.city">Bogotá, Colombia</p>
+              <p class="body-muted">Atendemos remoto en todo el mundo.</p>
+            </div>
+          </div>
+        </div>
+
+        <p class="body-muted" style="margin-top:1.5rem" data-i18n="contact.whatsapp_label">O escríbenos directamente:</p>
+        <a href="https://wa.me/573181154477?text=Hola%2C%20quiero%20agendar%20mi%20diagn%C3%B3stico%20gratuito%20con%20Make%20it%20Easy"
+           class="btn btn-secondary" target="_blank" rel="noopener"
+           data-track="whatsapp_click" style="margin-top:0.75rem">
+          <span class="material-symbols-outlined">chat</span>
+          <span data-i18n="contact.whatsapp_cta">Chatear en WhatsApp</span>
+        </a>
+      </div>
+
+      <div class="contact-form-wrap reveal reveal-delay-2">
+        <div id="form-success" class="form-success hidden">
+          <span class="material-symbols-outlined" style="font-size:3rem;color:var(--success)">check_circle</span>
+          <h3 data-i18n="contact.success_title">¡Solicitud enviada!</h3>
+          <p class="body-muted" data-i18n="contact.success_body">Te contactaremos en menos de 24 horas.</p>
+        </div>
+
+        <form id="contact-form" class="contact-form" novalidate
+              data-endpoint="https://formspree.io/f/REPLACE_FORM_ID"
+              aria-label="Formulario de Diagnóstico">
+
+          <!-- Honeypot -->
+          <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off" />
+          <input type="hidden" name="timestamp" />
+          <input type="hidden" name="source_page" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="field-name"><span data-i18n="contact.name">Nombre completo</span> *</label>
+              <input id="field-name" name="nombre" type="text" class="input" required autocomplete="name"
+                     data-i18n-placeholder="contact.name" placeholder="Nombre completo" />
+              <span class="field-error">Campo requerido</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="field-company"><span data-i18n="contact.company">Empresa</span> *</label>
+              <input id="field-company" name="empresa" type="text" class="input" required autocomplete="organization"
+                     data-i18n-placeholder="contact.company" placeholder="Empresa" />
+              <span class="field-error">Campo requerido</span>
+            </div>
+          <div class="form-group">
+            <label class="form-label" for="field-role"><span data-i18n="contact.role">Cargo</span></label>
+            <input id="field-role" name="cargo" type="text" class="input" autocomplete="organization-title"
+                   data-i18n-placeholder="contact.role" placeholder="Cargo" />
+          </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="field-email"><span data-i18n="contact.email">Email empresarial</span> *</label>
+              <input id="field-email" name="email" type="email" class="input" required autocomplete="email"
+                     data-i18n-placeholder="contact.email" placeholder="Email" />
+              <span class="field-error">Email inválido</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="field-phone"><span data-i18n="contact.phone">Teléfono / WhatsApp</span> *</label>
+              <input id="field-phone" name="telefono" type="tel" class="input" required autocomplete="tel"
+                     data-i18n-placeholder="contact.phone" placeholder="Teléfono" />
+              <span class="field-error">Campo requerido</span>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="field-employees" data-i18n="contact.employees">Número de empleados</label>
+              <select id="field-employees" name="empleados" class="input">
+                <option value="">— seleccionar —</option>
+                <option>1–10</option><option>11–50</option><option>51–200</option><option>200+</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="field-sector" data-i18n="contact.sector">Sector</label>
+              <select id="field-sector" name="sector" class="input" data-i18n-options="contact.sector_opts">
+                <option value="">— seleccionar —</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="field-plan" data-i18n="contact.plan">Plan de interés</label>
+            <select id="field-plan" name="plan_interes" class="input" data-i18n-options="contact.plan_opts">
+              <option value="">— seleccionar —</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="field-message" data-i18n="contact.message">¿Qué proceso quieres automatizar?</label>
+            <textarea id="field-message" name="mensaje" class="input" rows="4"
+                      data-i18n-placeholder="contact.message" placeholder="Describe tu proceso..."></textarea>
+          </div>
+
+          <div class="form-group form-checkbox">
+            <label class="checkbox-label">
+              <input type="checkbox" name="privacidad" required />
+              <span data-i18n="contact.privacy">Acepto la política de privacidad</span>
+            </label>
+            <span class="field-error">Debes aceptar la política de privacidad</span>
+          </div>
+
+          <div id="form-error" class="form-error-msg hidden" data-i18n="contact.error">Error al enviar. Por favor intenta de nuevo.</div>
+
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
+            <span class="spinner hidden"></span>
+            <span class="btn-text" data-i18n="contact.submit">Solicitar Diagnóstico</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ======================= FOOTER ======================= -->
+<footer class="site-footer" role="contentinfo">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo">
+        <img src="public/logo.svg" alt="Make it Easy"
+             style="height:2rem;width:auto;mix-blend-mode:screen;filter:brightness(1.1) contrast(1.1)" />
+        <span class="nav-logo-text">Make it Easy</span>
+      </div>
+      <p class="body-muted" data-i18n="footer.tagline">Intelligent Automation</p>
+      <p class="body-muted" style="font-size:0.85rem;margin-top:0.5rem" data-i18n="footer.city">Bogotá, Colombia</p>
+    </div>
+
+    <div class="footer-col">
+      <h4 data-i18n="footer.col_company">Empresa</h4>
+      <ul>
+        <li><a href="#nosotros" data-i18n="nav.about">Nosotros</a></li>
+        <li><a href="#servicios" data-i18n="nav.services">Servicios</a></li>
+        <li><a href="#proceso" data-i18n="nav.process">Proceso</a></li>
+        <li><a href="#planes" data-i18n="nav.plans">Planes</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4 data-i18n="footer.col_contact">Contacto</h4>
+      <ul>
+        <li><a href="mailto:daniel.makeiteasy@gmail.com">daniel.makeiteasy@gmail.com</a></li>
+        <li><a href="mailto:cristian.makeiteasy@gmail.com">cristian.makeiteasy@gmail.com</a></li>
+        <li><a href="https://wa.me/573181154477" target="_blank" rel="noopener">+57 318 115 4477</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4 data-i18n="footer.col_legal">Legal</h4>
+      <ul>
+        <li><a href="/privacidad.html" data-i18n="footer.privacy">Política de Privacidad</a></li>
+        <li><a href="/terminos.html" data-i18n="footer.terms">Términos de Uso</a></li>
+      </ul>
+      <div style="margin-top:1.5rem">
+        <p style="font-size:0.8rem;font-weight:600;margin-bottom:0.5rem" data-i18n="footer.newsletter_label">Recibe insights de automatización</p>
+        <div class="footer-newsletter" id="footer-newsletter-wrap">
+          <input type="email" id="footer-newsletter-email" class="input"
+                 style="padding:0.5rem 0.875rem;font-size:0.85rem;border-radius:var(--radius-full) 0 0 var(--radius-full)"
+                 data-i18n-placeholder="footer.newsletter_placeholder" placeholder="Tu email"
+                 aria-label="Email para newsletter" />
+          <button id="footer-newsletter-btn" class="btn btn-primary btn-sm"
+                  style="border-radius:0 var(--radius-full) var(--radius-full) 0;padding-inline:1rem"
+                  data-i18n="footer.newsletter_cta">Suscribir</button>
+        </div>
+        <p id="footer-newsletter-msg" class="footer-newsletter-msg" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <div class="container">
+      <p data-i18n="footer.copyright">© 2025–2026 Make it Easy — Intelligent Automation. Bogotá, Colombia.</p>
+    </div>
+  </div>
+</footer>
+
+<!-- WhatsApp FAB -->
+<a href="https://wa.me/573181154477?text=Hola%2C%20quiero%20agendar%20mi%20diagn%C3%B3stico%20gratuito%20con%20Make%20it%20Easy"
+   class="whatsapp-fab" target="_blank" rel="noopener"
+   aria-label="Contactar por WhatsApp" data-i18n="aria.whatsapp" data-i18n-attr="aria-label"
+   data-track="whatsapp_click">
+  <span class="material-symbols-outlined">chat</span>
+  <span class="whatsapp-fab-tooltip" data-i18n="contact.whatsapp_cta">Chatear en WhatsApp</span>
+</a>
+
+<!-- Back to top -->
+<button id="back-top" class="back-top" aria-label="Volver arriba" data-i18n="aria.back_top" data-i18n-attr="aria-label">
+  <span class="material-symbols-outlined">arrow_upward</span>
+</button>
+
+<!-- Cookie consent -->
+<div id="cookie-banner" class="cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie consent">
+  <p>
+    <span data-i18n="cookie.text">Usamos cookies para mejorar tu experiencia.</span>
+    <a href="/privacidad.html" data-i18n="cookie.policy">política de privacidad</a>.
+  </p>
+  <div class="cookie-actions">
+    <button id="cookie-decline" class="btn btn-outline btn-sm" data-i18n="cookie.decline">Rechazar</button>
+    <button id="cookie-accept" class="btn btn-primary btn-sm" data-i18n="cookie.accept">Aceptar</button>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script type="module" src="scripts/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# Make it Easy — robots.txt
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://makeiteasy.com.co/sitemap.xml

@@ -1,0 +1,15 @@
+# OS/Editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Node (if used in future)
+node_modules/
+package-lock.json
+
+# IA/Agents
+.agents/
+.claude/
+.neovate/
+.windsurf/
+scratch/
