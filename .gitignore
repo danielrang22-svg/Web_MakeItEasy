@@ -13,3 +13,9 @@ package-lock.json
 .neovate/
 .windsurf/
 scratch/
+
+# Docs de desarrollo / diseño (no van a producción)
+stitch/
+skills/
+skills-lock.json
+SRS_MakeItEasy_Website.md

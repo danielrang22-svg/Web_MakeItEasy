@@ -65,6 +65,19 @@
   <!-- Favicon & Icons -->
   <link rel="icon" type="image/svg+xml" href="public/favicon.svg" />
   <link rel="apple-touch-icon" href="public/og-image.png" />
+
+  <!--
+    ⚙️ CONFIGURACIÓN DE PRODUCCIÓN
+    Reemplaza los valores marcados antes de hacer deploy:
+
+    1. Google Analytics 4:
+       Ve a analytics.google.com → Admin → Data streams → copia el Measurement ID (G-XXXXXXXXXX)
+
+    2. Formspree:
+       Ve a formspree.io → crea un form → copia el Form ID (xyzabcde)
+  -->
+  <meta name="ga4-id"          content="G-XXXXXXXXXX" />
+  <meta name="formspree-id"    content="REPLACE_FORM_ID" />
 </head>
 <body class="loading">
 
@@ -1058,7 +1071,7 @@
         </div>
 
         <form id="contact-form" class="contact-form" novalidate
-              data-endpoint="https://formspree.io/f/REPLACE_FORM_ID"
+              data-formspree-meta="formspree-id"
               aria-label="Formulario de Diagnóstico">
 
           <!-- Honeypot -->

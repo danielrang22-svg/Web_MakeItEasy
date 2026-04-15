@@ -248,8 +248,17 @@ function initContactForm() {
     data.source_page = window.location.href;
 
     try {
-      // Attempt to send via Formspree or your endpoint
-      const endpoint = form.dataset.endpoint || 'https://formspree.io/f/REPLACE_FORM_ID';
+      // ⚙️ Formspree endpoint: configura el ID en index.html (<meta name="formspree-id" content="XXXXXXXX">)
+      const formspreeId = document.querySelector('meta[name="formspree-id"]')?.content;
+      const endpoint = (formspreeId && formspreeId !== 'REPLACE_FORM_ID')
+        ? `https://formspree.io/f/${formspreeId}`
+        : form.dataset.endpoint || null;
+
+      if (!endpoint) {
+        console.warn('[MakeItEasy] Formspree no configurado. Añade <meta name="formspree-id" content="TU_ID"> en index.html.');
+        throw new Error('Endpoint not configured');
+      }
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -357,7 +366,13 @@ function initCookieConsent() {
 }
 
 function loadGA4() {
-  const GA4_ID = 'G-XXXXXXXX'; // TODO: replace
+  // ⚙️  CONFIGURACIÓN: añade tu GA4 ID en index.html:
+  //     <meta name="ga4-id" content="G-XXXXXXXXXX">
+  const GA4_ID = document.querySelector('meta[name="ga4-id"]')?.content;
+  if (!GA4_ID || GA4_ID === 'G-XXXXXXXXXX') {
+    console.warn('[MakeItEasy] GA4 no configurado. Añade <meta name="ga4-id" content="G-XXXXXXXX"> en el <head> de index.html.');
+    return;
+  }
   if (document.querySelector(`script[src*="${GA4_ID}"]`)) return;
   const s1 = document.createElement('script');
   s1.async = true;
@@ -482,9 +497,15 @@ function initNewsletterFooter() {
     msg.className = 'footer-newsletter-msg';
 
     try {
-      // Send to Formspree (uses same endpoint as contact form, tag as newsletter)
-      const endpoint = document.getElementById('contact-form')?.dataset?.endpoint
-        || 'https://formspree.io/f/REPLACE_FORM_ID';
+      // ⚙️ Formspree endpoint: configura el ID en index.html (<meta name="formspree-id" content="XXXXXXXX">)
+      const formspreeId = document.querySelector('meta[name="formspree-id"]')?.content;
+      const endpoint = (formspreeId && formspreeId !== 'REPLACE_FORM_ID')
+        ? `https://formspree.io/f/${formspreeId}`
+        : document.getElementById('contact-form')?.dataset?.endpoint || null;
+
+      if (!endpoint) {
+        throw new Error('Endpoint not configured');
+      }
 
       const res = await fetch(endpoint, {
         method: 'POST',

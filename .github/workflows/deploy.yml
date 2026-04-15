@@ -15,20 +15,20 @@ jobs:
       - name: Deploy to Hostinger VPS
         uses: easingthemes/ssh-deploy@main
         env:
-          # Estas variables de entorno debes configurarlas en:
-          # GitHub Repo -> Settings -> Secrets and variables -> Actions -> Repository secrets
+          # Configura estas variables en:
+          # GitHub Repo → Settings → Secrets and variables → Actions → Repository secrets
           SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
           REMOTE_HOST: ${{ secrets.VPS_HOST }}
           REMOTE_USER: ${{ secrets.VPS_USER }}
-          
-          # Argumentos de Rsync para transferir rápido y eliminar lo viejo
+
+          # Rsync — transferencia rápida, elimina archivos viejos
           ARGS: "-rlgoDzvc -i --delete"
-          
-          # Copia toda la carpeta actual hacia el servidor
+
+          # Copia toda la carpeta al servidor
           SOURCE: "/"
-          
-          # RUTA FINAL EN TU VPS (MODIFICAR SEGÚN TU NGINX)
+
+          # Ruta en el VPS (ajusta según tu configuración de Nginx)
           TARGET: "/var/www/html/makeiteasy"
-          
-          # Archivos que GitHub no debe enviar al VPS
-          EXCLUDE: "/.git/, /.github/, /.agents/, /.gitignore, /README.md"
+
+          # Archivos que NO se envían al VPS
+          EXCLUDE: "/.git/, /.github/, /.agents/, /.claude/, /.neovate/, /.windsurf/, /stitch/, /skills/, /skills-lock.json, /SRS_MakeItEasy_Website.md, /.gitignore, /README.md"
