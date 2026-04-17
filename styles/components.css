@@ -38,6 +38,7 @@
   transition: opacity 200ms;
   white-space: nowrap;
   flex-shrink: 0;
+  margin-right: 2rem;
 }
 .nav-logo:hover { opacity: 0.8; }
 .nav-logo-icon { color: var(--primary); font-size: 1.6rem; }
@@ -45,8 +46,8 @@
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  margin: 0 1rem;
+  gap: 1.5rem;
+  margin: 0 auto;
   list-style: none;
 }
 
