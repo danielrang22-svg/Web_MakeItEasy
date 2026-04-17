@@ -36,6 +36,8 @@
   color: var(--primary);
   letter-spacing: -0.02em;
   transition: opacity 200ms;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .nav-logo:hover { opacity: 0.8; }
 .nav-logo-icon { color: var(--primary); font-size: 1.6rem; }
