@@ -45,14 +45,14 @@
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 2.25rem;
+  gap: 1.5rem;
   list-style: none;
 }
 
 .nav-link {
-  font-size: 0.725rem;
+  font-size: 0.65rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--on-surface-variant);
   transition: color 200ms;
