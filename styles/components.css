@@ -32,16 +32,24 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  font-weight: 800;
-  font-size: 1.25rem;
-  color: var(--primary);
-  letter-spacing: -0.02em;
-  transition: opacity 200ms;
-  white-space: nowrap;
+  transition: opacity 200ms, transform 200ms;
   flex-shrink: 0;
-  margin-right: 3rem;
 }
-.nav-logo:hover { opacity: 0.8; }
+.nav-logo:hover { 
+  opacity: 0.9; 
+  transform: translateY(-1px);
+}
+.nav-logo-img {
+  height: 32px;
+  width: auto;
+  display: block;
+}
+
+@media (max-width: 480px) {
+  .nav-logo-img {
+    height: 28px;
+  }
+}
 .nav-logo-icon { color: var(--primary); font-size: 1.6rem; }
 
 .nav-links {

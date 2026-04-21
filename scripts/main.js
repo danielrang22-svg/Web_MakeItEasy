@@ -152,6 +152,116 @@ function initHeroParticles() {
 }
 
 /* ========================================================
+   GSAP ANIMATIONS — Preloader & Hero Entrance
+   ======================================================== */
+function initLoader() {
+  const tl = gsap.timeline();
+
+  // 1. Logo entrance (fade + scale)
+  tl.to(".loader-logo", {
+    opacity: 1,
+    scale: 1,
+    duration: 1.2,
+    ease: "power2.out"
+  }, "+=0.2");
+
+  // 2. Progress bar (vertical neon line)
+  tl.to("#loader-bar", {
+    height: "100%",
+    duration: 2.2,
+    ease: "expo.inOut"
+  }, "-=0.8");
+
+  // 3. Subtle float while loading
+  gsap.to(".loader-logo img", {
+    y: -8,
+    duration: 2,
+    repeat: -1,
+    yoyo: true,
+    ease: "sine.inOut"
+  });
+
+  // 4. Logo exit
+  tl.to(".loader-logo", {
+    opacity: 0,
+    scale: 1.05,
+    duration: 0.6,
+    ease: "power2.in"
+  }, "-=0.2");
+
+  // 5. Reveal site (Slide up preloader)
+  tl.to("#preloader", {
+    yPercent: -100,
+    duration: 1.4,
+    ease: "expo.inOut",
+    onStart: () => {
+      // Optional: trigger hero reveals slightly before preloader is gone
+    },
+    onComplete: () => {
+      const loader = document.getElementById('preloader');
+      if (loader) loader.style.display = 'none';
+      document.body.classList.remove('loading');
+      initHeroAnimations();
+    }
+  }, "-=0.4");
+}
+
+function initHeroAnimations() {
+  const tl = gsap.timeline();
+
+  // Reveal text lines (slower and more deliberate)
+  tl.to(".reveal-text > *", {
+    y: 0,
+    duration: 1.6,
+    stagger: 0.2,
+    ease: "expo.out"
+  });
+
+  // Fade in other elements
+  tl.from(".hero-section .chip", {
+    opacity: 0,
+    y: 20,
+    duration: 1,
+    ease: "power3.out"
+  }, "-=1.2");
+
+  tl.from(".hero-ctas", {
+    opacity: 0,
+    y: 20,
+    duration: 1,
+    ease: "power3.out"
+  }, "-=1");
+
+  tl.from(".hero-visual", {
+    opacity: 0,
+    scale: 0.98,
+    x: 40,
+    duration: 2,
+    ease: "expo.out"
+  }, "-=1.4");
+}
+
+function initMouseFollow() {
+  const visual = document.querySelector('.hero-visual-card');
+  if (!visual) return;
+
+  window.addEventListener('mousemove', (e) => {
+    const { clientX, clientY } = e;
+    const xPos = (clientX / window.innerWidth - 0.5) * 30;
+    const yPos = (clientY / window.innerHeight - 0.5) * 30;
+
+    gsap.to(visual, {
+      x: xPos,
+      y: yPos,
+      rotateX: -yPos * 0.5,
+      rotateY: xPos * 0.5,
+      duration: 1.2,
+      ease: "power2.out"
+    });
+  });
+}
+
+/* ========================================================
    SERVICES — Expand on click
    ======================================================== */
 function initServiceCards() {
@@ -661,11 +771,12 @@ async function init() {
   initNewsletterFooter();
   initTeamCarousel();
 
+  // New Animations
+  initLoader();
+  initMouseFollow();
+
   // Analytics (respects cookie consent)
   initAnalytics();
-
-  // Remove loading class from body
-  document.body.classList.remove('loading');
 }
 
 // Run when DOM is ready

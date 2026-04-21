@@ -350,6 +350,105 @@ select.input { appearance: none; cursor: pointer; }
 .fade-in-up-4 { animation-delay: 0.55s; }
 .fade-in-up-5 { animation-delay: 0.7s; }
 
+/* Preloader */
+.preloader {
+  position: fixed;
+  inset: 0;
+  background: #FFFFFF; /* Premium White for the new logo */
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+body.loading {
+  overflow: hidden;
+}
+
+.loader-content {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.loader-logo {
+  margin-bottom: 3rem;
+  opacity: 0;
+  transform: scale(0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible; /* Ensure glow isn't clipped */
+}
+
+.loader-logo img {
+  max-width: 320px; /* Increased for premium feel */
+  width: 90%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.08)); /* Soft dark shadow for white BG */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Navbar Logo visibility on dark background */
+.nav-logo-img {
+  filter: brightness(0) invert(1); /* Makes the dark logo white for the dark navbar */
+  transition: filter 0.3s ease;
+}
+
+
+
+.loader-logo.text-mode {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--on-surface);
+  letter-spacing: -0.02em;
+}
+
+.loader-progress-wrap {
+  position: fixed;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 200px;
+  width: 2px;
+  background: rgba(143, 245, 255, 0.1);
+}
+
+.loader-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  background: #00B8D4; /* Slightly darker cyan for contrast on white */
+  box-shadow: 0 0 10px rgba(0, 184, 212, 0.3);
+}
+
+@media (max-width: 768px) {
+  .loader-logo img {
+    max-width: 160px;
+  }
+  .loader-progress-wrap {
+    right: 20px;
+    height: 150px;
+  }
+}
+
+/* Text Reveal */
+.reveal-text {
+  overflow: hidden;
+  display: block;
+}
+
+.reveal-text > * {
+  display: block;
+  transform: translateY(100%);
+}
+
 /* Glow pulse */
 @keyframes glowPulse {
   0%, 100% { opacity: 0.7; transform: scale(1); }

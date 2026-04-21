@@ -78,8 +78,23 @@
   -->
   <meta name="ga4-id"          content="G-XXXXXXXXXX" />
   <meta name="formspree-id"    content="xrerqkkn" />
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/CustomEase.min.js"></script>
 </head>
 <body class="loading">
+
+<!-- ======================= PRELOADER ======================= -->
+<div id="preloader" class="preloader" aria-hidden="true">
+  <div class="loader-content">
+    <div class="loader-logo">
+      <img src="make-it-easy-logo-transparent-fixed.svg" alt="Make It Easy Logo">
+    </div>
+    <div class="loader-progress-wrap">
+      <div class="loader-progress-bar" id="loader-bar"></div>
+    </div>
+  </div>
+</div>
 
 <!-- Skip to content -->
 <a href="#hero" class="skip-link">Saltar al contenido</a>
@@ -89,7 +104,7 @@
   <nav class="nav-inner container" aria-label="Navegación principal">
     <!-- Logo -->
     <a href="#hero" class="nav-logo" aria-label="MakeItEasy — inicio">
-      MakeItEasy
+      <img src="make-it-easy-logo-transparent-fixed.svg" alt="MakeItEasy" class="nav-logo-img">
     </a>
 
     <!-- Desktop links -->
@@ -153,14 +168,16 @@
         <span data-i18n="hero.chip">Automatización con IA · Resultados Reales</span>
       </div>
 
-      <h1 class="display-lg hero-headline fade-in-up fade-in-up-2">
-        <span data-i18n="hero.headline1">Haz crecer tu negocio</span>
-        <span class="text-primary glow-text-primary" data-i18n="hero.headline2"> sin crecer tu carga de trabajo.</span>
+      <h1 class="display-lg hero-headline">
+        <div class="reveal-text"><span data-i18n="hero.headline1">Haz crecer tu negocio</span></div>
+        <div class="reveal-text"><span class="text-primary glow-text-primary" data-i18n="hero.headline2"> sin crecer tu carga de trabajo.</span></div>
       </h1>
 
-      <p class="body-lg body-muted hero-sub fade-in-up fade-in-up-3" data-i18n="hero.sub">
-        Hacemos que tu equipo sea más productivo automatizando lo repetitivo con IA. Conectamos tus sistemas, CRM y ERPs para que todo fluya — tu gente se enfoca en lo que realmente importa.
-      </p>
+      <div class="reveal-text">
+        <p class="body-lg body-muted hero-sub" data-i18n="hero.sub">
+          Hacemos que tu equipo sea más productivo automatizando lo repetitivo con IA. Conectamos tus sistemas, CRM y ERPs para que todo fluya — tu gente se enfoca en lo que realmente importa.
+        </p>
+      </div>
 
       <div class="hero-ctas fade-in-up fade-in-up-4">
         <a href="#contacto" class="btn btn-primary" data-i18n="hero.cta_primary" data-track="cta_click" data-track-label="hero_primary">
