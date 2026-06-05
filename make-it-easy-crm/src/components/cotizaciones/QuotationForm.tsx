@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { Plus, Trash2, DollarSign, Calendar, FileText, CheckCircle, Info, Server, HelpCircle, Layers } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { Plus, Trash2, DollarSign, Calendar, FileText, CheckCircle, Info, Server, HelpCircle, Layers, Sparkles } from "lucide-react";
 import { Cotizacion, EstadoCotizacion, CotizacionCreateData } from "@/lib/types";
 import { getNextCodigo } from "@/lib/cotizacionesCalc";
 import { formatCurrency } from "@/lib/constants";
+import { AiProposal } from "@/components/cotizaciones/AIBriefInput";
 
 interface QuotationFormProps {
     initial?: Cotizacion | null;
+    aiPrefilled?: AiProposal | null;
     allCotizaciones: Cotizacion[];
     empresas: string[];
     contactos: { nombre: string; empresa: string }[];
@@ -19,6 +21,7 @@ interface QuotationFormProps {
 
 export default function QuotationForm({
     initial,
+    aiPrefilled,
     allCotizaciones,
     empresas,
     contactos,
@@ -117,6 +120,25 @@ export default function QuotationForm({
         return fases.reduce((acc, curr) => acc + (Number(curr.precio) || 0), 0);
     }, [fases]);
 
+    // Apply AI prefilled data when available
+    useEffect(() => {
+        if (!aiPrefilled) return;
+        setTituloPropuesta(aiPrefilled.tituloPropuesta || "");
+        setDesafioNegocio(aiPrefilled.desafioNegocio || "");
+        setEmpresaNombre(aiPrefilled.empresaNombre || "");
+        setContactoNombre(aiPrefilled.contactoNombre || "");
+        setMoneda(aiPrefilled.moneda || "COP");
+        if (aiPrefilled.prerrequisitos?.length) setPrerrequisitos(aiPrefilled.prerrequisitos);
+        if (aiPrefilled.arquitectura?.length) setArquitectura(aiPrefilled.arquitectura);
+        if (aiPrefilled.fases?.length) setFases(aiPrefilled.fases);
+        if (aiPrefilled.checklistInicio?.length) setChecklist(aiPrefilled.checklistInicio);
+        if (aiPrefilled.feeMensual) setFeeMensual(aiPrefilled.feeMensual);
+        if (aiPrefilled.moduloOpcionalFee) setModuloOpcionalFee(aiPrefilled.moduloOpcionalFee);
+        if (aiPrefilled.feeMensualIncluye) setFeeMensualIncluye(aiPrefilled.feeMensualIncluye);
+        // Jump to challenge tab so user sees AI content first
+        setActiveTab("challenge");
+    }, [aiPrefilled]);
+
     // Helpers to add/remove rows
     const addPrereq = () => setPrerrequisitos(prev => [...prev, { titulo: "", descripcion: "" }]);
     const removePrereq = (idx: number) => setPrerrequisitos(prev => prev.filter((_, i) => i !== idx));
@@ -180,6 +202,16 @@ export default function QuotationForm({
     return (
         <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-2 custom-scrollbar">
             {title && <h3 className="font-bold text-lg mb-4 text-primary font-display">{title}</h3>}
+
+            {/* AI prefilled banner */}
+            {aiPrefilled && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800/30 rounded-xl text-xs">
+                    <Sparkles size={14} className="text-violet-600 shrink-0" />
+                    <span className="text-violet-700 dark:text-violet-300">
+                        <strong>Propuesta generada por IA</strong> — Revisa y ajusta los campos y precios antes de guardar.
+                    </span>
+                </div>
+            )}
 
             {/* TAB Navigation Header */}
             <div className="flex border-b border-border text-sm overflow-x-auto custom-scrollbar whitespace-nowrap">

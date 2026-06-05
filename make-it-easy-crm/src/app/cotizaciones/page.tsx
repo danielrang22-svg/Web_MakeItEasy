@@ -14,9 +14,10 @@ import { useRouter } from "next/navigation";
 import { useProyectosStore } from "@/lib/state/proyectosStore";
 import {
     Search, FileText, Plus, Pencil, Trash2, Eye, Download,
-    Building2, User, DollarSign, Cpu, CheckCircle, Clock, Filter, X, ArrowRight, Archive,
+    Building2, User, DollarSign, Cpu, CheckCircle, Clock, Filter, X, ArrowRight, Archive, Sparkles,
 } from "lucide-react";
 import { CotizacionView } from "@/components/cotizaciones/CotizacionView";
+import AIBriefInput, { AiProposal } from "@/components/cotizaciones/AIBriefInput";
 
 const ESTADO_STYLES: Record<EstadoCotizacion, { bg: string; text: string; icon: React.ReactNode }> = {
     [EstadoCotizacion.BORRADOR]: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-400", icon: <Clock size={12} /> },
@@ -41,6 +42,8 @@ export default function CotizacionesPage() {
     const { generarDesdeCotizacion, loadProyectos, loadOrdenes, proyectos } = useProyectosStore();
 
     const [showForm, setShowForm] = useState(false);
+    const [showAiBrief, setShowAiBrief] = useState(false);
+    const [aiPrefilledData, setAiPrefilledData] = useState<AiProposal | null>(null);
     const [editingCot, setEditingCot] = useState<Cotizacion | null>(null);
     const [viewingCot, setViewingCot] = useState<Cotizacion | null>(null);
     const [clientView, setClientView] = useState(false);
@@ -87,11 +90,19 @@ export default function CotizacionesPage() {
 
     function openCreate() {
         setEditingCot(null);
-        setShowForm(true);
+        setAiPrefilledData(null);
+        setShowAiBrief(true);
     }
 
     function openEdit(cot: Cotizacion) {
         setEditingCot(cot);
+        setAiPrefilledData(null);
+        setShowForm(true);
+    }
+
+    function handleAiProposalGenerated(proposal: AiProposal) {
+        setAiPrefilledData(proposal);
+        setShowAiBrief(false);
         setShowForm(true);
     }
 
@@ -139,7 +150,7 @@ export default function CotizacionesPage() {
                     <p className="text-muted-foreground text-sm mt-1">{filtered.length} propuestas registradas</p>
                 </div>
                 <button onClick={openCreate} className="mie-gradient text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-1 shadow-md">
-                    <Plus size={16} /> Nueva Propuesta
+                    <Sparkles size={16} /> Nueva Propuesta con IA
                 </button>
             </div>
 
@@ -298,11 +309,22 @@ export default function CotizacionesPage() {
                 )}
             </div>
 
+            {/* AI BRIEF MODAL */}
+            <Modal isOpen={showAiBrief} onClose={() => setShowAiBrief(false)} title="✨ Nueva Propuesta con Agente IA">
+                <div className="p-1 max-h-[85vh] overflow-y-auto custom-scrollbar">
+                    <AIBriefInput
+                        onProposalGenerated={handleAiProposalGenerated}
+                        onSkip={() => { setShowAiBrief(false); setShowForm(true); }}
+                    />
+                </div>
+            </Modal>
+
             {/* CREATE / EDIT FORM MODAL */}
             <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={editingCot ? `Editar Propuesta ${editingCot.codigo} V${editingCot.version}` : "Crear Propuesta Comercial"}>
                 <div className="p-1 max-h-[85vh] overflow-y-auto custom-scrollbar">
                     <QuotationForm
                         initial={editingCot}
+                        aiPrefilled={aiPrefilledData}
                         allCotizaciones={cotizaciones}
                         empresas={empresas.map((e) => e.nombre)}
                         contactos={contactos.map((c) => ({ nombre: c.nombre, empresa: c.empresaNombre || "" }))}
@@ -315,8 +337,9 @@ export default function CotizacionesPage() {
                                 setToast({ message: "Propuesta creada", type: "success" });
                             }
                             setShowForm(false);
+                            setAiPrefilledData(null);
                         }}
-                        onCancel={() => setShowForm(false)}
+                        onCancel={() => { setShowForm(false); setAiPrefilledData(null); }}
                     />
                 </div>
             </Modal>
