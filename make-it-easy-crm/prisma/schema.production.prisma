@@ -1,0 +1,311 @@
+// Schema de producción — usa PostgreSQL
+// Uso: npx prisma migrate deploy --schema=prisma/schema.production.prisma
+//      npx prisma generate --schema=prisma/schema.production.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Lead {
+  id                 String   @id @default(uuid())
+  titulo             String
+  nombreContacto     String
+  empresa            String
+  valorEstimado      Float    @default(0)
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+  telefono           String
+  email              String
+  notas              String
+  etapa              String   // Mapped to Etapa enum
+  tallas             String
+  tipoMarcacion      String   // Mapped to TipoMarcacion enum
+  origenLead         String
+
+  cotizaciones       Cotizacion[]
+  proyectos          Proyecto[]
+
+  @@index([email])
+  @@index([fechaCreacion])
+  @@map("leads")
+}
+
+model Empresa {
+  id                    String   @id @default(uuid())
+  nombre                String
+  nit                   String
+  direccion             String
+  ciudad                String
+  sector                String
+  tamano                String
+  telefono              String
+  email                 String
+  notas                 String
+  
+  // Campos fiscales para integración con Siigo
+  tipoPersona           String   @default("Natural") // "Natural" | "Juridica"
+  tipoDocumento         String   @default("13")      // "13" (CC) | "31" (NIT)
+  digitoVerificacion    String   @default("")        // Dígito de verificación para NIT
+  responsabilidadFiscal String   @default("R-99-PN") // Ej: "O-47" o "R-99-PN"
+  codigoCiudadSiigo     String   @default("11001")   // Código Dane de ciudad (ej. 11001 para Bogotá)
+  siigoId               String?                      // ID del cliente en Siigo (null = no sincronizado)
+
+  fechaCreacion         DateTime @default(now())
+  fechaActualizacion    DateTime @updatedAt
+
+  contactos             Contacto[]
+
+  @@map("empresas")
+}
+
+model Contacto {
+  id                 String   @id @default(uuid())
+  nombre             String
+  cargo              String
+  empresaId          String
+  empresaNombre      String
+  telefono           String
+  telefono2          String
+  email              String
+  email2             String
+  notas              String
+  tags               String   // Comma separated list or JSON string
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  empresa            Empresa       @relation(fields: [empresaId], references: [id])
+  interacciones      Interaccion[]
+
+  @@index([empresaId])
+  @@map("contactos")
+}
+
+model Interaccion {
+  id          String   @id @default(uuid())
+  contactoId  String
+  tipo        String
+  descripcion String
+  fecha       DateTime @default(now())
+
+  contacto    Contacto @relation(fields: [contactoId], references: [id])
+
+  @@index([contactoId])
+  @@map("interacciones")
+}
+
+model Cotizacion {
+  id                 String   @id @default(uuid())
+  codigo             String
+  version            Int      @default(1)
+  vendedor           String   @default("Daniel Rangel")
+  fecha              DateTime @default(now())
+  leadId             String?
+  empresaNombre      String
+  contactoNombre     String
+  estado             String
+  incluyeIVA         Boolean  @default(false)
+  solicitarAnticipo  Boolean  @default(false)
+  valorAnticipo      Float?
+  observaciones      String
+  formaPago          String
+  tiempoEntrega      String
+  validez            String
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  lineas             LineaCotizacion[]
+  proyectos          Proyecto[]
+  lead               Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([leadId])
+  @@index([fechaCreacion])
+  @@map("cotizaciones")
+}
+
+model LineaCotizacion {
+  id             String     @id @default(uuid())
+  cotizacionId   String
+  referencia     String
+  nombre         String
+  proveedor      String
+  costoUnd       Float
+  precioUnd      Float
+  cantidad       Int
+
+  cotizacion     Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+
+  @@index([cotizacionId])
+  @@map("lineas_cotizacion")
+}
+
+model Proyecto {
+  id                   String   @id @default(uuid())
+  leadId               String?
+  cotizacionId         String?
+  titulo               String
+  clienteNombre        String
+  estado               String
+  fechaInicio          DateTime @default(now())
+  fechaEntregaEstimada DateTime?
+  notas                String
+
+  // Integración Siigo Facturación
+  facturaSiigoId       String?
+  facturaSiigoUrl      String?
+  fechaCreacion        DateTime @default(now())
+  fechaActualizacion   DateTime @updatedAt
+
+  ordenes              OrdenProduccion[]
+  lead                 Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  cotizacion           Cotizacion?        @relation(fields: [cotizacionId], references: [id], onDelete: SetNull)
+  facturas             Factura[]
+
+  @@index([leadId])
+  @@index([cotizacionId])
+  @@map("proyectos")
+}
+
+model OrdenProduccion {
+  id                   String   @id @default(uuid())
+  proyectoId           String
+  proveedor            String
+  estado               String
+  fechaEntregaEstimada DateTime?
+  costoTotalEstimado   Float
+  notas                String
+  fechaCreacion        DateTime @default(now())
+  fechaActualizacion   DateTime @updatedAt
+
+  items                ItemOrdenProduccion[]
+  proyecto             Proyecto              @relation(fields: [proyectoId], references: [id])
+
+  @@index([proyectoId])
+  @@map("ordenes_produccion")
+}
+
+model ItemOrdenProduccion {
+  id                   String   @id @default(uuid())
+  ordenId              String
+  lineaCotizacionId    String
+  referencia           String
+  nombre               String
+  cantidad             Int
+  costoUnd             Float
+  totalCosto           Float
+  notasInternas        String
+  fechaEntregaEstimada DateTime?
+  entregado            String // "SI" | "NO" | "PARCIALMENTE"
+  cantidadEntregada    Int    @default(0)
+
+  orden                OrdenProduccion @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+
+  @@index([ordenId])
+  @@map("items_orden_produccion")
+}
+
+model Usuario {
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  passwordHash       String
+  nombre             String
+  rol                String   @default("ventas") // "admin" o "ventas"
+  activo             Boolean  @default(true)
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  @@map("usuarios")
+}
+
+model Proveedor {
+  id                 String   @id @default(uuid())
+  nombre             String   @unique
+  nit                String
+  especialidad       String
+  telefono           String
+  email              String
+  notas              String
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  @@map("proveedores")
+}
+
+model Producto {
+  id                 String   @id @default(uuid())
+  referencia         String   @unique
+  nombre             String
+  proveedor          String
+  costoEstimado      Float
+  precioSugerido     Float
+  // Campos para integración con Siigo
+  tipo               String   @default("producto")
+  categoriasiigo     String   @default("Productos")
+  unidadDian         String   @default("94")
+  descripcion        String   @default("")
+  impuesto           String   @default("IVA19")
+  siigoCode          String?
+  activo             Boolean  @default(true)
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  @@map("productos")
+}
+
+model Factura {
+  id                 String   @id @default(uuid())
+  proyectoId         String
+  siigoId            String   @unique // ID retornado por Siigo
+  numero             String   // Ej: FV-1-75 o FV-2-120
+  tipo               String   // "FV-1" (No electrónica) o "FV-2" (Electrónica)
+  valorTotal         Float
+  saldoPendiente     Float    // Saldo restante por pagar
+  estado             String   // "EMITIDA" | "ANULADA" | "PAGADA" | "PAGO_PARCIAL"
+  url                String?
+  fechaEmision       DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  // Anulaciones
+  notaCreditoId      String?  // ID de la Nota de Crédito en Siigo si aplica
+  notaCreditoNumero  String?  // Número de la Nota de Crédito en Siigo
+
+  proyecto           Proyecto @relation(fields: [proyectoId], references: [id])
+  pagos              Pago[]
+
+  @@map("facturas")
+}
+
+model Pago {
+  id                 String   @id @default(uuid())
+  facturaId          String
+  siigoId            String?  @unique // ID del Recibo de Caja (Voucher) en Siigo si se originó o sincronizó
+  numeroRC           String?  // Número del Recibo de Caja en Siigo (ej. RC-1-65)
+  monto              Float
+  medioPagoId        String   // Ej: "13588" (Davivienda), "1675" (Efectivo)
+  fechaPago          DateTime @default(now())
+  origen             String   // "CRM" o "SIIGO"
+
+  factura            Factura  @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+
+  @@map("pagos")
+}
+
+model LogIntegracion {
+  id            String   @id @default(uuid())
+  servicio      String   // "SIIGO"
+  accion        String   // "EMITIR_FACTURA", "REGISTRAR_PAGO", "CREAR_CLIENTE", "ANULAR_FACTURA"
+  entidadId     String?  // ID local del recurso afectado
+  exitoso       Boolean
+  urlRequest    String
+  payloadSent   String?  // JSON string
+  responseBody  String?  // JSON string
+  statusCode    Int?
+  mensajeError  String?
+  fechaCreacion DateTime @default(now())
+
+  @@map("logs_integracion")
+}

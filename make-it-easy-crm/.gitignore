@@ -1,0 +1,62 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+/src/generated/prisma
+
+# Nota: los backups se guardan en Vibrand_System/backups/ (raiz del workspace),
+# fuera de este repo, por lo que no hay riesgo de subirlos a Git.
+
+# Archivos de prueba locales (no van a producción)
+test-*.ts
+test_*.js
+test_*.ts
+query-products.ts
+delete-cache.js
+
+# Estado de sincronización Siigo (se genera en producción localmente)
+.siigo-sync-state.json
+
+# Base de datos local (solo para desarrollo)
+prisma/dev.db
+prisma/dev.db-journal
+prisma/prisma/dev.db
+prisma/prisma/dev.db-journal

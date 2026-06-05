@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Lead {
+  id                 String   @id @default(uuid())
+  titulo             String
+  nombreContacto     String
+  empresa            String
+  valorEstimado      Float    @default(0)
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+  telefono           String
+  email              String
+  notas              String
+  etapa              String   // Mapped to Etapa enum ("NUEVO", "CALIFICADO", "PROPUESTA", "PERDIDO", "GANADO")
+  origenLead         String   @default("Manual")
+  
+  // Custom Make It Easy fields
+  sector             String?
+  numEmpleados       String?
+  procesoAAutomatizar String?
+  planInteres        String?
+
+  cotizaciones       Cotizacion[]
+  proyectos          Proyecto[]
+
+  @@index([email])
+  @@index([fechaCreacion])
+  @@map("leads")
+}
+
+model Empresa {
+  id                    String   @id @default(uuid())
+  nombre                String
+  nit                   String
+  direccion             String
+  ciudad                String
+  sector                String
+  tamano                String
+  telefono              String
+  email                 String
+  notas                 String
+  
+  fechaCreacion         DateTime @default(now())
+  fechaActualizacion    DateTime @updatedAt
+
+  contactos             Contacto[]
+
+  @@map("empresas")
+}
+
+model Contacto {
+  id                 String   @id @default(uuid())
+  nombre             String
+  cargo              String
+  empresaId          String
+  empresaNombre      String
+  telefono           String
+  telefono2          String
+  email              String
+  email2             String
+  notas              String
+  tags               String   // Comma separated list or JSON string
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  empresa            Empresa       @relation(fields: [empresaId], references: [id])
+  interacciones      Interaccion[]
+
+  @@index([empresaId])
+  @@map("contactos")
+}
+
+model Interaccion {
+  id          String   @id @default(uuid())
+  contactoId  String
+  tipo        String
+  descripcion String
+  fecha       DateTime @default(now())
+
+  contacto    Contacto @relation(fields: [contactoId], references: [id])
+
+  @@index([contactoId])
+  @@map("interacciones")
+}
+
+model Cotizacion {
+  id                 String   @id @default(uuid())
+  codigo             String
+  version            Int      @default(1)
+  vendedor           String   @default("Daniel Rangel")
+  fecha              DateTime @default(now())
+  leadId             String?
+  empresaNombre      String
+  contactoNombre     String
+  estado             String   // "BORRADOR" | "ENVIADA" | "APROBADA" | "RECHAZADA"
+  
+  // Rich Proposal Fields (Text content matching DOCX template)
+  tituloPropuesta    String   @default("Propuesta Comercial: Ecosistema Digital Omnicanal")
+  desafioNegocio     String?  // Section 1
+  prerrequisitos     String?  // Section 2 (JSON String or text)
+  arquitecturaJson   String?  // Section 3 (JSON array of component/function)
+  fasesJson          String?  // Section 4 (JSON array of phases/pricing)
+  checklistInicio    String?  // Section 6 (JSON String or text)
+  
+  // Totals & Recurring Fees (Section 5)
+  totalProyectoCore  Float    @default(0)
+  moduloOpcionalFee  Float    @default(0)
+  feeMensual         Float    @default(0)
+  feeMensualIncluye  String?  // Text description of what is included in the monthly fee
+  moneda             String   @default("COP") // "COP" | "USD"
+  
+  observaciones      String?
+  validez            String   @default("30 días")
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  lead               Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  proyectos          Proyecto[]
+
+  @@index([leadId])
+  @@index([fechaCreacion])
+  @@map("cotizaciones")
+}
+
+model Proyecto {
+  id                   String   @id @default(uuid())
+  leadId               String?
+  cotizacionId         String?
+  titulo               String
+  clienteNombre        String
+  estado               String   // "DIAGNOSTICO" | "DISENO" | "IMPLEMENTACION" | "SOPORTE"
+  fechaInicio          DateTime @default(now())
+  fechaEntregaEstimada DateTime?
+  notas                String
+  
+  herramientasUsadas   String?  // Comma separated list of tools (n8n, Make, Stripe, etc.)
+  fechaCreacion        DateTime @default(now())
+  fechaActualizacion   DateTime @updatedAt
+
+  ordenes              AutomationFlow[]
+  lead                 Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  cotizacion           Cotizacion?        @relation(fields: [cotizacionId], references: [id], onDelete: SetNull)
+
+  @@index([leadId])
+  @@index([cotizacionId])
+  @@map("proyectos")
+}
+
+model AutomationFlow {
+  id                 String   @id @default(uuid())
+  proyectoId         String
+  nombre             String
+  estado             String   // "ACTIVO" | "PAUSADO" | "ERROR"
+  tipo               String   // "WhatsApp AI Agent" | "CRM Sync" | "Invoicing Bot"
+  ejecuciones24h     Int      @default(0)
+  tasaExito          Float    @default(100.0)
+  tiempoPromedio     Float    @default(0.0)
+  notas              String
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  proyecto           Proyecto @relation(fields: [proyectoId], references: [id])
+
+  @@index([proyectoId])
+  @@map("automation_flows")
+}
+
+model Usuario {
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  passwordHash       String
+  nombre             String
+  rol                String   @default("ventas") // "admin" o "ventas"
+  activo             Boolean  @default(true)
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  @@map("usuarios")
+}
+
+model Proveedor {
+  id                 String   @id @default(uuid())
+  nombre             String   @unique
+  nit                String
+  especialidad       String
+  telefono           String
+  email              String
+  notas              String
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  @@map("proveedores")
+}
+
+model Producto {
+  id                 String   @id @default(uuid())
+  referencia         String   @unique
+  nombre             String
+  proveedor          String
+  costoEstimado      Float
+  precioSugerido     Float
+  tipo               String   @default("servicio") // "producto" | "servicio"
+  descripcion        String   @default("")          // Descripción larga opcional
+  activo             Boolean  @default(true)
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  @@map("productos")
+}

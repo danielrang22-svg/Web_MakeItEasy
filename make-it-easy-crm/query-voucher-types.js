@@ -1,0 +1,38 @@
+const dotenv = require('dotenv');
+dotenv.config();
+
+async function run() {
+  try {
+    const authRes = await fetch(`${process.env.SIIGO_API_URL}/auth`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Partner-Id': process.env.SIIGO_PARTNER_ID,
+      },
+      body: JSON.stringify({
+        username: process.env.SIIGO_USERNAME,
+        access_key: process.env.SIIGO_ACCESS_KEY,
+      }),
+    });
+    
+    const authData = await authRes.json();
+    const token = authData.access_token;
+    
+    // Get document types for vouchers (RC)
+    // In Siigo, Recibos de Caja (vouchers) are of type "RC"
+    const res = await fetch(`${process.env.SIIGO_API_URL}/v1/document-types?type=RC`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Partner-Id': process.env.SIIGO_PARTNER_ID,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const data = await res.json();
+    console.log('Voucher Document Types (RC):', JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error(err);
+  }
+}
+run();

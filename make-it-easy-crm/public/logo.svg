@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 120 40" fill="none">
+  <rect x="2" y="4" width="8" height="32" rx="2" fill="url(#gradient)" />
+  <rect x="14" y="8" width="8" height="28" rx="2" fill="url(#gradient)" opacity="0.7"/>
+  <rect x="26" y="4" width="8" height="32" rx="2" fill="url(#gradient)" />
+  <text x="42" y="26" font-family="Plus Jakarta Sans, sans-serif" font-size="16" font-weight="800" fill="#dde2f1" letter-spacing="1">MIE</text>
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8aebff"/>
+      <stop offset="100%" stop-color="#d2bbff"/>
+    </linearGradient>
+  </defs>
+</svg>

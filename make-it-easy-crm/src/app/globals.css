@@ -1,0 +1,352 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ══════════════════════════════════════════════════════════════
+   MAKE IT EASY CRM — Design System "The Luminous Engine"
+   globals.css — Exact palette from stitch/code.html
+   ══════════════════════════════════════════════════════════════ */
+
+@theme {
+  --color-primary:             #8aebff;
+  --color-primary-container:   #22d3ee;
+  --color-on-primary:          #00363e;
+  --color-secondary:           #d2bbff;
+  --color-secondary-container: #572ea2;
+  --color-tertiary:            #66f796;
+  --color-error:               #ffb4ab;
+  --color-error-container:     #93000a;
+  
+  --color-surface-dim:         #0e141e;
+  --color-surface-bright:      #333945;
+  --color-surface-container-low:     #161c26;
+  --color-surface-container:         #1a202a;
+  --color-surface-container-high:    #242a35;
+  --color-surface-container-highest: #2f3540;
+  
+  --color-bg-workspace:        #0B111B;
+  --color-text-primary:        #FFFFFF;
+  --color-text-secondary:      #94A3B8;
+  --color-border-glass:        rgba(255, 255, 255, 0.1);
+  --color-outline:             #859397;
+  --color-outline-variant:      #3c494c;
+
+  --color-background:          var(--color-bg-workspace);
+  --color-foreground:          var(--color-text-primary);
+
+  /* Legacy aliases so existing Tailwind classes still work */
+  --color-card:              var(--color-surface-container-low);
+  --color-card-foreground:   var(--color-text-primary);
+  --color-border:            var(--color-border-glass);
+  --color-muted:             var(--color-surface-dim);
+  --color-muted-foreground:  var(--color-text-secondary);
+  --color-accent:            var(--color-primary);
+  --color-accent-foreground: var(--color-on-primary);
+
+  /* ── Brand color aliases ── */
+  --color-mie-primary:   #8aebff;
+  --color-mie-secondary: #d2bbff;
+  --color-mie-tertiary:  #66f796;
+
+  /* ── Typography ── */
+  --font-sans:    "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-plus-jakarta), "Plus Jakarta Sans", sans-serif;
+}
+
+/* ── Stitch CSS vars (available everywhere) ── */
+:root {
+  --primary:                   #8aebff;
+  --primary-container:         #22d3ee;
+  --on-primary:                #00363e;
+  --secondary:                 #d2bbff;
+  --secondary-container:       #572ea2;
+  --tertiary:                  #66f796;
+  --error:                     #ffb4ab;
+  --error-container:           #93000a;
+
+  --surface-dim:               #0e141e;
+  --surface-bright:            #333945;
+  --surface-container-low:     #161c26;
+  --surface-container:         #1a202a;
+  --surface-container-high:    #242a35;
+  --surface-container-highest: #2f3540;
+  
+  --bg-workspace:              #0B111B;
+  --text-primary:              #FFFFFF;
+  --text-secondary:            #94A3B8;
+  --border-glass:              rgba(255, 255, 255, 0.1);
+  --outline:                   #859397;
+  --outline-variant:           #3c494c;
+
+  --surface:                   #0e141e;
+  --on-surface:                #dde2f1;
+  --on-surface-variant:        #bbc9cd;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(95deg, #8aebff 0%, #2fd9f4 100%);
+  --gradient-hero:    radial-gradient(ellipse at 60% 40%, rgba(138,235,255,0.08) 0%, transparent 60%),
+                      radial-gradient(ellipse at 20% 80%, rgba(210,187,255,0.06) 0%, transparent 50%);
+
+  /* Glows */
+  --glow-primary:   0 0 30px rgba(138,235,255,0.25);
+  --glow-secondary: 0 0 30px rgba(210,187,255,0.20);
+
+  /* Shadows */
+  --shadow-sm: 0 4px 12px rgba(0,0,0,0.25);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
+  --shadow-lg: 0 20px 40px rgba(0,0,0,0.45);
+
+  /* Radii */
+  --radius-sm:   0.25rem;
+  --radius-md:   0.5rem;
+  --radius-lg:   0.5rem;
+  --radius-xl:   0.75rem;
+  --radius-full: 9999px;
+}
+
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  background: var(--bg-workspace);
+  color: var(--text-primary);
+  -webkit-tap-highlight-color: transparent;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-plus-jakarta), "Plus Jakarta Sans", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+img { max-width: 100%; display: block; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--surface-container-low); }
+::-webkit-scrollbar-thumb { background: var(--outline); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+.custom-scrollbar::-webkit-scrollbar { display: none; }
+.custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Selection ── */
+::selection { background: var(--primary); color: var(--on-primary); }
+
+/* ── Focus ── */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ══════════════════════════════════
+   STITCH UTILITY CLASSES
+   ══════════════════════════════════ */
+
+/* Glassmorphism exact Stitch panel */
+.glass-panel {
+  background: rgba(22, 30, 44, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass {
+  background: rgba(22, 30, 44, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* iOS blur (used in modals, overlays) */
+.ios-blur {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Grid background pattern */
+.bg-grid-pattern {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj48ZGVmcz48cGF0dGVybiBpZD0iYSIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNMCAwaDQwdjQwaC00MHoiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMCAwaDF2MWgtMXoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjYSkiLz48L3N2Zz4=");
+}
+
+/* Bento card — matches the stitch card style */
+.bento-card {
+  background: rgba(22, 30, 44, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-glass);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: transform 250ms ease, background 250ms ease, box-shadow 250ms ease;
+}
+.bento-card:hover {
+  transform: translateY(-4px);
+  background: rgba(30, 38, 54, 0.7);
+  box-shadow: var(--shadow-md);
+}
+
+/* Glow card variant */
+.glow-card:hover {
+  box-shadow: var(--glow-primary), var(--shadow-md);
+}
+
+/* Icon boxes */
+.icon-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-md);
+}
+.icon-box-primary   { background: rgba(143,245,255,0.1); color: var(--primary); }
+.icon-box-secondary { background: rgba(175,136,255,0.1); color: var(--secondary); }
+.icon-box-tertiary  { background: rgba(71,196,255,0.1);  color: var(--tertiary); }
+.icon-box-success   { background: rgba(74,222,128,0.1);  color: var(--success); }
+.icon-box-warning   { background: rgba(251,191,36,0.1);  color: var(--warning); }
+.icon-box-error     { background: rgba(255,113,108,0.1); color: var(--error); }
+
+/* Chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--secondary-container);
+  color: var(--secondary);
+  border: 1px solid rgba(175,136,255,0.25);
+  border-radius: var(--radius-full);
+  padding: 0.2rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.chip-primary {
+  background: rgba(143,245,255,0.1);
+  color: var(--primary);
+  border-color: rgba(143,245,255,0.25);
+}
+.chip-success {
+  background: rgba(74,222,128,0.1);
+  color: var(--success);
+  border-color: rgba(74,222,128,0.25);
+}
+.chip-warning {
+  background: rgba(251,191,36,0.1);
+  color: var(--warning);
+  border-color: rgba(251,191,36,0.25);
+}
+.chip-error {
+  background: rgba(255,113,108,0.1);
+  color: var(--error);
+  border-color: rgba(255,113,108,0.25);
+}
+
+/* Primary gradient button */
+.btn-primary {
+  background: var(--gradient-primary);
+  color: var(--on-primary);
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-primary);
+}
+
+/* Gradient utility */
+.mie-gradient {
+  background: var(--gradient-primary);
+}
+.mie-gradient-horizontal {
+  background: linear-gradient(90deg, #8ff5ff 0%, #af88ff 100%);
+}
+
+/* Overline label */
+.overline {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+/* ══════════════════════════════════
+   ANIMATIONS
+   ══════════════════════════════════ */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.04); }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(0.95); box-shadow: 0 0 0 0   rgba(143,245,255,0.7); }
+  70%  { transform: scale(1);    box-shadow: 0 0 0 10px rgba(143,245,255,0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0   rgba(143,245,255,0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0px rgba(138, 235, 255, 0.2); }
+  50%      { opacity: 0.8; box-shadow: 0 0 0 10px rgba(138, 235, 255, 0); }
+}
+
+.animate-fade-in  { animation: fadeIn  0.3s ease-out forwards; }
+.animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+.animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
+.glow-pulse       { animation: glowPulse 3s ease-in-out infinite; }
+.pulse-glow       { animation: pulse-ring 2s cubic-bezier(0.215,0.61,0.355,1) infinite; }
+.ai-pulse         { animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-container) 25%,
+    var(--surface-bright) 50%,
+    var(--surface-container) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+/* Stitch-style form inputs */
+.input-stitch {
+  width: 100%;
+  background: var(--surface-container-low);
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  color: var(--on-surface);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+.input-stitch:focus  { border-color: var(--primary); }
+.input-stitch::placeholder { color: var(--on-surface-variant); }
