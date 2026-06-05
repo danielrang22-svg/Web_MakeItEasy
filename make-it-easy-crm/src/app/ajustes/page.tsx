@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, Moon, Sun, Trash2, Download, Database, Palette, FileSpreadsheet, Users } from "lucide-react";
-import { ConfirmDialog, Toast } from "@/components/ui/SharedUI";
+import { Settings, Moon, Sun, Trash2, Download, Database, FileSpreadsheet, Users, Sparkles, Plus, Eye, EyeOff, Check, X, Pencil, Zap, AlertCircle } from "lucide-react";
+import { ConfirmDialog, Toast, Modal } from "@/components/ui/SharedUI";
 import * as XLSX from "xlsx";
 import { useLeadsStore } from "@/lib/state/leadsStore";
 
@@ -14,9 +14,45 @@ export default function AjustesPage() {
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
+    // ── AI Config state ──────────────────────────────────────────
+    type AiConfigRow = {
+        id: string; nombre: string; proveedor: string; modelo: string;
+        apiKey: string; baseUrl?: string; activo: boolean; etiqueta?: string;
+        fechaCreacion: string;
+    };
+    const PROVEEDORES = [
+        { value: "openai",    label: "OpenAI",          models: ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"] },
+        { value: "deepseek",  label: "DeepSeek",        models: ["deepseek-chat", "deepseek-reasoner"] },
+        { value: "gemini",    label: "Google Gemini",   models: ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"] },
+        { value: "anthropic", label: "Anthropic Claude",models: ["claude-3-5-haiku-20241022", "claude-sonnet-4-5"] },
+    ];
+    const PROVEEDOR_COLORS: Record<string, string> = {
+        openai:    "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300",
+        deepseek:  "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300",
+        gemini:    "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300",
+        anthropic: "bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300",
+    };
+
+    const [aiConfigs, setAiConfigs] = useState<AiConfigRow[]>([]);
+    const [showAiForm, setShowAiForm] = useState(false);
+    const [editingAi, setEditingAi] = useState<AiConfigRow | null>(null);
+    const [deletingAi, setDeletingAi] = useState<AiConfigRow | null>(null);
+    const [showApiKey, setShowApiKey] = useState(false);
+    const [aiForm, setAiForm] = useState({ nombre: "", proveedor: "openai", modelo: "gpt-4o-mini", apiKey: "", baseUrl: "", etiqueta: "", activo: true });
+    const [aiLoading, setAiLoading] = useState(false);
+    // ─────────────────────────────────────────────────────────────
+
     useEffect(() => {
         loadLeads();
+        loadAiConfigs();
     }, [loadLeads]);
+
+    async function loadAiConfigs() {
+        try {
+            const res = await fetch("/api/admin/ai-config");
+            if (res.ok) setAiConfigs(await res.json());
+        } catch {}
+    }
 
     function toggleDarkMode() {
         const html = document.documentElement;
@@ -99,6 +135,76 @@ export default function AjustesPage() {
         XLSX.writeFile(wb, `mie-crm-full-backup-${new Date().toISOString().slice(0, 10)}.xlsx`);
         setToast({ message: "Excel exportado exitosamente con todas las tablas", type: "success" });
     }
+
+    async function handleSaveAiConfig() {
+        setAiLoading(true);
+        try {
+            if (editingAi) {
+                const res = await fetch(`/api/admin/ai-config/${editingAi.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(aiForm),
+                });
+                if (!res.ok) throw new Error("Error al actualizar");
+                setToast({ message: "Configuración actualizada", type: "success" });
+            } else {
+                const res = await fetch("/api/admin/ai-config", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(aiForm),
+                });
+                if (!res.ok) throw new Error("Error al crear");
+                setToast({ message: "Configuración de IA creada", type: "success" });
+            }
+            setShowAiForm(false);
+            setEditingAi(null);
+            loadAiConfigs();
+        } catch {
+            setToast({ message: "Error guardando configuración", type: "error" });
+        } finally {
+            setAiLoading(false);
+        }
+    }
+
+    async function handleActivateAiConfig(id: string) {
+        try {
+            await fetch(`/api/admin/ai-config/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ activo: true }),
+            });
+            loadAiConfigs();
+            setToast({ message: "Configuración activada", type: "success" });
+        } catch {
+            setToast({ message: "Error al activar", type: "error" });
+        }
+    }
+
+    async function handleDeleteAiConfig() {
+        if (!deletingAi) return;
+        try {
+            await fetch(`/api/admin/ai-config/${deletingAi.id}`, { method: "DELETE" });
+            setDeletingAi(null);
+            loadAiConfigs();
+            setToast({ message: "Configuración eliminada", type: "info" });
+        } catch {
+            setToast({ message: "Error al eliminar", type: "error" });
+        }
+    }
+
+    function openCreateAi() {
+        setEditingAi(null);
+        setAiForm({ nombre: "", proveedor: "openai", modelo: "gpt-4o-mini", apiKey: "", baseUrl: "", etiqueta: "", activo: true });
+        setShowAiForm(true);
+    }
+
+    function openEditAi(c: AiConfigRow) {
+        setEditingAi(c);
+        setAiForm({ nombre: c.nombre, proveedor: c.proveedor, modelo: c.modelo, apiKey: "", baseUrl: c.baseUrl || "", etiqueta: c.etiqueta || "", activo: c.activo });
+        setShowAiForm(true);
+    }
+
+    const selectedProveedor = PROVEEDORES.find(p => p.value === aiForm.proveedor);
 
     return (
         <div className="px-5 pb-32">
@@ -242,7 +348,191 @@ export default function AjustesPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* ── Agente IA ── */}
+                <div className="bg-card ring-1 ring-border rounded-2xl overflow-hidden">
+                    <div className="px-5 pt-4 pb-3 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                <Sparkles size={12} className="text-violet-500" /> Agente IA — API Keys
+                            </h3>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Solo una configuración puede estar activa a la vez.</p>
+                        </div>
+                        <button
+                            onClick={openCreateAi}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-xs font-bold rounded-xl shadow-sm hover:opacity-90 transition-all"
+                        >
+                            <Plus size={12} /> Nueva Key
+                        </button>
+                    </div>
+
+                    {aiConfigs.length === 0 && (
+                        <div className="px-5 pb-5 flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-xl mx-5 mb-4 text-xs">
+                            <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                            <div className="text-amber-700 dark:text-amber-400">
+                                <strong>No hay API Keys configuradas.</strong> El agente usará la key del archivo <code className="font-mono bg-amber-100 dark:bg-amber-900/30 px-1 rounded">.env</code> como fallback.
+                                Agrega una para gestionar todo desde aquí.
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="divide-y divide-border">
+                        {aiConfigs.map((config) => (
+                            <div key={config.id} className={`px-5 py-4 flex items-center gap-3 ${config.activo ? "bg-violet-50/50 dark:bg-violet-900/5" : ""}`}>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-semibold text-sm">{config.nombre}</span>
+                                        {config.activo && (
+                                            <span className="flex items-center gap-1 px-2 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-[10px] font-bold rounded-full uppercase">
+                                                <Zap size={9} /> Activa
+                                            </span>
+                                        )}
+                                        {config.etiqueta && (
+                                            <span className="px-2 py-0.5 bg-muted text-muted-foreground text-[10px] rounded-full">{config.etiqueta}</span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${PROVEEDOR_COLORS[config.proveedor] ?? "bg-gray-100 text-gray-600"}`}>
+                                            {config.proveedor.toUpperCase()}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground font-mono">{config.modelo}</span>
+                                        <span className="text-xs text-muted-foreground font-mono">{config.apiKey}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    {!config.activo && (
+                                        <button
+                                            onClick={() => handleActivateAiConfig(config.id)}
+                                            title="Activar esta configuración"
+                                            className="p-1.5 text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                                        >
+                                            <Check size={14} />
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => openEditAi(config)}
+                                        title="Editar"
+                                        className="p-1.5 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+                                    >
+                                        <Pencil size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => setDeletingAi(config)}
+                                        title="Eliminar"
+                                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
+
+            {/* ── AI Config Modal ── */}
+            <Modal isOpen={showAiForm} onClose={() => setShowAiForm(false)} title={editingAi ? "Editar Configuración de IA" : "Nueva Configuración de IA"}>
+                <div className="p-1 space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="col-span-2">
+                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Nombre de la configuración *</label>
+                            <input
+                                value={aiForm.nombre}
+                                onChange={e => setAiForm(f => ({ ...f, nombre: e.target.value }))}
+                                placeholder="Ej: OpenAI Principal, DeepSeek Backup..."
+                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Proveedor *</label>
+                            <select
+                                value={aiForm.proveedor}
+                                onChange={e => {
+                                    const prov = PROVEEDORES.find(p => p.value === e.target.value);
+                                    setAiForm(f => ({ ...f, proveedor: e.target.value, modelo: prov?.models[0] ?? "" }));
+                                }}
+                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
+                            >
+                                {PROVEEDORES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Modelo *</label>
+                            <select
+                                value={aiForm.modelo}
+                                onChange={e => setAiForm(f => ({ ...f, modelo: e.target.value }))}
+                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
+                            >
+                                {selectedProveedor?.models.map(m => <option key={m} value={m}>{m}</option>)}
+                            </select>
+                        </div>
+                        <div className="col-span-2">
+                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                                API Key {editingAi && <span className="text-muted-foreground normal-case">(dejar vacío para no cambiar)</span>}
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={showApiKey ? "text" : "password"}
+                                    value={aiForm.apiKey}
+                                    onChange={e => setAiForm(f => ({ ...f, apiKey: e.target.value }))}
+                                    placeholder={editingAi ? "•••••••••••••• (sin cambios)" : "sk-... o tu API key"}
+                                    className="w-full px-3 py-2.5 pr-10 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm font-mono"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowApiKey(v => !v)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                        </div>
+                        {(aiForm.proveedor === "deepseek" || aiForm.proveedor === "gemini") && (
+                            <div className="col-span-2">
+                                <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Base URL (opcional)</label>
+                                <input
+                                    value={aiForm.baseUrl}
+                                    onChange={e => setAiForm(f => ({ ...f, baseUrl: e.target.value }))}
+                                    placeholder={aiForm.proveedor === "deepseek" ? "https://api.deepseek.com" : "https://generativelanguage.googleapis.com/v1beta/openai/"}
+                                    className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm font-mono"
+                                />
+                            </div>
+                        )}
+                        <div>
+                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Etiqueta (opcional)</label>
+                            <input
+                                value={aiForm.etiqueta}
+                                onChange={e => setAiForm(f => ({ ...f, etiqueta: e.target.value }))}
+                                placeholder="Ej: Cotizaciones, Pruebas..."
+                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
+                            />
+                        </div>
+                        <div className="flex items-center gap-3 mt-4">
+                            <button
+                                type="button"
+                                onClick={() => setAiForm(f => ({ ...f, activo: !f.activo }))}
+                                className={`w-12 h-7 rounded-full p-1 transition-colors ${aiForm.activo ? "bg-violet-600" : "bg-muted"}`}
+                            >
+                                <div className={`w-5 h-5 rounded-full bg-white transition-transform ${aiForm.activo ? "translate-x-5" : "translate-x-0"}`} />
+                            </button>
+                            <label className="text-sm font-medium">Activar como principal</label>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            onClick={handleSaveAiConfig}
+                            disabled={aiLoading || !aiForm.nombre || !aiForm.proveedor || !aiForm.modelo || (!editingAi && !aiForm.apiKey)}
+                            className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all"
+                        >
+                            {aiLoading ? "Guardando..." : editingAi ? "Guardar Cambios" : "Crear Configuración"}
+                        </button>
+                        <button onClick={() => setShowAiForm(false)} className="px-5 py-3 rounded-xl ring-1 ring-border font-bold text-muted-foreground hover:bg-muted transition-all">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Reset Confirm */}
             <ConfirmDialog
@@ -253,6 +543,15 @@ export default function AjustesPage() {
                 onCancel={() => setShowResetConfirm(false)}
             />
 
+            {/* Delete AI Config Confirm */}
+            <ConfirmDialog
+                isOpen={!!deletingAi}
+                title="Eliminar Configuración de IA"
+                message={`¿Eliminar "${deletingAi?.nombre}"? Si es la configuración activa, el agente dejará de funcionar hasta que actives otra.`}
+                onConfirm={handleDeleteAiConfig}
+                onCancel={() => setDeletingAi(null)}
+            />
+
             {/* Toast */}
             {toast && (
                 <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
@@ -260,3 +559,4 @@ export default function AjustesPage() {
         </div>
     );
 }
+

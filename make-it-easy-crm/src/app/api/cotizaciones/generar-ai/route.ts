@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { verifyAuthRole } from '@/lib/auth';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import prisma from '@/lib/prisma';
 
 const SYSTEM_PROMPT = `Eres un experto consultor comercial de Make It Easy, una empresa colombiana de automatización de negocios con IA. Tu tarea es generar la estructura de una propuesta comercial profesional basada en el brief del cliente.
 
@@ -48,6 +45,14 @@ INSTRUCCIONES:
 
 RESPONDE ÚNICAMENTE CON EL JSON VÁLIDO. Sin texto antes ni después del JSON.`;
 
+// Supported providers and their base URLs
+const PROVIDER_BASE_URLS: Record<string, string | undefined> = {
+  openai: undefined, // uses OpenAI default
+  deepseek: 'https://api.deepseek.com',
+  anthropic: undefined, // not supported via OpenAI-compat yet
+  gemini: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+};
+
 export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAuthRole(request);
@@ -60,11 +65,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Se requiere un brief o correcciones' }, { status: 400 });
     }
 
+    // ── Load active AI config from DB ──────────────────────────────
+    const aiConfig = await prisma.aiConfig.findFirst({
+      where: { activo: true },
+    });
+
+    // Fallback to env variable if no DB config is active
+    const apiKey = aiConfig?.apiKey || process.env.OPENAI_API_KEY;
+    const modelo = aiConfig?.modelo || 'gpt-4o-mini';
+    const baseURL = aiConfig?.baseUrl || PROVIDER_BASE_URLS[aiConfig?.proveedor ?? 'openai'];
+
+    if (!apiKey) {
+      return NextResponse.json(
+        {
+          error:
+            'No hay una API Key configurada. Ve a Ajustes → Agente IA y agrega tu API Key.',
+        },
+        { status: 503 }
+      );
+    }
+
+    const openai = new OpenAI({
+      apiKey,
+      ...(baseURL ? { baseURL } : {}),
+    });
+    // ──────────────────────────────────────────────────────────────
+
     // Build the user message
     let userMessage = '';
 
     if (propuestaAnterior && correcciones) {
-      // CORRECTION MODE: revise an existing proposal
       userMessage = `Tengo una propuesta comercial ya generada y necesito que apliques las siguientes correcciones:
 
 CORRECCIONES A APLICAR:
@@ -75,13 +105,11 @@ ${JSON.stringify(propuestaAnterior, null, 2)}
 
 Aplica las correcciones indicadas y devuelve el JSON completo actualizado.`;
     } else {
-      // GENERATION MODE: create a new proposal from brief
       userMessage = `Genera una propuesta comercial profesional basada en este brief del cliente:
 
 BRIEF DEL CLIENTE:
 ${brief}`;
 
-      // Enrich with lead data if available
       if (leadData) {
         userMessage += `
 
@@ -96,7 +124,7 @@ DATOS DEL LEAD EN CRM:
     }
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: modelo,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userMessage },
@@ -122,6 +150,8 @@ DATOS DEL LEAD EN CRM:
       success: true,
       propuesta: parsed,
       tokensUsed: completion.usage?.total_tokens ?? 0,
+      modeloUsado: modelo,
+      proveedorUsado: aiConfig?.proveedor ?? 'openai (env)',
     });
   } catch (error: unknown) {
     console.error('POST /api/cotizaciones/generar-ai error:', error);

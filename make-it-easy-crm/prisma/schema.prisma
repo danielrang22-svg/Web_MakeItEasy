@@ -214,3 +214,18 @@ model Producto {
 
   @@map("productos")
 }
+
+model AiConfig {
+  id           String   @id @default(uuid())
+  nombre       String   // Friendly name, e.g. "OpenAI Principal"
+  proveedor    String   // "openai" | "deepseek" | "anthropic" | "gemini"
+  modelo       String   // e.g. "gpt-4o-mini", "deepseek-chat"
+  apiKey       String   // Stored as-is (admin-only route, never sent to client)
+  baseUrl      String?  // Optional custom base URL (for DeepSeek / self-hosted)
+  activo       Boolean  @default(false) // Only one config active at a time
+  etiqueta     String?  // Optional tag, e.g. "Cotizaciones", "General"
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  @@map("ai_configs")
+}
