@@ -17,6 +17,7 @@ interface QuotationFormProps {
     onCancel: () => void;
     title?: string;
     isInsideLeadForm?: boolean;
+    userRole?: string;
 }
 
 export default function QuotationForm({
@@ -28,7 +29,8 @@ export default function QuotationForm({
     onSubmit,
     onCancel,
     title,
-    isInsideLeadForm = false
+    isInsideLeadForm = false,
+    userRole = "ventas"
 }: QuotationFormProps) {
     // Current Active Tab
     const [activeTab, setActiveTab] = useState<"info" | "challenge" | "architecture" | "phases" | "checklist">("info");
@@ -180,8 +182,9 @@ export default function QuotationForm({
         setChecklist(prev => prev.map((item, i) => i === idx ? val : item));
     };
 
-    async function handleSubmit(e?: React.FormEvent) {
+    async function handleSubmit(e?: React.FormEvent, customEstado?: EstadoCotizacion) {
         e?.preventDefault();
+        const finalEstado = customEstado || estado;
 
         const data: CotizacionCreateData = {
             codigo,
@@ -190,7 +193,7 @@ export default function QuotationForm({
             empresaNombre: empresaNombre || "Sin Empresa",
             contactoNombre: contactoNombre || "Sin Contacto",
             vendedor: vendedor || "Daniel Rangel",
-            estado,
+            estado: finalEstado,
             validez,
             moneda,
             observaciones,
@@ -682,13 +685,62 @@ export default function QuotationForm({
 
             {/* bottom actions - non-sticky when inside LeadForm to prevent overlapping */}
             <div className={`flex gap-3 pt-4 pb-2 bg-background/80 backdrop-blur-md ${isInsideLeadForm ? "relative" : "sticky bottom-0 -mx-1 px-1"}`}>
-                <button
-                    type="button"
-                    onClick={handleSubmit}
-                    className="flex-1 mie-gradient text-white font-bold py-4 rounded-2xl shadow-xl hover:shadow-purple-500/25 active:scale-[0.98] transition-all duration-200"
-                >
-                    {initial ? "Guardar Cambios" : "Guardar Propuesta"}
-                </button>
+                
+                {/* Lógica de botones según rol y estado */}
+                {userRole === "ventas" && (estado === EstadoCotizacion.BORRADOR || !initial) && (
+                    <>
+                        <button
+                            type="button"
+                            onClick={(e) => handleSubmit(e, EstadoCotizacion.BORRADOR)}
+                            className="flex-1 bg-muted text-muted-foreground font-bold py-4 rounded-2xl hover:bg-muted/80 active:scale-[0.98] transition-all duration-200 border border-border"
+                        >
+                            Guardar Borrador
+                        </button>
+                        <button
+                            type="button"
+                            onClick={(e) => handleSubmit(e, EstadoCotizacion.REVISION_TECNICA)}
+                            className="flex-1 mie-gradient text-white font-bold py-4 rounded-2xl shadow-xl hover:shadow-purple-500/25 active:scale-[0.98] transition-all duration-200"
+                        >
+                            Enviar a Revisión Técnica
+                        </button>
+                    </>
+                )}
+
+                {userRole === "admin" && estado === EstadoCotizacion.REVISION_TECNICA && (
+                    <>
+                        <button
+                            type="button"
+                            onClick={(e) => handleSubmit(e, EstadoCotizacion.REVISION_TECNICA)}
+                            className="flex-1 bg-muted text-muted-foreground font-bold py-4 rounded-2xl hover:bg-muted/80 active:scale-[0.98] transition-all duration-200 border border-border"
+                        >
+                            Guardar Cambios
+                        </button>
+                        <button
+                            type="button"
+                            onClick={(e) => handleSubmit(e, EstadoCotizacion.APROBADA_TECNICAMENTE)}
+                            className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl shadow-xl hover:shadow-green-500/25 active:scale-[0.98] transition-all duration-200"
+                        >
+                            Aprobar Técnicamente
+                        </button>
+                    </>
+                )}
+
+                {(estado === EstadoCotizacion.APROBADA_TECNICAMENTE || estado === EstadoCotizacion.ENVIADA || estado === EstadoCotizacion.APROBADA || (userRole === "admin" && estado === EstadoCotizacion.BORRADOR)) && (
+                    <button
+                        type="button"
+                        onClick={(e) => handleSubmit(e)}
+                        className="flex-1 mie-gradient text-white font-bold py-4 rounded-2xl shadow-xl hover:shadow-purple-500/25 active:scale-[0.98] transition-all duration-200"
+                    >
+                        {initial ? "Guardar Cambios" : "Guardar Propuesta"}
+                    </button>
+                )}
+
+                {(userRole === "ventas" && estado === EstadoCotizacion.REVISION_TECNICA) && (
+                    <div className="flex-1 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-bold py-4 rounded-2xl border border-yellow-500/20 flex items-center justify-center">
+                        Esperando Aprobación Técnica...
+                    </div>
+                )}
+
                 <button type="button" onClick={onCancel} className="px-8 py-4 rounded-2xl ring-1 ring-border font-bold text-muted-foreground hover:bg-muted transition-all active:scale-[0.98]">
                     Cancelar
                 </button>

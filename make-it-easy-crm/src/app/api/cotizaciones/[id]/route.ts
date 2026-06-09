@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyAuthRole } from '@/lib/auth';
 import { auditLog } from '@/lib/audit';
+import { sendEmail } from '@/lib/utils/email';
 
 export async function PUT(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
@@ -45,17 +46,72 @@ export async function PUT(request: NextRequest, props: { params: Promise<{ id: s
     if (observaciones !== undefined) cotizacionData.observaciones = observaciones;
     if (validez !== undefined) cotizacionData.validez = validez;
 
+    const existing = await prisma.cotizacion.findUnique({ where: { id } });
+
     const updated = await prisma.cotizacion.update({
       where: { id },
       data: cotizacionData
     });
 
-    // If proposal is approved, move lead to GANADO (won)
-    if (body.estado === "APROBADA" && updated.leadId) {
-        await prisma.lead.update({
-            where: { id: updated.leadId },
-            data: { etapa: "GANADO" }
-        });
+    // Notificaciones y Emails por cambio de estado
+    if (existing && existing.estado !== estado) {
+      const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      const cotizacionLink = `${BASE_URL}/cotizaciones`;
+
+      if (estado === "REVISION_TECNICA") {
+        // Notificar a los admins
+        const admins = await prisma.usuario.findMany({ where: { rol: "admin", activo: true } });
+        for (const admin of admins) {
+          await prisma.notificacion.create({
+            data: {
+              usuarioId: admin.id,
+              titulo: "Nueva Cotización por Revisar",
+              mensaje: `${auth.nombre} envió la cotización ${updated.codigo} (${updated.empresaNombre}) para revisión técnica.`,
+              enlace: cotizacionLink
+            }
+          });
+          
+          await sendEmail({
+            to: admin.email,
+            subject: `Revisión Técnica Requerida: Cotización ${updated.codigo}`,
+            html: `<p>Hola ${admin.nombre},</p>
+                   <p>El comercial <strong>${auth.nombre}</strong> ha enviado la cotización <strong>${updated.codigo}</strong> de la empresa ${updated.empresaNombre} para revisión técnica.</p>
+                   <p><a href="${cotizacionLink}">Haz clic aquí para revisarla y aprobarla</a>.</p>`
+          });
+        }
+      } else if (estado === "APROBADA_TECNICAMENTE") {
+        // Notificar al vendedor original (buscamos por el nombre del vendedor guardado en la cotización)
+        const comercial = await prisma.usuario.findFirst({ where: { nombre: updated.vendedor, activo: true } });
+        if (comercial) {
+          await prisma.notificacion.create({
+            data: {
+              usuarioId: comercial.id,
+              titulo: "Cotización Aprobada",
+              mensaje: `La cotización ${updated.codigo} ha sido aprobada técnicamente por ${auth.nombre}. Ya puedes exportarla a PDF.`,
+              enlace: cotizacionLink
+            }
+          });
+
+          await sendEmail({
+            to: comercial.email,
+            subject: `Cotización Aprobada: ${updated.codigo}`,
+            html: `<p>Hola ${comercial.nombre},</p>
+                   <p>Tu cotización <strong>${updated.codigo}</strong> (${updated.empresaNombre}) ha sido <strong>Aprobada Técnicamente</strong> por ${auth.nombre}.</p>
+                   <p>Ya puedes ingresar al sistema y exportarla como PDF para enviarla al cliente.</p>
+                   <p><a href="${cotizacionLink}">Ir a mis cotizaciones</a></p>`
+          });
+        }
+      }
+    }
+
+    // If proposal is approved definitively (won), move lead to GANADO
+    if (estado === "ENVIADA_CLIENTE" || estado === "APROBADA") {
+        if (updated.leadId) {
+            await prisma.lead.update({
+                where: { id: updated.leadId },
+                data: { etapa: "GANADO" }
+            });
+        }
     }
 
     auditLog("UPDATE_COTIZACION", id, auth.email);

@@ -4,6 +4,7 @@ import { Bell, Moon, Sun, LogOut, Settings, User, Shield, Search, Menu, Sparkles
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import NotificationBell from "./NotificationBell";
 
 const ROUTE_LABELS: Record<string, string> = {
     "/":            "Dashboard",
@@ -109,10 +110,7 @@ export default function Header() {
                     </div>
 
                     {/* Notification bell with pulse glow */}
-                    <button className="relative p-2 rounded-lg text-text-secondary hover:bg-surface-bright hover:text-primary transition-colors">
-                        <Bell size={16} />
-                        <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-error rounded-full ai-pulse"></span>
-                    </button>
+                    <NotificationBell />
 
                     {/* Dark/Light mode toggle */}
                     <button

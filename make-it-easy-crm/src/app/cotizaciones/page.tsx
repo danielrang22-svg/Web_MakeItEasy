@@ -54,11 +54,24 @@ export default function CotizacionesPage() {
     const [filterEmpresa, setFilterEmpresa] = useState("");
     const [filterContacto, setFilterContacto] = useState("");
     const [filterEstado, setFilterEstado] = useState("");
-    const [activeTab, setActiveTab] = useState<"activas" | "historial">("activas");
+    const [filterVendedor, setFilterVendedor] = useState("");
+    const [activeTab, setActiveTab] = useState<string>("activas");
     const [quickStateMenu, setQuickStateMenu] = useState<string | null>(null); // cotizacion id with open menu
+    const [userRole, setUserRole] = useState<string>("ventas"); // Default to ventas
+    const [userName, setUserName] = useState<string>("");
     const quickStateRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => { 
+        const role = document.cookie.split("mie-role=")[1]?.split(";")[0];
+        const token = document.cookie.split("mie-auth=")[1]?.split(";")[0];
+        if (role) setUserRole(role);
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split(".")[1]));
+                setUserName(payload.nombre);
+            } catch {}
+        }
+        
         loadCotizaciones(); 
         loadLeads(); 
         loadEmpresas(); 
@@ -83,18 +96,37 @@ export default function CotizacionesPage() {
 
     let filtered = getFilteredCotizaciones(store);
     
-    if (activeTab === "activas") {
-        filtered = filtered.filter(c => c.estado !== EstadoCotizacion.APROBADA);
+    // Tab Filtering
+    if (userRole === "admin") {
+        if (activeTab === "pendientes") {
+            filtered = filtered.filter(c => c.estado === EstadoCotizacion.REVISION_TECNICA);
+        } else if (activeTab === "mis_pendientes") {
+            filtered = filtered.filter(c => c.vendedor === userName && c.estado === EstadoCotizacion.REVISION_TECNICA);
+        } else if (activeTab === "mias") {
+            filtered = filtered.filter(c => c.vendedor === userName);
+        } else if (activeTab === "historial") {
+            filtered = filtered.filter(c => c.estado === EstadoCotizacion.APROBADA || c.estado === EstadoCotizacion.ENVIADA_CLIENTE || c.estado === EstadoCotizacion.CERRADA);
+        } else {
+            // "global" - all quotes
+        }
     } else {
-        filtered = filtered.filter(c => c.estado === EstadoCotizacion.APROBADA);
+        // Ventas
+        if (activeTab === "activas") {
+            filtered = filtered.filter(c => c.estado === EstadoCotizacion.BORRADOR || c.estado === EstadoCotizacion.RECHAZADA || c.estado === EstadoCotizacion.APROBADA_TECNICAMENTE);
+        } else if (activeTab === "pendientes") {
+            filtered = filtered.filter(c => c.estado === EstadoCotizacion.REVISION_TECNICA);
+        } else if (activeTab === "historial") {
+            filtered = filtered.filter(c => c.estado === EstadoCotizacion.APROBADA || c.estado === EstadoCotizacion.ENVIADA_CLIENTE || c.estado === EstadoCotizacion.CERRADA);
+        }
     }
 
     if (filterEmpresa) filtered = filtered.filter((c) => c.empresaNombre === filterEmpresa);
     if (filterContacto) filtered = filtered.filter((c) => c.contactoNombre === filterContacto);
     if (filterEstado) filtered = filtered.filter((c) => c.estado === filterEstado);
+    if (filterVendedor) filtered = filtered.filter((c) => c.vendedor === filterVendedor);
 
-    const hasActiveFilters = filterEmpresa || filterContacto || filterEstado;
-    function clearFilters() { setFilterEmpresa(""); setFilterContacto(""); setFilterEstado(""); }
+    const hasActiveFilters = filterEmpresa || filterContacto || filterEstado || filterVendedor;
+    function clearFilters() { setFilterEmpresa(""); setFilterContacto(""); setFilterEstado(""); setFilterVendedor(""); }
 
     async function handleDelete() {
         if (!deletingCot) return;
@@ -177,18 +209,56 @@ export default function CotizacionesPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 bg-muted p-1 rounded-2xl mb-4 w-fit shadow-sm">
-                <button 
-                    onClick={() => setActiveTab("activas")}
-                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "activas" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                    <FileText size={14} /> En Negociación / Borrador
-                </button>
+            <div className="flex gap-1 bg-muted p-1 rounded-2xl mb-4 w-fit shadow-sm overflow-x-auto custom-scrollbar">
+                {userRole === "admin" ? (
+                    <>
+                        <button 
+                            onClick={() => setActiveTab("global")}
+                            className={`whitespace-nowrap px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "global" || activeTab === "activas" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                        >
+                            <FileText size={14} /> Panel Global (Todas)
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab("pendientes")}
+                            className={`whitespace-nowrap px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "pendientes" ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                        >
+                            <Clock size={14} /> Pendientes por Revisar
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab("mis_pendientes")}
+                            className={`whitespace-nowrap px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "mis_pendientes" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                        >
+                            <Clock size={14} /> Mis Pendientes
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab("mias")}
+                            className={`whitespace-nowrap px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "mias" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                        >
+                            <User size={14} /> Mis Cotizaciones
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <button 
+                            onClick={() => setActiveTab("activas")}
+                            className={`whitespace-nowrap px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "activas" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                        >
+                            <FileText size={14} /> Mis Cotizaciones (Activas)
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab("pendientes")}
+                            className={`whitespace-nowrap px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "pendientes" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                        >
+                            <Clock size={14} /> En Revisión Técnica
+                        </button>
+                    </>
+                )}
+                
                 <button 
                     onClick={() => setActiveTab("historial")}
-                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "historial" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`whitespace-nowrap px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "historial" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                 >
-                    <Archive size={14} /> Ganadas (Proyectos Activos)
+                    <Archive size={14} /> Ganadas / Cerradas
                 </button>
             </div>
 
@@ -207,6 +277,18 @@ export default function CotizacionesPage() {
             {/* Filters */}
             <div className="flex gap-2 mb-4 flex-wrap items-center">
                 <Filter size={14} className="text-muted-foreground" />
+                {userRole === "admin" && (
+                    <select
+                        value={filterVendedor}
+                        onChange={(e) => setFilterVendedor(e.target.value)}
+                        className="px-3 py-1.5 bg-card rounded-xl ring-1 ring-border text-xs outline-none focus:ring-mie-primary"
+                    >
+                        <option value="">Todos los comerciales</option>
+                        {Array.from(new Set(cotizaciones.map(c => c.vendedor))).filter(Boolean).map(v => (
+                            <option key={v} value={v}>{v}</option>
+                        ))}
+                    </select>
+                )}
                 <select
                     value={filterEmpresa}
                     onChange={(e) => setFilterEmpresa(e.target.value)}
@@ -336,9 +418,11 @@ export default function CotizacionesPage() {
                                 <button onClick={() => openView(cot, true)} className="px-2 py-1 text-xs text-mie-primary hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-lg flex items-center gap-1">
                                     <Users size={12} /> Vista Cliente
                                 </button>
-                                <button onClick={() => handleExportPDF(cot)} className="px-2 py-1 text-xs text-mie-secondary hover:bg-mie-secondary/10 rounded-lg flex items-center gap-1">
-                                    <Download size={12} /> Exportar PDF
-                                </button>
+                                {((cot.estado === EstadoCotizacion.APROBADA_TECNICAMENTE || cot.estado === EstadoCotizacion.ENVIADA || cot.estado === EstadoCotizacion.APROBADA) || userRole === "admin") && (
+                                    <button onClick={() => handleExportPDF(cot)} className="px-2 py-1 text-xs text-mie-secondary hover:bg-mie-secondary/10 rounded-lg flex items-center gap-1">
+                                        <Download size={12} /> Exportar PDF
+                                    </button>
+                                )}
                                 <button onClick={() => openEdit(cot)} className="px-2 py-1 text-xs text-muted-foreground hover:bg-muted rounded-lg flex items-center gap-1">
                                     <Pencil size={12} /> Editar
                                 </button>
@@ -405,6 +489,7 @@ export default function CotizacionesPage() {
                         allCotizaciones={cotizaciones}
                         empresas={empresas.map((e) => e.nombre)}
                         contactos={contactos.map((c) => ({ nombre: c.nombre, empresa: c.empresaNombre || "" }))}
+                        userRole={userRole}
                         onSubmit={async (data) => {
                             const dataWithLead = { ...data, leadId: linkedLeadId || data.leadId || "" };
                             if (editingCot) {
@@ -441,12 +526,14 @@ export default function CotizacionesPage() {
                             >
                                 <Users size={12} /> Vista Cliente
                             </button>
-                            <button
-                                onClick={() => handleExportPDF(viewingCot)}
-                                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-mie-secondary hover:bg-mie-secondary/10"
-                            >
-                                <Download size={12} /> Exportar PDF
-                            </button>
+                            {((viewingCot.estado === EstadoCotizacion.APROBADA_TECNICAMENTE || viewingCot.estado === EstadoCotizacion.ENVIADA || viewingCot.estado === EstadoCotizacion.APROBADA) || userRole === "admin") && (
+                                <button
+                                    onClick={() => handleExportPDF(viewingCot)}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-mie-secondary hover:bg-mie-secondary/10"
+                                >
+                                    <Download size={12} /> Exportar PDF
+                                </button>
+                            )}
                         </div>
                         <CotizacionView cot={viewingCot} isClient={clientView} />
                     </div>

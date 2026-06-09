@@ -8,7 +8,21 @@ export async function GET(request: NextRequest) {
     const auth = await verifyAuthRole(request);
     if (!auth) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
+    const usuario = await prisma.usuario.findUnique({ where: { email: auth.email } });
+    if (!usuario) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+
+    let whereClause = {};
+    if (usuario.rol === "ventas") {
+      whereClause = {
+        OR: [
+          { usuarioId: usuario.id },
+          { vendedor: usuario.nombre }
+        ]
+      };
+    }
+
     const data = await prisma.cotizacion.findMany({ 
+      where: whereClause,
       orderBy: { fechaCreacion: 'desc' } 
     });
     return NextResponse.json(data);
@@ -25,10 +39,13 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    const usuario = await prisma.usuario.findUnique({ where: { email: auth.email } });
+
     const cotizacionData = {
       codigo:            body.codigo            ?? '',
       version:           body.version           ?? 1,
-      vendedor:          body.vendedor          ?? 'Daniel Rangel',
+      vendedor:          body.vendedor          ?? auth.nombre,
+      usuarioId:         usuario?.id            || null,
       fecha:             body.fecha             ? new Date(body.fecha) : new Date(),
       leadId:            body.leadId            || null,
       empresaNombre:     body.empresaNombre     ?? '',

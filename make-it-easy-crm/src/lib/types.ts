@@ -114,9 +114,11 @@ export interface Interaccion {
 // ── Cotización / Propuesta ──
 export enum EstadoCotizacion {
   BORRADOR = "BORRADOR",
-  ENVIADA = "ENVIADA",
-  APROBADA = "APROBADA",
+  REVISION_TECNICA = "REVISION_TECNICA",
+  APROBADA_TECNICAMENTE = "APROBADA_TECNICAMENTE",
+  ENVIADA_CLIENTE = "ENVIADA_CLIENTE",
   RECHAZADA = "RECHAZADA",
+  CERRADA = "CERRADA",
 }
 
 export interface Cotizacion {

@@ -123,8 +123,12 @@ model Cotizacion {
 
   lead               Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
   proyectos          Proyecto[]
+  
+  usuarioId          String?
+  usuario            Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
 
   @@index([leadId])
+  @@index([usuarioId])
   @@index([fechaCreacion])
   @@map("cotizaciones")
 }
@@ -182,7 +186,26 @@ model Usuario {
   fechaCreacion      DateTime @default(now())
   fechaActualizacion DateTime @updatedAt
 
+  notificaciones     Notificacion[]
+  cotizaciones       Cotizacion[]
+
   @@map("usuarios")
+}
+
+model Notificacion {
+  id           String   @id @default(uuid())
+  usuarioId    String
+  titulo       String
+  mensaje      String
+  enlace       String?
+  leida        Boolean  @default(false)
+  fechaCreacion DateTime @default(now())
+
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([leida])
+  @@map("notificaciones")
 }
 
 model Proveedor {
