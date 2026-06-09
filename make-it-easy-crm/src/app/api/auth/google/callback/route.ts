@@ -94,8 +94,7 @@ export async function GET(request: NextRequest) {
 
     console.log("[AUTH:GOOGLE] JWT signed, redirecting to /");
 
-    const response = NextResponse.redirect(new URL("http://localhost:3000/"));
-    //const response = NextResponse.redirect(new URL("/", request.url));
+    const response = NextResponse.redirect(new URL("/", request.url));
 
     response.cookies.set({
       name: COOKIE_NAME,
