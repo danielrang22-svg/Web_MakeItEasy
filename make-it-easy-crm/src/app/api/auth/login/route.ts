@@ -44,8 +44,7 @@ export async function POST(request: NextRequest) {
       where: { email },
     });
 
-    if (!user || (!user.activo)) {
-      // Record failed attempt
+    if (!user || !user.activo) {
       const current = loginAttempts.get(ip) || { count: 0, lastAttempt: now };
       loginAttempts.set(ip, { count: current.count + 1, lastAttempt: now });
 
@@ -53,7 +52,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Credenciales inválidas o cuenta desactivada" }, { status: 401 });
     }
 
-    // Comparar los hashes
+    if (!user.passwordHash) {
+      const current = loginAttempts.get(ip) || { count: 0, lastAttempt: now };
+      loginAttempts.set(ip, { count: current.count + 1, lastAttempt: now });
+
+      console.log(`[AUTH] ${new Date().toISOString()} | LOGIN_FAIL | email: ${email} | reason: google_only_account | ip: ${ip}`);
+      return NextResponse.json({ error: "Esta cuenta solo puede iniciar sesión con Google" }, { status: 401 });
+    }
+
     const passwordMatch = await bcrypt.compare(password, user.passwordHash);
 
     if (passwordMatch) {

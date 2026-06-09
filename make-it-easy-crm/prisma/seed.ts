@@ -32,6 +32,26 @@ async function main() {
     },
   });
 
+  const teamMembers = [
+    { email: 'daniel.makeiteasy@gmail.com', nombre: 'Daniel Rangel', rol: 'admin' },
+    { email: 'cristian.makeiteasy@gmail.com', nombre: 'Cristian MakeItEasy', rol: 'ventas' },
+    { email: 'luis.makeiteasy@gmail.com', nombre: 'Luis MakeItEasy', rol: 'ventas' },
+  ];
+
+  for (const member of teamMembers) {
+    await prisma.usuario.upsert({
+      where: { email: member.email },
+      update: {},
+      create: {
+        email: member.email,
+        nombre: member.nombre,
+        rol: member.rol,
+        passwordHash: null,
+        activo: true,
+      },
+    });
+  }
+
   // Seed default automation services
   const defaultServices = [
     { referencia: 'MIE-AGENTE-IA', nombre: 'Agente de IA 🤖', proveedor: 'Make It Easy', costoEstimado: 100000, precioSugerido: 300000, tipo: 'servicio', descripcion: 'Chatbot para WhatsApp Business, asistente web o Instagram' },
