@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { Plus, Trash2, DollarSign, Calendar, FileText, CheckCircle, Info, Server, HelpCircle, Layers, Sparkles } from "lucide-react";
+import { Plus, Trash2, DollarSign, Calendar, FileText, CheckCircle, Info, Server, HelpCircle, Layers, Sparkles, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 import { Cotizacion, EstadoCotizacion, CotizacionCreateData } from "@/lib/types";
 import { getNextCodigo } from "@/lib/cotizacionesCalc";
 import { formatCurrency } from "@/lib/constants";
@@ -33,6 +33,14 @@ export default function QuotationForm({
     // Current Active Tab
     const [activeTab, setActiveTab] = useState<"info" | "challenge" | "architecture" | "phases" | "checklist">("info");
 
+    // Example Toggles
+    const [showExampleDesafio, setShowExampleDesafio] = useState(false);
+    const [showExampleArch, setShowExampleArch] = useState(false);
+    const [showExamplePhases, setShowExamplePhases] = useState(false);
+    const [showExamplePrereq, setShowExamplePrereq] = useState(false);
+    const [showExampleFee, setShowExampleFee] = useState(false);
+    const [showExampleChecklist, setShowExampleChecklist] = useState(false);
+
     // Form fields
     const [codigo, setCodigo] = useState(initial?.codigo || getNextCodigo(allCotizaciones));
     const [fecha, setFecha] = useState(initial?.fecha.split("T")[0] || new Date().toISOString().split("T")[0]);
@@ -45,17 +53,11 @@ export default function QuotationForm({
     const [observaciones, setObservaciones] = useState(initial?.observaciones || "");
     
     // Rich Proposal Fields (with default values matching DOCX example)
-    const [tituloPropuesta, setTituloPropuesta] = useState(initial?.tituloPropuesta || "Propuesta Comercial: Ecosistema Digital Omnicanal");
-    const [desafioNegocio, setDesafioNegocio] = useState(initial?.desafioNegocio || 
-        "Dulce Agonía se prepara para ejecutar una fuerte inversión en pauta publicitaria, lo que generará un volumen masivo de prospectos y pedidos a través de múltiples canales simultáneos (Web, WhatsApp, Amazon, Uber Eats, DoorDash). Sin una arquitectura tecnológica centralizada, este flujo provocará un colapso operativo: chats sin respuesta, inventarios fragmentados, pedidos duplicados y pérdida de ingresos. Para resolver esto, Make it easy construirá un ecosistema 100% propio y omnicanal. Este sistema automatizará el ciclo de vida completo del cliente, desde la visualización del anuncio hasta el despacho en Dallas y su respectiva contabilización."
-    );
+    const [tituloPropuesta, setTituloPropuesta] = useState(initial?.tituloPropuesta || "");
+    const [desafioNegocio, setDesafioNegocio] = useState(initial?.desafioNegocio || "");
 
     // Prereqs JSON State
-    const defaultPrereqs = [
-        { titulo: "Normativa TABC Texas (Legal)", descripcion: "Dulce Agonía debe contar con la habilitación como distribuidor y permisos de venta directa al consumidor para operar legalmente. Sin estas licencias, el sistema no podrá procesar ingresos." },
-        { titulo: "Cuentas Comerciales Aprobadas", descripcion: "Se requiere estatus de vendedor aprobado en Amazon, Uber Eats y DoorDash. La integración técnica de estas APIs será gestionada por Make it easy." },
-        { titulo: "WhatsApp Business API", descripcion: "Es indispensable proveer una línea oficial activa y autorizar a Make it easy para la configuración del motor de IA." }
-    ];
+    const defaultPrereqs = [{ titulo: "", descripcion: "" }];
     const [prerrequisitos, setPrerrequisitos] = useState<{ titulo: string; descripcion: string }[]>(() => {
         if (initial?.prerrequisitos) {
             try { return JSON.parse(initial.prerrequisitos); } catch (e) { return defaultPrereqs; }
@@ -64,14 +66,7 @@ export default function QuotationForm({
     });
 
     // Architecture JSON State
-    const defaultArch = [
-        { componente: "Frontend Web", funcion: "Catálogo interactivo, carrito de compras, checkout seguro y widget de chat." },
-        { componente: "Base de Datos", funcion: "Repositorio cifrado para la gestión en tiempo real de clientes, inventario y pedidos." },
-        { componente: "Orquestador Central", funcion: "Motor lógico que sincroniza la Web, WhatsApp, plataformas de delivery (Amazon, Uber Eats, DoorDash), CRM y contabilidad." },
-        { componente: "Motor de IA", funcion: "Agente conversacional que califica leads, resuelve consultas y procesa opciones de pago 24/7." },
-        { componente: "Pasarela de Pagos", funcion: "Procesamiento en USD vía Stripe, incluyendo enlaces de pago seguros integrados al chat." },
-        { componente: "Infraestructura", funcion: "Cloud privado con redundancia, monitoreo continuo, backups automáticos y certificados SSL." }
-    ];
+    const defaultArch = [{ componente: "", funcion: "" }];
     const [arquitectura, setArquitectura] = useState<{ componente: string; funcion: string }[]>(() => {
         if (initial?.arquitecturaJson) {
             try { return JSON.parse(initial.arquitecturaJson); } catch (e) { return defaultArch; }
@@ -80,11 +75,7 @@ export default function QuotationForm({
     });
 
     // Phases JSON State
-    const defaultPhases = [
-        { nombre: "Fase 1: Piso Mínimo Operativo", objetivo: "Capturar y procesar demanda antes de encender la pauta.", detalles: "Compra Web B2C con Stripe checkout, Agente de IA Omnicanal en WhatsApp y Web, CRM propio con pipelines.", precio: 1000 },
-        { nombre: "Fase 2: Control Operativo Omnicanal", objetivo: "Unificar la logística y evitar quiebres o duplicidades de stock.", detalles: "Integración Amazon/Uber Eats/DoorDash APIs, Inventario unificado Dallas en tiempo real, Order Management para bodega.", precio: 1000 },
-        { nombre: "Fase 3: Inteligencia del Negocio", objetivo: "Medición exacta del retorno de inversión y desempeño de ventas.", detalles: "Módulo contable con categorización, Dashboard BI de ROI integrado con Meta Ads API.", precio: 1000 }
-    ];
+    const defaultPhases = [{ nombre: "", objetivo: "", detalles: "", precio: 0 }];
     const [fases, setFases] = useState<{ nombre: string; objetivo: string; detalles: string; precio: number }[]>(() => {
         if (initial?.fasesJson) {
             try { return JSON.parse(initial.fasesJson); } catch (e) { return defaultPhases; }
@@ -93,14 +84,7 @@ export default function QuotationForm({
     });
 
     // Kickoff checklist
-    const defaultChecklist = [
-        "Licencia TABC Texas confirmada",
-        "Permisos de venta al consumidor en Texas",
-        "Sitio web desarrollado y listo para integración",
-        "Línea oficial de WhatsApp Business lista",
-        "Cuentas de vendedor aprobadas (Amazon, Uber Eats, DoorDash)",
-        "Business Account de Meta Ads activa"
-    ];
+    const defaultChecklist = [""];
     const [checklist, setChecklist] = useState<string[]>(() => {
         if (initial?.checklistInicio) {
             try { return JSON.parse(initial.checklistInicio); } catch (e) { return defaultChecklist; }
@@ -109,11 +93,43 @@ export default function QuotationForm({
     });
 
     // Monthly Fee Details
-    const [feeMensual, setFeeMensual] = useState<number>(initial?.feeMensual || 500);
-    const [moduloOpcionalFee, setModuloOpcionalFee] = useState<number>(initial?.moduloOpcionalFee || 500);
-    const [feeMensualIncluye, setFeeMensualIncluye] = useState<string>(initial?.feeMensualIncluye || 
-        "Infraestructura (hosting privado, SSL, backups), Soporte Técnico (hasta 10h/mes), Monitoreo y APIs (alertas 24/7 y gestión completa de Meta Ads, Amazon, WhatsApp, Stripe)."
-    );
+    const [feeMensual, setFeeMensual] = useState<number>(initial?.feeMensual || 0);
+    const [moduloOpcionalFee, setModuloOpcionalFee] = useState<number>(initial?.moduloOpcionalFee || 0);
+    const [feeMensualIncluye, setFeeMensualIncluye] = useState<string>(initial?.feeMensualIncluye || "");
+
+    const loadExampleData = () => {
+        setTituloPropuesta("Propuesta Comercial: Ecosistema Digital Omnicanal");
+        setDesafioNegocio("Dulce Agonía se prepara para ejecutar una fuerte inversión en pauta publicitaria, lo que generará un volumen masivo de prospectos y pedidos a través de múltiples canales simultáneos (Web, WhatsApp, Amazon, Uber Eats, DoorDash). Sin una arquitectura tecnológica centralizada, este flujo provocará un colapso operativo: chats sin respuesta, inventarios fragmentados, pedidos duplicados y pérdida de ingresos. Para resolver esto, Make it easy construirá un ecosistema 100% propio y omnicanal. Este sistema automatizará el ciclo de vida completo del cliente, desde la visualización del anuncio hasta el despacho en Dallas y su respectiva contabilización.");
+        setPrerrequisitos([
+            { titulo: "Normativa TABC Texas (Legal)", descripcion: "Dulce Agonía debe contar con la habilitación como distribuidor y permisos de venta directa al consumidor para operar legalmente. Sin estas licencias, el sistema no podrá procesar ingresos." },
+            { titulo: "Cuentas Comerciales Aprobadas", descripcion: "Se requiere estatus de vendedor aprobado en Amazon, Uber Eats y DoorDash. La integración técnica de estas APIs será gestionada por Make it easy." },
+            { titulo: "WhatsApp Business API", descripcion: "Es indispensable proveer una línea oficial activa y autorizar a Make it easy para la configuración del motor de IA." }
+        ]);
+        setArquitectura([
+            { componente: "Frontend Web", funcion: "Catálogo interactivo, carrito de compras, checkout seguro y widget de chat." },
+            { componente: "Base de Datos", funcion: "Repositorio cifrado para la gestión en tiempo real de clientes, inventario y pedidos." },
+            { componente: "Orquestador Central", funcion: "Motor lógico que sincroniza la Web, WhatsApp, plataformas de delivery (Amazon, Uber Eats, DoorDash), CRM y contabilidad." },
+            { componente: "Motor de IA", funcion: "Agente conversacional que califica leads, resuelve consultas y procesa opciones de pago 24/7." },
+            { componente: "Pasarela de Pagos", funcion: "Procesamiento en USD vía Stripe, incluyendo enlaces de pago seguros integrados al chat." },
+            { componente: "Infraestructura", funcion: "Cloud privado con redundancia, monitoreo continuo, backups automáticos y certificados SSL." }
+        ]);
+        setFases([
+            { nombre: "Fase 1: Piso Mínimo Operativo", objetivo: "Capturar y procesar demanda antes de encender la pauta.", detalles: "Compra Web B2C con Stripe checkout, Agente de IA Omnicanal en WhatsApp y Web, CRM propio con pipelines.", precio: 1000 },
+            { nombre: "Fase 2: Control Operativo Omnicanal", objetivo: "Unificar la logística y evitar quiebres o duplicidades de stock.", detalles: "Integración Amazon/Uber Eats/DoorDash APIs, Inventario unificado Dallas en tiempo real, Order Management para bodega.", precio: 1000 },
+            { nombre: "Fase 3: Inteligencia del Negocio", objetivo: "Medición exacta del retorno de inversión y desempeño de ventas.", detalles: "Módulo contable con categorización, Dashboard BI de ROI integrado con Meta Ads API.", precio: 1000 }
+        ]);
+        setChecklist([
+            "Licencia TABC Texas confirmada",
+            "Permisos de venta al consumidor en Texas",
+            "Sitio web desarrollado y listo para integración",
+            "Línea oficial de WhatsApp Business lista",
+            "Cuentas de vendedor aprobadas (Amazon, Uber Eats, DoorDash)",
+            "Business Account de Meta Ads activa"
+        ]);
+        setFeeMensual(500);
+        setModuloOpcionalFee(500);
+        setFeeMensualIncluye("Infraestructura (hosting privado, SSL, backups), Soporte Técnico (hasta 10h/mes), Monitoreo y APIs (alertas 24/7 y gestión completa de Meta Ads, Amazon, WhatsApp, Stripe).");
+    };
 
     // Calculate core project total
     const totalProyectoCore = useMemo(() => {
@@ -201,7 +217,9 @@ export default function QuotationForm({
     
     return (
         <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-2 custom-scrollbar">
-            {title && <h3 className="font-bold text-lg mb-4 text-primary font-display">{title}</h3>}
+            <div className="flex items-center justify-between mb-4">
+                {title && <h3 className="font-bold text-lg text-primary font-display">{title}</h3>}
+            </div>
 
             {/* AI prefilled banner */}
             {aiPrefilled && (
@@ -315,7 +333,24 @@ export default function QuotationForm({
                         <input value={tituloPropuesta} onChange={(e) => setTituloPropuesta(e.target.value)} required className={inputCls} placeholder="Ej: Propuesta Comercial: Ecosistema Digital Omnicanal" />
                     </div>
                     <div>
-                        <label className={labelCls}>1. El Desafío de Negocio</label>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label className={labelCls}>1. El Desafío de Negocio</label>
+                            <button
+                                type="button"
+                                onClick={() => setShowExampleDesafio(v => !v)}
+                                className="text-xs text-violet-500 hover:text-violet-600 flex items-center gap-1"
+                            >
+                                <Lightbulb size={12} />
+                                {showExampleDesafio ? "Ocultar" : "Ver ejemplo"}
+                                {showExampleDesafio ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            </button>
+                        </div>
+                        {showExampleDesafio && (
+                            <div className="mb-3 p-3 bg-muted/60 rounded-xl text-[11px] text-muted-foreground border border-border">
+                                <p className="font-semibold text-foreground mb-1">Ejemplo de redacción (Caso: Dulce Agonía):</p>
+                                <p className="italic">"Dulce Agonía se prepara para ejecutar una fuerte inversión en pauta publicitaria, lo que generará un volumen masivo de prospectos y pedidos a través de múltiples canales simultáneos (Web, WhatsApp, Amazon, Uber Eats, DoorDash). Sin una arquitectura tecnológica centralizada, este flujo provocará un colapso operativo: chats sin respuesta, inventarios fragmentados, pedidos duplicados y pérdida de ingresos. Para resolver esto, Make it easy construirá un ecosistema 100% propio y omnicanal. Este sistema automatizará el ciclo de vida completo del cliente, desde la visualización del anuncio hasta el despacho en Dallas y su respectiva contabilización."</p>
+                            </div>
+                        )}
                         <textarea
                             value={desafioNegocio}
                             onChange={(e) => setDesafioNegocio(e.target.value)}
@@ -327,10 +362,30 @@ export default function QuotationForm({
                     <div className="border-t border-border pt-4">
                         <div className="flex items-center justify-between mb-3">
                             <label className="text-xs font-bold uppercase text-muted-foreground ml-1">2. Prerrequisitos de Viabilidad</label>
-                            <button type="button" onClick={addPrereq} className="text-[11px] text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-md hover:bg-primary/20 flex items-center gap-1 transition-all">
-                                <Plus size={12} /> Agregar
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowExamplePrereq(v => !v)}
+                                    className="text-xs text-violet-500 hover:text-violet-600 flex items-center gap-1"
+                                >
+                                    <Lightbulb size={12} />
+                                    {showExamplePrereq ? "Ocultar" : "Ver ejemplo"}
+                                    {showExamplePrereq ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                </button>
+                                <button type="button" onClick={addPrereq} className="text-[11px] text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-md hover:bg-primary/20 flex items-center gap-1 transition-all">
+                                    <Plus size={12} /> Agregar
+                                </button>
+                            </div>
                         </div>
+                        {showExamplePrereq && (
+                            <div className="mb-3 p-3 bg-muted/60 rounded-xl text-[11px] text-muted-foreground border border-border">
+                                <p className="font-semibold text-foreground mb-1">Ejemplos de Prerrequisitos:</p>
+                                <ul className="list-disc pl-4 space-y-1">
+                                    <li><strong>Normativa TABC Texas (Legal):</strong> Dulce Agonía debe contar con la habilitación como distribuidor y permisos de venta directa al consumidor para operar legalmente.</li>
+                                    <li><strong>WhatsApp Business API:</strong> Es indispensable proveer una línea oficial activa y autorizar a Make it easy para la configuración del motor de IA.</li>
+                                </ul>
+                            </div>
+                        )}
                         <div className="space-y-3">
                             {prerrequisitos.map((pre, idx) => (
                                 <div key={idx} className="flex gap-2 items-start bg-card/40 border border-border/50 p-3 rounded-xl relative">
@@ -364,10 +419,31 @@ export default function QuotationForm({
                 <div className="space-y-4 animate-fade-in">
                     <div className="flex items-center justify-between">
                         <label className="text-xs font-bold uppercase text-muted-foreground ml-1">3. Arquitectura del Ecosistema</label>
-                        <button type="button" onClick={addArch} className="text-[11px] text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-md hover:bg-primary/20 flex items-center gap-1 transition-all">
-                            <Plus size={12} /> Agregar Componente
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowExampleArch(v => !v)}
+                                className="text-xs text-violet-500 hover:text-violet-600 flex items-center gap-1"
+                            >
+                                <Lightbulb size={12} />
+                                {showExampleArch ? "Ocultar" : "Ver ejemplo"}
+                                {showExampleArch ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            </button>
+                            <button type="button" onClick={addArch} className="text-[11px] text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-md hover:bg-primary/20 flex items-center gap-1 transition-all">
+                                <Plus size={12} /> Agregar Componente
+                            </button>
+                        </div>
                     </div>
+                    {showExampleArch && (
+                        <div className="mb-2 p-3 bg-muted/60 rounded-xl text-[11px] text-muted-foreground border border-border">
+                            <p className="font-semibold text-foreground mb-1">Ejemplos de Componentes:</p>
+                            <ul className="list-disc pl-4 space-y-1">
+                                <li><strong>Frontend Web:</strong> Catálogo interactivo, carrito de compras, checkout seguro y widget de chat.</li>
+                                <li><strong>Motor de IA:</strong> Agente conversacional que califica leads, resuelve consultas y procesa opciones de pago 24/7.</li>
+                                <li><strong>Orquestador Central:</strong> Motor lógico que sincroniza la Web, WhatsApp, plataformas de delivery (Amazon, Uber Eats, DoorDash), CRM y contabilidad.</li>
+                            </ul>
+                        </div>
+                    )}
                     <div className="space-y-3">
                         {arquitectura.map((arc, idx) => (
                             <div key={idx} className="flex gap-2 items-start bg-card/40 border border-border/50 p-3 rounded-xl">
@@ -403,10 +479,30 @@ export default function QuotationForm({
                 <div className="space-y-5 animate-fade-in">
                     <div className="flex items-center justify-between">
                         <label className="text-xs font-bold uppercase text-muted-foreground ml-1">4. Fases de Implementación</label>
-                        <button type="button" onClick={addPhase} className="text-[11px] text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-md hover:bg-primary/20 flex items-center gap-1 transition-all">
-                            <Plus size={12} /> Agregar Fase
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowExamplePhases(v => !v)}
+                                className="text-xs text-violet-500 hover:text-violet-600 flex items-center gap-1"
+                            >
+                                <Lightbulb size={12} />
+                                {showExamplePhases ? "Ocultar" : "Ver ejemplo"}
+                                {showExamplePhases ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            </button>
+                            <button type="button" onClick={addPhase} className="text-[11px] text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-md hover:bg-primary/20 flex items-center gap-1 transition-all">
+                                <Plus size={12} /> Agregar Fase
+                            </button>
+                        </div>
                     </div>
+                    {showExamplePhases && (
+                        <div className="mb-2 p-3 bg-muted/60 rounded-xl text-[11px] text-muted-foreground border border-border">
+                            <p className="font-semibold text-foreground mb-1">Ejemplo de Fases:</p>
+                            <ul className="list-disc pl-4 space-y-1">
+                                <li><strong>Fase 1: Piso Mínimo Operativo</strong> - Capturar y procesar demanda antes de encender la pauta. (Compra Web B2C con Stripe checkout, Agente de IA Omnicanal en WhatsApp y Web, CRM propio con pipelines.)</li>
+                                <li><strong>Fase 2: Control Operativo Omnicanal</strong> - Unificar la logística y evitar quiebres o duplicidades de stock. (Integración Amazon/Uber Eats/DoorDash APIs, Inventario unificado Dallas en tiempo real, Order Management para bodega.)</li>
+                            </ul>
+                        </div>
+                    )}
                     <div className="space-y-4">
                         {fases.map((fas, idx) => (
                             <div key={idx} className="bg-card/40 border border-border/50 p-4 rounded-xl space-y-3 relative group">
@@ -476,7 +572,24 @@ export default function QuotationForm({
                                 </div>
                             </div>
                             <div className="col-span-2">
-                                <label className={labelCls}>¿Qué incluye el Fee Mensual?</label>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className={labelCls}>¿Qué incluye el Fee Mensual?</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowExampleFee(v => !v)}
+                                        className="text-xs text-violet-500 hover:text-violet-600 flex items-center gap-1"
+                                    >
+                                        <Lightbulb size={12} />
+                                        {showExampleFee ? "Ocultar" : "Ver ejemplo"}
+                                        {showExampleFee ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                    </button>
+                                </div>
+                                {showExampleFee && (
+                                    <div className="mb-3 p-3 bg-muted/60 rounded-xl text-[11px] text-muted-foreground border border-border">
+                                        <p className="font-semibold text-foreground mb-1">Ejemplo de redacción:</p>
+                                        <p className="italic">"Infraestructura (hosting privado, SSL, backups), Soporte Técnico (hasta 10h/mes), Monitoreo y APIs (alertas 24/7 y gestión completa de Meta Ads, Amazon, WhatsApp, Stripe)."</p>
+                                    </div>
+                                )}
                                 <textarea
                                     value={feeMensualIncluye}
                                     onChange={(e) => setFeeMensualIncluye(e.target.value)}
@@ -509,12 +622,34 @@ export default function QuotationForm({
             {/* TAB 5: CHECKLIST & CLOSING */}
             {activeTab === "checklist" && (
                 <div className="space-y-4 animate-fade-in">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                         <label className="text-xs font-bold uppercase text-muted-foreground ml-1">6. Checklist de Inicio para el Cliente</label>
-                        <button type="button" onClick={addChecklist} className="text-[11px] text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-md hover:bg-primary/20 flex items-center gap-1 transition-all">
-                            <Plus size={12} /> Agregar Paso
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowExampleChecklist(v => !v)}
+                                className="text-xs text-violet-500 hover:text-violet-600 flex items-center gap-1"
+                            >
+                                <Lightbulb size={12} />
+                                {showExampleChecklist ? "Ocultar" : "Ver ejemplo"}
+                                {showExampleChecklist ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            </button>
+                            <button type="button" onClick={addChecklist} className="text-[11px] text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-md hover:bg-primary/20 flex items-center gap-1 transition-all">
+                                <Plus size={12} /> Agregar Paso
+                            </button>
+                        </div>
                     </div>
+                    {showExampleChecklist && (
+                        <div className="mb-3 p-3 bg-muted/60 rounded-xl text-[11px] text-muted-foreground border border-border">
+                            <p className="font-semibold text-foreground mb-1">Ejemplos de Checklist:</p>
+                            <ul className="list-disc pl-4 space-y-1">
+                                <li>Licencia TABC Texas confirmada</li>
+                                <li>Línea oficial de WhatsApp Business lista</li>
+                                <li>Cuentas de vendedor aprobadas (Amazon, Uber Eats, DoorDash)</li>
+                                <li>Business Account de Meta Ads activa</li>
+                            </ul>
+                        </div>
+                    )}
                     <div className="space-y-2">
                         {checklist.map((chk, idx) => (
                             <div key={idx} className="flex gap-2 items-center">
@@ -545,8 +680,8 @@ export default function QuotationForm({
                 </div>
             )}
 
-            {/* bottom sticky actions */}
-            <div className={`flex gap-3 pt-4 pb-2 sticky bottom-0 bg-background/80 backdrop-blur-md ${isInsideLeadForm ? "" : "-mx-1 px-1"}`}>
+            {/* bottom actions - non-sticky when inside LeadForm to prevent overlapping */}
+            <div className={`flex gap-3 pt-4 pb-2 bg-background/80 backdrop-blur-md ${isInsideLeadForm ? "relative" : "sticky bottom-0 -mx-1 px-1"}`}>
                 <button
                     type="button"
                     onClick={handleSubmit}

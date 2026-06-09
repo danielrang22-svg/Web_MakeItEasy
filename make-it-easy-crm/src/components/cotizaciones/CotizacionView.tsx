@@ -60,7 +60,7 @@ export function CotizacionView({ cot, isClient }: { cot: Cotizacion; isClient: b
                     <HelpCircle size={14} className="text-mie-primary" />
                     1. El Desafío de Negocio
                 </h4>
-                <p className="text-xs leading-relaxed text-muted-foreground text-justify p-4 bg-muted/20 border border-border/50 rounded-2xl italic">
+                <p className="text-xs leading-relaxed text-muted-foreground text-justify p-4 bg-muted/20 border border-border/50 rounded-2xl italic whitespace-pre-wrap">
                     "{cot.desafioNegocio || "No especificado."}"
                 </p>
             </div>

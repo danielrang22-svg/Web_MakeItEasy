@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useCotizacionesStore, getFilteredCotizaciones } from "@/lib/state/cotizacionesStore";
 import { useLeadsStore } from "@/lib/state/leadsStore";
 import { useEmpresasStore } from "@/lib/state/empresasStore";
 import { useContactosStore } from "@/lib/state/contactosStore";
-import { getNextCodigo } from "@/lib/cotizacionesCalc";
 import { exportCotizacionClientePDF } from "@/lib/utils/exportPDF";
 import { Cotizacion, CotizacionCreateData, EstadoCotizacion } from "@/lib/types";
 import { formatCurrency } from "@/lib/constants";
@@ -15,15 +14,17 @@ import { useProyectosStore } from "@/lib/state/proyectosStore";
 import {
     Search, FileText, Plus, Pencil, Trash2, Eye, Download,
     Building2, User, DollarSign, Cpu, CheckCircle, Clock, Filter, X, ArrowRight, Archive, Sparkles,
+    ChevronDown, Send, Users, Link2,
 } from "lucide-react";
 import { CotizacionView } from "@/components/cotizaciones/CotizacionView";
 import AIBriefInput, { AiProposal } from "@/components/cotizaciones/AIBriefInput";
+import QuotationForm from "@/components/cotizaciones/QuotationForm";
 
-const ESTADO_STYLES: Record<EstadoCotizacion, { bg: string; text: string; icon: React.ReactNode }> = {
-    [EstadoCotizacion.BORRADOR]: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-400", icon: <Clock size={12} /> },
-    [EstadoCotizacion.ENVIADA]: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-mie-primary", icon: <Clock size={12} /> },
-    [EstadoCotizacion.APROBADA]: { bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-600", icon: <CheckCircle size={12} /> },
-    [EstadoCotizacion.RECHAZADA]: { bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-500", icon: <XCircleIcon size={12} /> },
+const ESTADO_STYLES: Record<EstadoCotizacion, { bg: string; text: string; dot: string; icon: React.ReactNode; label: string }> = {
+    [EstadoCotizacion.BORRADOR]: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-400", dot: "#9ca3af", icon: <Clock size={12} />, label: "Borrador" },
+    [EstadoCotizacion.ENVIADA]:  { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-mie-primary", dot: "#3b82f6", icon: <Send size={12} />, label: "Enviada" },
+    [EstadoCotizacion.APROBADA]: { bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-600", dot: "#22c55e", icon: <CheckCircle size={12} />, label: "Aprobada" },
+    [EstadoCotizacion.RECHAZADA]:{ bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-500", dot: "#ef4444", icon: <XCircleIcon size={12} />, label: "Rechazada" },
 };
 
 function XCircleIcon({ size }: { size: number }) {
@@ -44,6 +45,7 @@ export default function CotizacionesPage() {
     const [showForm, setShowForm] = useState(false);
     const [showAiBrief, setShowAiBrief] = useState(false);
     const [aiPrefilledData, setAiPrefilledData] = useState<AiProposal | null>(null);
+    const [linkedLeadId, setLinkedLeadId] = useState<string | null>(null);
     const [editingCot, setEditingCot] = useState<Cotizacion | null>(null);
     const [viewingCot, setViewingCot] = useState<Cotizacion | null>(null);
     const [clientView, setClientView] = useState(false);
@@ -53,6 +55,8 @@ export default function CotizacionesPage() {
     const [filterContacto, setFilterContacto] = useState("");
     const [filterEstado, setFilterEstado] = useState("");
     const [activeTab, setActiveTab] = useState<"activas" | "historial">("activas");
+    const [quickStateMenu, setQuickStateMenu] = useState<string | null>(null); // cotizacion id with open menu
+    const quickStateRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => { 
         loadCotizaciones(); 
@@ -62,6 +66,17 @@ export default function CotizacionesPage() {
         loadProyectos();
         loadOrdenes();
     }, [loadCotizaciones, loadLeads, loadEmpresas, loadContactos, loadProyectos, loadOrdenes]);
+
+    // Close quick state menu when clicking outside
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (quickStateRef.current && !quickStateRef.current.contains(e.target as Node)) {
+                setQuickStateMenu(null);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const uniqueEmpresas = [...new Set(cotizaciones.map((c) => c.empresaNombre))].filter(Boolean).sort();
     const uniqueContactos = [...new Set(cotizaciones.map((c) => c.contactoNombre))].filter(Boolean).sort();
@@ -91,6 +106,7 @@ export default function CotizacionesPage() {
     function openCreate() {
         setEditingCot(null);
         setAiPrefilledData(null);
+        setLinkedLeadId(null);
         setShowAiBrief(true);
     }
 
@@ -104,6 +120,12 @@ export default function CotizacionesPage() {
         setAiPrefilledData(proposal);
         setShowAiBrief(false);
         setShowForm(true);
+    }
+
+    async function handleQuickStateChange(cot: Cotizacion, newEstado: EstadoCotizacion) {
+        setQuickStateMenu(null);
+        await updateCotizacion(cot.id, { estado: newEstado });
+        setToast({ message: `Estado cambiado a: ${newEstado}`, type: "success" });
     }
 
     function openView(cot: Cotizacion, isClient: boolean) {
@@ -233,9 +255,32 @@ export default function CotizacionesPage() {
                                         <h3 className="font-bold text-base">
                                             {cot.codigo} {cot.version > 1 && <span className="text-mie-secondary ml-1">V{cot.version}</span>}
                                         </h3>
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 ${estilo.bg} ${estilo.text}`}>
-                                            {estilo.icon} {cot.estado}
-                                        </span>
+                                        {/* Quick State Badge with Dropdown */}
+                                        <div className="relative" ref={quickStateMenu === cot.id ? quickStateRef : undefined}>
+                                            <button
+                                                onClick={() => setQuickStateMenu(quickStateMenu === cot.id ? null : cot.id)}
+                                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity ${estilo.bg} ${estilo.text}`}
+                                            >
+                                                {estilo.icon} {estilo.label ?? cot.estado}
+                                                <ChevronDown size={10} className="ml-0.5" />
+                                            </button>
+                                            {quickStateMenu === cot.id && (
+                                                <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-20 min-w-[160px] overflow-hidden">
+                                                    {Object.values(EstadoCotizacion).filter(e => e !== cot.estado).map(estado => {
+                                                        const s = ESTADO_STYLES[estado];
+                                                        return (
+                                                            <button
+                                                                key={estado}
+                                                                onClick={() => handleQuickStateChange(cot, estado)}
+                                                                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-muted transition-colors text-left ${s.text}`}
+                                                            >
+                                                                {s.icon} {s.label ?? estado}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                                         <Building2 size={10} /> {cot.empresaNombre}
@@ -288,6 +333,9 @@ export default function CotizacionesPage() {
                                 <button onClick={() => openView(cot, false)} className="px-2 py-1 text-xs text-muted-foreground hover:bg-muted rounded-lg flex items-center gap-1">
                                     <Eye size={12} /> Vista Interna
                                 </button>
+                                <button onClick={() => openView(cot, true)} className="px-2 py-1 text-xs text-mie-primary hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-lg flex items-center gap-1">
+                                    <Users size={12} /> Vista Cliente
+                                </button>
                                 <button onClick={() => handleExportPDF(cot)} className="px-2 py-1 text-xs text-mie-secondary hover:bg-mie-secondary/10 rounded-lg flex items-center gap-1">
                                     <Download size={12} /> Exportar PDF
                                 </button>
@@ -309,10 +357,39 @@ export default function CotizacionesPage() {
                 )}
             </div>
 
-            {/* AI BRIEF MODAL */}
+            {/* AI BRIEF MODAL — with lead selector */}
             <Modal isOpen={showAiBrief} onClose={() => setShowAiBrief(false)} title="✨ Nueva Propuesta con Agente IA">
-                <div className="p-1 max-h-[85vh] overflow-y-auto custom-scrollbar">
+                <div className="p-1 max-h-[85vh] overflow-y-auto custom-scrollbar space-y-3">
+                    {/* Lead selector */}
+                    <div className="p-3 bg-muted/40 rounded-xl border border-border">
+                        <label className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-1.5 mb-2">
+                            <Link2 size={11} /> Vincular a Lead (opcional)
+                        </label>
+                        <select
+                            value={linkedLeadId || ""}
+                            onChange={e => setLinkedLeadId(e.target.value || null)}
+                            className="w-full px-3 py-2 bg-card rounded-xl ring-1 ring-border text-xs outline-none focus:ring-mie-primary"
+                        >
+                            <option value="">— Sin vincular a lead —</option>
+                            {leads.map(l => (
+                                <option key={l.id} value={l.id}>
+                                    {l.empresa} — {l.nombreContacto} {l.planInteres ? `(${l.planInteres})` : ""}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                     <AIBriefInput
+                        leadData={linkedLeadId ? (() => {
+                            const lead = leads.find(l => l.id === linkedLeadId);
+                            return lead ? {
+                                empresa: lead.empresa,
+                                sector: lead.sector || undefined,
+                                numEmpleados: lead.numEmpleados || undefined,
+                                procesoAAutomatizar: lead.procesoAAutomatizar || undefined,
+                                planInteres: lead.planInteres || undefined,
+                                valorEstimado: lead.valorEstimado,
+                            } : null;
+                        })() : null}
                         onProposalGenerated={handleAiProposalGenerated}
                         onSkip={() => { setShowAiBrief(false); setShowForm(true); }}
                     />
@@ -329,25 +406,48 @@ export default function CotizacionesPage() {
                         empresas={empresas.map((e) => e.nombre)}
                         contactos={contactos.map((c) => ({ nombre: c.nombre, empresa: c.empresaNombre || "" }))}
                         onSubmit={async (data) => {
+                            const dataWithLead = { ...data, leadId: linkedLeadId || data.leadId || "" };
                             if (editingCot) {
-                                await updateCotizacion(editingCot.id, data);
+                                await updateCotizacion(editingCot.id, dataWithLead);
                                 setToast({ message: "Propuesta actualizada", type: "success" });
                             } else {
-                                await createCotizacion(data);
+                                await createCotizacion(dataWithLead);
                                 setToast({ message: "Propuesta creada", type: "success" });
                             }
                             setShowForm(false);
                             setAiPrefilledData(null);
+                            setLinkedLeadId(null);
                         }}
-                        onCancel={() => { setShowForm(false); setAiPrefilledData(null); }}
+                        onCancel={() => { setShowForm(false); setAiPrefilledData(null); setLinkedLeadId(null); }}
                     />
                 </div>
             </Modal>
 
             {/* VIEW MODAL */}
-            <Modal wide isOpen={!!viewingCot} onClose={() => setViewingCot(null)} title={viewingCot ? `${viewingCot.codigo} ${viewingCot.version > 1 ? `V${viewingCot.version}` : ""} — Vista Detallada` : ""}>
+            <Modal wide isOpen={!!viewingCot} onClose={() => setViewingCot(null)} title={viewingCot ? `${viewingCot.codigo} ${viewingCot.version > 1 ? `V${viewingCot.version}` : ""} — ${clientView ? "Vista Cliente" : "Vista Interna"}` : ""}>
                 {viewingCot && (
                     <div className="p-1 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                        {/* View mode switcher */}
+                        <div className="flex gap-1 mb-4 bg-muted p-1 rounded-xl w-fit">
+                            <button
+                                onClick={() => setClientView(false)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${ !clientView ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                            >
+                                <Eye size={12} /> Interna
+                            </button>
+                            <button
+                                onClick={() => setClientView(true)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${ clientView ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                            >
+                                <Users size={12} /> Vista Cliente
+                            </button>
+                            <button
+                                onClick={() => handleExportPDF(viewingCot)}
+                                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-mie-secondary hover:bg-mie-secondary/10"
+                            >
+                                <Download size={12} /> Exportar PDF
+                            </button>
+                        </div>
                         <CotizacionView cot={viewingCot} isClient={clientView} />
                     </div>
                 )}
@@ -358,5 +458,3 @@ export default function CotizacionesPage() {
         </div>
     );
 }
-
-import QuotationForm from "@/components/cotizaciones/QuotationForm";

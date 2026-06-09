@@ -14,12 +14,20 @@ export default function AjustesPage() {
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
-    // ── AI Config state ──────────────────────────────────────────
-    type AiConfigRow = {
+    // ── AI Connection state ──────────────────────────────────────────
+    type AiConnectionRow = {
         id: string; nombre: string; proveedor: string; modelo: string;
-        apiKey: string; baseUrl?: string; activo: boolean; etiqueta?: string;
+        apiKey: string; baseUrl?: string | null;
         fechaCreacion: string;
     };
+    // ── Agent state ──────────────────────────────────────────
+    type AgentRow = {
+        id: string; nombre: string; descripcion?: string | null; systemPrompt: string;
+        activo: boolean; connectionId: string;
+        conexion?: AiConnectionRow | null;
+        fechaCreacion: string;
+    };
+
     const PROVEEDORES = [
         { value: "openai",    label: "OpenAI",          models: ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"] },
         { value: "deepseek",  label: "DeepSeek",        models: ["deepseek-chat", "deepseek-reasoner"] },
@@ -33,24 +41,40 @@ export default function AjustesPage() {
         anthropic: "bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300",
     };
 
-    const [aiConfigs, setAiConfigs] = useState<AiConfigRow[]>([]);
+    const [aiConfigs, setAiConfigs] = useState<AiConnectionRow[]>([]);
     const [showAiForm, setShowAiForm] = useState(false);
-    const [editingAi, setEditingAi] = useState<AiConfigRow | null>(null);
-    const [deletingAi, setDeletingAi] = useState<AiConfigRow | null>(null);
+    const [editingAi, setEditingAi] = useState<AiConnectionRow | null>(null);
+    const [deletingAi, setDeletingAi] = useState<AiConnectionRow | null>(null);
     const [showApiKey, setShowApiKey] = useState(false);
-    const [aiForm, setAiForm] = useState({ nombre: "", proveedor: "openai", modelo: "gpt-4o-mini", apiKey: "", baseUrl: "", etiqueta: "", activo: true });
+    const [aiForm, setAiForm] = useState({ nombre: "", proveedor: "openai", modelo: "gpt-4o-mini", apiKey: "", baseUrl: "" });
     const [aiLoading, setAiLoading] = useState(false);
+
+    // Agents state
+    const [agents, setAgents] = useState<AgentRow[]>([]);
+    const [showAgentForm, setShowAgentForm] = useState(false);
+    const [editingAgent, setEditingAgent] = useState<AgentRow | null>(null);
+    const [deletingAgent, setDeletingAgent] = useState<AgentRow | null>(null);
+    const [agentForm, setAgentForm] = useState({ nombre: "", descripcion: "", systemPrompt: "", connectionId: "", activo: false });
+    const [agentLoading, setAgentLoading] = useState(false);
     // ─────────────────────────────────────────────────────────────
 
     useEffect(() => {
         loadLeads();
         loadAiConfigs();
+        loadAgents();
     }, [loadLeads]);
 
     async function loadAiConfigs() {
         try {
             const res = await fetch("/api/admin/ai-config");
             if (res.ok) setAiConfigs(await res.json());
+        } catch {}
+    }
+
+    async function loadAgents() {
+        try {
+            const res = await fetch("/api/admin/agentes");
+            if (res.ok) setAgents(await res.json());
         } catch {}
     }
 
@@ -126,7 +150,6 @@ export default function AjustesPage() {
         
         for (const [key, items] of Object.entries(data)) {
             if (Array.isArray(items) && items.length > 0) {
-                // flatten objects for excel export if needed, or rely on json_to_sheet
                 const ws = XLSX.utils.json_to_sheet(items);
                 XLSX.utils.book_append_sheet(wb, ws, key.charAt(0).toUpperCase() + key.slice(1));
             }
@@ -146,7 +169,7 @@ export default function AjustesPage() {
                     body: JSON.stringify(aiForm),
                 });
                 if (!res.ok) throw new Error("Error al actualizar");
-                setToast({ message: "Configuración actualizada", type: "success" });
+                setToast({ message: "Conexión actualizada", type: "success" });
             } else {
                 const res = await fetch("/api/admin/ai-config", {
                     method: "POST",
@@ -154,29 +177,16 @@ export default function AjustesPage() {
                     body: JSON.stringify(aiForm),
                 });
                 if (!res.ok) throw new Error("Error al crear");
-                setToast({ message: "Configuración de IA creada", type: "success" });
+                setToast({ message: "Conexión de IA creada", type: "success" });
             }
             setShowAiForm(false);
             setEditingAi(null);
             loadAiConfigs();
+            loadAgents(); // Reload agents to get updated connection details
         } catch {
-            setToast({ message: "Error guardando configuración", type: "error" });
+            setToast({ message: "Error guardando conexión", type: "error" });
         } finally {
             setAiLoading(false);
-        }
-    }
-
-    async function handleActivateAiConfig(id: string) {
-        try {
-            await fetch(`/api/admin/ai-config/${id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ activo: true }),
-            });
-            loadAiConfigs();
-            setToast({ message: "Configuración activada", type: "success" });
-        } catch {
-            setToast({ message: "Error al activar", type: "error" });
         }
     }
 
@@ -186,22 +196,99 @@ export default function AjustesPage() {
             await fetch(`/api/admin/ai-config/${deletingAi.id}`, { method: "DELETE" });
             setDeletingAi(null);
             loadAiConfigs();
-            setToast({ message: "Configuración eliminada", type: "info" });
+            loadAgents(); // Reload agents as deleting connection affects them
+            setToast({ message: "Conexión eliminada", type: "info" });
         } catch {
-            setToast({ message: "Error al eliminar", type: "error" });
+            setToast({ message: "Error al eliminar conexión", type: "error" });
         }
     }
 
     function openCreateAi() {
         setEditingAi(null);
-        setAiForm({ nombre: "", proveedor: "openai", modelo: "gpt-4o-mini", apiKey: "", baseUrl: "", etiqueta: "", activo: true });
+        setAiForm({ nombre: "", proveedor: "openai", modelo: "gpt-4o-mini", apiKey: "", baseUrl: "" });
         setShowAiForm(true);
     }
 
-    function openEditAi(c: AiConfigRow) {
+    function openEditAi(c: AiConnectionRow) {
         setEditingAi(c);
-        setAiForm({ nombre: c.nombre, proveedor: c.proveedor, modelo: c.modelo, apiKey: "", baseUrl: c.baseUrl || "", etiqueta: c.etiqueta || "", activo: c.activo });
+        setAiForm({ nombre: c.nombre, proveedor: c.proveedor, modelo: c.modelo, apiKey: "", baseUrl: c.baseUrl || "" });
         setShowAiForm(true);
+    }
+
+    async function handleSaveAgent() {
+        setAgentLoading(true);
+        try {
+            if (editingAgent) {
+                const res = await fetch(`/api/admin/agentes/${editingAgent.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(agentForm),
+                });
+                if (!res.ok) throw new Error("Error al actualizar");
+                setToast({ message: "Agente actualizado", type: "success" });
+            } else {
+                const res = await fetch("/api/admin/agentes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(agentForm),
+                });
+                if (!res.ok) throw new Error("Error al crear");
+                setToast({ message: "Agente de IA creado", type: "success" });
+            }
+            setShowAgentForm(false);
+            setEditingAgent(null);
+            loadAgents();
+        } catch {
+            setToast({ message: "Error guardando agente", type: "error" });
+        } finally {
+            setAgentLoading(false);
+        }
+    }
+
+    async function handleActivateAgent(id: string) {
+        try {
+            const res = await fetch(`/api/admin/agentes/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ activo: true }),
+            });
+            if (!res.ok) throw new Error("Error al activar");
+            loadAgents();
+            setToast({ message: "Agente activado como principal", type: "success" });
+        } catch {
+            setToast({ message: "Error al activar agente", type: "error" });
+        }
+    }
+
+    async function handleDeleteAgent() {
+        if (!deletingAgent) return;
+        try {
+            await fetch(`/api/admin/agentes/${deletingAgent.id}`, { method: "DELETE" });
+            setDeletingAgent(null);
+            loadAgents();
+            setToast({ message: "Agente de IA eliminado", type: "info" });
+        } catch {
+            setToast({ message: "Error al eliminar agente", type: "error" });
+        }
+    }
+
+    function openCreateAgent() {
+        setEditingAgent(null);
+        const defaultConn = aiConfigs.length > 0 ? aiConfigs[0].id : "";
+        setAgentForm({ nombre: "", descripcion: "", systemPrompt: "", connectionId: defaultConn, activo: false });
+        setShowAgentForm(true);
+    }
+
+    function openEditAgent(a: AgentRow) {
+        setEditingAgent(a);
+        setAgentForm({
+            nombre: a.nombre,
+            descripcion: a.descripcion || "",
+            systemPrompt: a.systemPrompt,
+            connectionId: a.connectionId,
+            activo: a.activo
+        });
+        setShowAgentForm(true);
     }
 
     const selectedProveedor = PROVEEDORES.find(p => p.value === aiForm.proveedor);
@@ -349,20 +436,20 @@ export default function AjustesPage() {
                     </div>
                 </div>
 
-                {/* ── Agente IA ── */}
+                {/* ── Conexiones de API ── */}
                 <div className="bg-card ring-1 ring-border rounded-2xl overflow-hidden">
                     <div className="px-5 pt-4 pb-3 flex items-center justify-between">
                         <div>
                             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                                <Sparkles size={12} className="text-violet-500" /> Agente IA — API Keys
+                                <Database size={12} className="text-cyan-500" /> Conexiones de API
                             </h3>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">Solo una configuración puede estar activa a la vez.</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Credenciales y modelos para servicios de IA (OpenAI, DeepSeek, Gemini, Claude).</p>
                         </div>
                         <button
                             onClick={openCreateAi}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-xs font-bold rounded-xl shadow-sm hover:opacity-90 transition-all"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs font-bold rounded-xl shadow-sm hover:opacity-90 transition-all"
                         >
-                            <Plus size={12} /> Nueva Key
+                            <Plus size={12} /> Nueva Conexión
                         </button>
                     </div>
 
@@ -370,26 +457,17 @@ export default function AjustesPage() {
                         <div className="px-5 pb-5 flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-xl mx-5 mb-4 text-xs">
                             <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
                             <div className="text-amber-700 dark:text-amber-400">
-                                <strong>No hay API Keys configuradas.</strong> El agente usará la key del archivo <code className="font-mono bg-amber-100 dark:bg-amber-900/30 px-1 rounded">.env</code> como fallback.
-                                Agrega una para gestionar todo desde aquí.
+                                <strong>No hay conexiones configuradas.</strong> Agrega credenciales de API para que los agentes puedan realizar tareas.
                             </div>
                         </div>
                     )}
 
                     <div className="divide-y divide-border">
                         {aiConfigs.map((config) => (
-                            <div key={config.id} className={`px-5 py-4 flex items-center gap-3 ${config.activo ? "bg-violet-50/50 dark:bg-violet-900/5" : ""}`}>
+                            <div key={config.id} className="px-5 py-4 flex items-center gap-3 hover:bg-muted/30 transition-colors">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <span className="font-semibold text-sm">{config.nombre}</span>
-                                        {config.activo && (
-                                            <span className="flex items-center gap-1 px-2 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-[10px] font-bold rounded-full uppercase">
-                                                <Zap size={9} /> Activa
-                                            </span>
-                                        )}
-                                        {config.etiqueta && (
-                                            <span className="px-2 py-0.5 bg-muted text-muted-foreground text-[10px] rounded-full">{config.etiqueta}</span>
-                                        )}
                                     </div>
                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${PROVEEDOR_COLORS[config.proveedor] ?? "bg-gray-100 text-gray-600"}`}>
@@ -397,18 +475,14 @@ export default function AjustesPage() {
                                         </span>
                                         <span className="text-xs text-muted-foreground font-mono">{config.modelo}</span>
                                         <span className="text-xs text-muted-foreground font-mono">{config.apiKey}</span>
+                                        {config.baseUrl && (
+                                            <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground font-mono truncate max-w-[150px]" title={config.baseUrl}>
+                                                URL: {config.baseUrl}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1.5 shrink-0">
-                                    {!config.activo && (
-                                        <button
-                                            onClick={() => handleActivateAiConfig(config.id)}
-                                            title="Activar esta configuración"
-                                            className="p-1.5 text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
-                                        >
-                                            <Check size={14} />
-                                        </button>
-                                    )}
                                     <button
                                         onClick={() => openEditAi(config)}
                                         title="Editar"
@@ -428,18 +502,97 @@ export default function AjustesPage() {
                         ))}
                     </div>
                 </div>
+
+                {/* ── Agentes de IA ── */}
+                <div className="bg-card ring-1 ring-border rounded-2xl overflow-hidden">
+                    <div className="px-5 pt-4 pb-3 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                <Sparkles size={12} className="text-violet-500" /> Agentes de IA
+                            </h3>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Define las instrucciones, prompts y asocia la conexión de API que usará cada agente.</p>
+                        </div>
+                        <button
+                            onClick={openCreateAgent}
+                            disabled={aiConfigs.length === 0}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-xs font-bold rounded-xl shadow-sm hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            title={aiConfigs.length === 0 ? "Primero crea una Conexión de API" : "Nuevo Agente"}
+                        >
+                            <Plus size={12} /> Nuevo Agente
+                        </button>
+                    </div>
+
+                    {agents.length === 0 && (
+                        <div className="px-5 pb-5 flex items-start gap-3 p-3 bg-violet-50/50 dark:bg-violet-900/5 border border-violet-200 dark:border-violet-800/30 rounded-xl mx-5 mb-4 text-xs">
+                            <AlertCircle size={14} className="text-violet-600 dark:text-violet-400 shrink-0 mt-0.5" />
+                            <div className="text-violet-700 dark:text-violet-400">
+                                <strong>No hay agentes configurados.</strong> Crea un agente de IA, configúrale un prompt de sistema, y asócialo a una conexión de API activa.
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="divide-y divide-border">
+                        {agents.map((agent) => (
+                            <div key={agent.id} className={`px-5 py-4 flex items-center gap-3 ${agent.activo ? "bg-violet-50/50 dark:bg-violet-900/5" : ""}`}>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-semibold text-sm">{agent.nombre}</span>
+                                        {agent.activo && (
+                                            <span className="flex items-center gap-1 px-2 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-[10px] font-bold rounded-full uppercase">
+                                                <Zap size={9} /> Activo
+                                            </span>
+                                        )}
+                                    </div>
+                                    {agent.descripcion && (
+                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{agent.descripcion}</p>
+                                    )}
+                                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                        <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground font-mono">
+                                            Conexión: {agent.conexion?.nombre || "Ninguna (Eliminada)"} ({agent.conexion?.proveedor?.toUpperCase()} - {agent.conexion?.modelo})
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    {!agent.activo && (
+                                        <button
+                                            onClick={() => handleActivateAgent(agent.id)}
+                                            title="Activar este agente"
+                                            className="p-1.5 text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                                        >
+                                            <Check size={14} />
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => openEditAgent(agent)}
+                                        title="Editar"
+                                        className="p-1.5 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+                                    >
+                                        <Pencil size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => setDeletingAgent(agent)}
+                                        title="Eliminar"
+                                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
 
-            {/* ── AI Config Modal ── */}
-            <Modal isOpen={showAiForm} onClose={() => setShowAiForm(false)} title={editingAi ? "Editar Configuración de IA" : "Nueva Configuración de IA"}>
+            {/* ── AI Connection Modal ── */}
+            <Modal isOpen={showAiForm} onClose={() => setShowAiForm(false)} title={editingAi ? "Editar Conexión de API" : "Nueva Conexión de API"}>
                 <div className="p-1 space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                         <div className="col-span-2">
-                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Nombre de la configuración *</label>
+                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Nombre de la Conexión *</label>
                             <input
                                 value={aiForm.nombre}
                                 onChange={e => setAiForm(f => ({ ...f, nombre: e.target.value }))}
-                                placeholder="Ej: OpenAI Principal, DeepSeek Backup..."
+                                placeholder="Ej: OpenAI Principal, DeepSeek Pro..."
                                 className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
                             />
                         </div>
@@ -498,25 +651,6 @@ export default function AjustesPage() {
                                 />
                             </div>
                         )}
-                        <div>
-                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Etiqueta (opcional)</label>
-                            <input
-                                value={aiForm.etiqueta}
-                                onChange={e => setAiForm(f => ({ ...f, etiqueta: e.target.value }))}
-                                placeholder="Ej: Cotizaciones, Pruebas..."
-                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
-                            />
-                        </div>
-                        <div className="flex items-center gap-3 mt-4">
-                            <button
-                                type="button"
-                                onClick={() => setAiForm(f => ({ ...f, activo: !f.activo }))}
-                                className={`w-12 h-7 rounded-full p-1 transition-colors ${aiForm.activo ? "bg-violet-600" : "bg-muted"}`}
-                            >
-                                <div className={`w-5 h-5 rounded-full bg-white transition-transform ${aiForm.activo ? "translate-x-5" : "translate-x-0"}`} />
-                            </button>
-                            <label className="text-sm font-medium">Activar como principal</label>
-                        </div>
                     </div>
 
                     <div className="flex gap-3 pt-2">
@@ -525,9 +659,83 @@ export default function AjustesPage() {
                             disabled={aiLoading || !aiForm.nombre || !aiForm.proveedor || !aiForm.modelo || (!editingAi && !aiForm.apiKey)}
                             className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all"
                         >
-                            {aiLoading ? "Guardando..." : editingAi ? "Guardar Cambios" : "Crear Configuración"}
+                            {aiLoading ? "Guardando..." : editingAi ? "Guardar Cambios" : "Crear Conexión"}
                         </button>
                         <button onClick={() => setShowAiForm(false)} className="px-5 py-3 rounded-xl ring-1 ring-border font-bold text-muted-foreground hover:bg-muted transition-all">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* ── AI Agent Modal ── */}
+            <Modal isOpen={showAgentForm} onClose={() => setShowAgentForm(false)} title={editingAgent ? "Editar Agente de IA" : "Nuevo Agente de IA"}>
+                <div className="p-1 space-y-4">
+                    <div className="space-y-3">
+                        <div>
+                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Nombre del Agente *</label>
+                            <input
+                                value={agentForm.nombre}
+                                onChange={e => setAgentForm(f => ({ ...f, nombre: e.target.value }))}
+                                placeholder="Ej: Agente de Cotizaciones, Asistente de Email..."
+                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Descripción (opcional)</label>
+                            <input
+                                value={agentForm.descripcion}
+                                onChange={e => setAgentForm(f => ({ ...f, descripcion: e.target.value }))}
+                                placeholder="Ej: Agente entrenado para cotizar productos de imprenta..."
+                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Conexión de API Asociada *</label>
+                            <select
+                                value={agentForm.connectionId}
+                                onChange={e => setAgentForm(f => ({ ...f, connectionId: e.target.value }))}
+                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
+                            >
+                                <option value="" disabled>Selecciona una conexión...</option>
+                                {aiConfigs.map(c => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.nombre} ({c.proveedor.toUpperCase()} - {c.modelo})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Prompt del Sistema (Instrucciones) *</label>
+                            <textarea
+                                value={agentForm.systemPrompt}
+                                onChange={e => setAgentForm(f => ({ ...f, systemPrompt: e.target.value }))}
+                                placeholder="Escribe aquí las instrucciones de comportamiento, reglas de negocio y restricciones del agente..."
+                                rows={6}
+                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-xs resize-none text-foreground font-mono"
+                            />
+                        </div>
+                        <div className="flex items-center gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setAgentForm(f => ({ ...f, activo: !f.activo }))}
+                                className={`w-12 h-7 rounded-full p-1 transition-colors ${agentForm.activo ? "bg-violet-600" : "bg-muted"}`}
+                            >
+                                <div className={`w-5 h-5 rounded-full bg-white transition-transform ${agentForm.activo ? "translate-x-5" : "translate-x-0"}`} />
+                            </button>
+                            <label className="text-sm font-medium">Activar como principal</label>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            onClick={handleSaveAgent}
+                            disabled={agentLoading || !agentForm.nombre || !agentForm.systemPrompt || !agentForm.connectionId}
+                            className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all"
+                        >
+                            {agentLoading ? "Guardando..." : editingAgent ? "Guardar Cambios" : "Crear Agente"}
+                        </button>
+                        <button onClick={() => setShowAgentForm(false)} className="px-5 py-3 rounded-xl ring-1 ring-border font-bold text-muted-foreground hover:bg-muted transition-all">
                             Cancelar
                         </button>
                     </div>
@@ -546,10 +754,19 @@ export default function AjustesPage() {
             {/* Delete AI Config Confirm */}
             <ConfirmDialog
                 isOpen={!!deletingAi}
-                title="Eliminar Configuración de IA"
-                message={`¿Eliminar "${deletingAi?.nombre}"? Si es la configuración activa, el agente dejará de funcionar hasta que actives otra.`}
+                title="Eliminar Conexión de API"
+                message={`¿Eliminar "${deletingAi?.nombre}"? Todos los agentes que usen esta conexión dejarán de funcionar.`}
                 onConfirm={handleDeleteAiConfig}
                 onCancel={() => setDeletingAi(null)}
+            />
+
+            {/* Delete Agent Confirm */}
+            <ConfirmDialog
+                isOpen={!!deletingAgent}
+                title="Eliminar Agente de IA"
+                message={`¿Eliminar al agente "${deletingAgent?.nombre}"? Esta acción no se puede deshacer.`}
+                onConfirm={handleDeleteAgent}
+                onCancel={() => setDeletingAgent(null)}
             />
 
             {/* Toast */}

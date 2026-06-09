@@ -80,13 +80,17 @@ interface ModalProps {
     title?: string;
     children: React.ReactNode;
     wide?: boolean;
+    zIndex?: number;
 }
 
-export function Modal({ isOpen, onClose, title, children, wide }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, wide, zIndex }: ModalProps) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div 
+            className="fixed inset-0 flex items-end sm:items-center justify-center"
+            style={{ zIndex: zIndex ?? 50 }}
+        >
             {/* Backdrop */}
             <div
                 className="fixed inset-0 ios-blur"

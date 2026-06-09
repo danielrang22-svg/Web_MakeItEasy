@@ -46,6 +46,13 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
   const [showExample, setShowExample] = useState(false);
   const [tokensUsed, setTokensUsed] = useState(0);
   const [iteraciones, setIteraciones] = useState(0);
+  const [moneda, setMoneda] = useState("COP");
+
+  function formatPrice(amount: number, currency = "COP") {
+    const symbol = currency === "USD" ? "$" : currency === "EUR" ? "€" : "$";
+    const suffix = currency === "COP" ? " COP" : ` ${currency}`;
+    return `${symbol}${amount.toLocaleString("es-CO")}${suffix}`;
+  }
 
   async function callAI(isCorrectionMode = false) {
     setStep("loading");
@@ -56,10 +63,11 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          brief: isCorrectionMode ? brief : brief,
+          brief: brief,
           correcciones: isCorrectionMode ? correcciones : undefined,
           propuestaAnterior: isCorrectionMode ? currentProposal : undefined,
           leadData: leadData || undefined,
+          moneda: isCorrectionMode ? currentProposal?.moneda : moneda,
         }),
       });
 
@@ -122,6 +130,30 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
       {(step === "brief") && (
         <div className="space-y-4">
           <div>
+            <div className="mb-4">
+              <label className="text-xs font-bold uppercase text-muted-foreground mb-1.5 block">Moneda de Cotización</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: "COP", label: "Pesos (COP)" },
+                  { value: "USD", label: "Dólares (USD)" },
+                  { value: "EUR", label: "Euros (EUR)" },
+                ].map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => setMoneda(m.value)}
+                    className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
+                      moneda === m.value
+                        ? "bg-violet-600/10 border-violet-500 text-violet-500 shadow-sm shadow-violet-500/5"
+                        : "bg-muted/40 border-border text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-bold uppercase text-muted-foreground">Brief del Cliente</label>
               <button
@@ -161,7 +193,7 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
               placeholder="Ej: Cliente: Dulce Agonía — pastelería en Bogotá. Reciben pedidos por WhatsApp y se les pierden. Quieren automatizar respuestas, tener catálogo y pagos en línea. Presupuesto $4M COP, 5 empleados..."
             />
             <p className="text-[11px] text-muted-foreground mt-1 ml-1">
-              {brief.length} caracteres · Cuanto más detalle incluyas, mejor será la propuesta.
+              {brief.length} caracteres · (Mínimo 5 caracteres para activar la generación con IA).
             </p>
           </div>
 
@@ -176,11 +208,11 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
             <button
               type="button"
               onClick={() => callAI(false)}
-              disabled={brief.trim().length < 30}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all shadow-lg shadow-violet-500/20"
+              disabled={brief.trim().length < 5}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-violet-600 to-cyan-600 text-white disabled:text-white/60 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-all shadow-lg shadow-violet-500/20"
             >
               <Sparkles size={16} />
-              Generar Propuesta con IA
+              Generar Propuesta con IA ({moneda})
             </button>
             <button
               type="button"
@@ -206,8 +238,8 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
             <p className="font-bold text-sm">El agente está analizando el brief...</p>
             <p className="text-xs text-muted-foreground mt-1">
               {iteraciones === 0
-                ? "Identificando soluciones, arquitectura y fases del proyecto"
-                : "Aplicando tus correcciones a la propuesta"}
+                ? `Generando propuesta comercial en ${moneda === "COP" ? "Pesos Colombianos" : moneda === "USD" ? "Dólares (USD)" : "Euros (EUR)"}...`
+                : "Aplicando tus correcciones a la propuesta..."}
             </p>
           </div>
           <div className="flex gap-1.5 mt-2">
@@ -246,7 +278,7 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
               </div>
               <div>
                 <span className="font-bold text-muted-foreground uppercase text-[10px]">Desafío</span>
-                <p className="mt-0.5 text-muted-foreground line-clamp-2">{currentProposal.desafioNegocio}</p>
+                <p className="mt-0.5 text-muted-foreground whitespace-pre-wrap">{currentProposal.desafioNegocio}</p>
               </div>
               <div className="flex gap-4 pt-1">
                 <div>
@@ -256,25 +288,37 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
                 <div>
                   <span className="font-bold text-muted-foreground uppercase text-[10px]">Total Estimado</span>
                   <p className="font-bold mt-0.5 text-violet-600">
-                    ${currentProposal.fases?.reduce((s, f) => s + (f.precio || 0), 0).toLocaleString("es-CO")} COP
+                    {formatPrice(currentProposal.fases?.reduce((s, f) => s + (f.precio || 0), 0) || 0, currentProposal.moneda)}
                   </p>
                 </div>
                 <div>
                   <span className="font-bold text-muted-foreground uppercase text-[10px]">Fee Mensual</span>
                   <p className="font-bold mt-0.5 text-cyan-600">
-                    ${currentProposal.feeMensual?.toLocaleString("es-CO")} COP/mes
+                    {formatPrice(currentProposal.feeMensual || 0, currentProposal.moneda)}/mes
                   </p>
                 </div>
               </div>
-              <div className="flex gap-3 flex-wrap">
-                {currentProposal.arquitectura?.slice(0, 4).map((a, i) => (
-                  <span key={i} className="px-2 py-0.5 bg-violet-100 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 rounded-md text-[10px] font-medium">
-                    {a.componente}
-                  </span>
-                ))}
-                {(currentProposal.arquitectura?.length ?? 0) > 4 && (
-                  <span className="text-[10px] text-muted-foreground">+{currentProposal.arquitectura.length - 4} más</span>
-                )}
+              <div>
+                <span className="font-bold text-muted-foreground uppercase text-[10px] block mb-1">Estructura Detallada (Fases y Componentes)</span>
+                <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                  {currentProposal.fases?.map((f, i) => (
+                    <div key={i} className="p-2 bg-muted/60 border border-border rounded-lg">
+                      <div className="flex justify-between font-bold text-[11px] text-foreground">
+                        <span>{f.nombre}</span>
+                        <span className="text-violet-500">{formatPrice(f.precio || 0, currentProposal.moneda)}</span>
+                      </div>
+                      {f.objetivo && <p className="text-[10px] text-muted-foreground mt-0.5"><strong>Obj:</strong> {f.objetivo}</p>}
+                      {f.detalles && <p className="text-[10px] text-muted-foreground mt-0.5"><strong>Entregables:</strong> {f.detalles}</p>}
+                    </div>
+                  ))}
+                  <div className="flex gap-2.5 flex-wrap pt-1">
+                    {currentProposal.arquitectura?.map((a, i) => (
+                      <div key={i} className="px-2 py-1 bg-violet-100 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 rounded-md text-[10px]">
+                        <strong>{a.componente}:</strong> {a.funcion}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

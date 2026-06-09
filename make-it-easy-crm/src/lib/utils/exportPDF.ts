@@ -90,7 +90,7 @@ export function exportCotizacionClientePDF(cot: Cotizacion): void {
         .content-body { padding: 40px; }
         .section { margin-bottom: 36px; }
         .section-title { font-size: 16px; font-weight: 800; color: #111827; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #af88ff; padding-bottom: 6px; margin-bottom: 16px; }
-        p.text-p { font-size: 13.5px; color: #374151; line-height: 1.6; text-align: justify; }
+        p.text-p { font-size: 13.5px; color: #374151; line-height: 1.6; text-align: justify; white-space: pre-wrap; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
         thead th { background: #0b111b; color: white; padding: 10px 14px; font-size: 12px; font-weight: 700; text-align: left; text-transform: uppercase; border-bottom: 2px solid #8ff5ff; }
         tbody td { font-size: 13px; }

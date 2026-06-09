@@ -21,6 +21,7 @@ import {
     ListTodo
 } from "lucide-react";
 import QuotationForm from "../cotizaciones/QuotationForm";
+import AIBriefInput, { AiProposal } from "../cotizaciones/AIBriefInput";
 import { Modal } from "../ui/SharedUI";
 import { SearchableSelect } from "../ui/SearchableSelect";
 
@@ -66,6 +67,8 @@ export default function LeadForm({
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [showCotModal, setShowCotModal] = useState(false);
+    const [showAiBrief, setShowAiBrief] = useState(false);
+    const [aiPrefilledData, setAiPrefilledData] = useState<AiProposal | null>(null);
     const [pendingCot, setPendingCot] = useState<CotizacionCreateData | null>(null);
 
     // Build contact items for dropdown
@@ -173,11 +176,29 @@ export default function LeadForm({
     const inputClass = (field: string) =>
         `w-full pl-12 pr-4 py-4 bg-card border rounded-2xl focus:ring-2 focus:ring-mie-secondary transition-all outline-none text-foreground ${errors[field] ? "border-red-500 ring-1 ring-red-500" : "border-border"}`;
 
+    const handleOpenCotDialog = () => {
+        if (pendingCot) {
+            // Already has a cotizacion drafted, open directly to edit
+            setShowCotModal(true);
+        } else {
+            // New cotizacion, open AI Brief first
+            setAiPrefilledData(null);
+            setShowAiBrief(true);
+        }
+    };
+
+    const handleAiProposalGenerated = (proposal: AiProposal) => {
+        setAiPrefilledData(proposal);
+        setShowAiBrief(false);
+        setShowCotModal(true);
+    };
+
     const handleCotSubmit = (cotData: CotizacionCreateData) => {
         setPendingCot(cotData);
         // Set the estimated value of the lead to the total core project implementation cost
         handleChange("valorEstimado", cotData.totalProyectoCore);
         setShowCotModal(false);
+        setAiPrefilledData(null);
     };
 
     return (
@@ -242,7 +263,7 @@ export default function LeadForm({
                         </div>
                         <button
                             type="button"
-                            onClick={() => setShowCotModal(true)}
+                            onClick={handleOpenCotDialog}
                             className="bg-mie-primary/10 text-mie-primary p-4 rounded-2xl border border-mie-primary/20 hover:bg-mie-primary/20 transition-all flex items-center justify-center shrink-0"
                             title={form.valorEstimado ? "Editar Propuesta" : "Crear Propuesta"}
                         >
@@ -442,10 +463,27 @@ export default function LeadForm({
                 </button>
             </div>
 
-            <Modal isOpen={showCotModal} onClose={() => setShowCotModal(false)} title="Generar Propuesta Comercial para el Lead">
+            <Modal isOpen={showAiBrief} onClose={() => setShowAiBrief(false)} title="✨ Generar Propuesta Comercial con IA" zIndex={60}>
+                <div className="p-1 max-h-[85vh] overflow-y-auto custom-scrollbar">
+                    <AIBriefInput
+                        leadData={{
+                            empresa: form.empresa || undefined,
+                            sector: form.sector || undefined,
+                            numEmpleados: form.numEmpleados || undefined,
+                            procesoAAutomatizar: form.procesoAAutomatizar || undefined,
+                            planInteres: form.planInteres || undefined,
+                        }}
+                        onProposalGenerated={handleAiProposalGenerated}
+                        onSkip={() => { setShowAiBrief(false); setShowCotModal(true); }}
+                    />
+                </div>
+            </Modal>
+
+            <Modal isOpen={showCotModal} onClose={() => setShowCotModal(false)} title="Generar Propuesta Comercial para el Lead" zIndex={60}>
                 <div className="p-1 max-h-[85vh] overflow-y-auto custom-scrollbar">
                     <QuotationForm
                         initial={pendingCot ? { ...pendingCot, id: "temp", version: 1, fechaCreacion: "", fechaActualizacion: "" } as any : null}
+                        aiPrefilled={aiPrefilledData}
                         allCotizaciones={cotizaciones}
                         empresas={empresas.map(e => e.nombre)}
                         contactos={contactos.map(c => ({ nombre: c.nombre, empresa: c.empresaNombre || "" }))}
