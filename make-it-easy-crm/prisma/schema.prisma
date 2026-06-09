@@ -175,7 +175,7 @@ model AutomationFlow {
 model Usuario {
   id                 String   @id @default(uuid())
   email              String   @unique
-  passwordHash       String
+  passwordHash       String?
   nombre             String
   rol                String   @default("ventas") // "admin" o "ventas"
   activo             Boolean  @default(true)
