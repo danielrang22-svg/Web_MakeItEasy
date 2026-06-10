@@ -11,10 +11,12 @@ import { formatCurrency } from "@/lib/constants";
 import { Modal, Toast, ConfirmDialog } from "@/components/ui/SharedUI";
 import { useRouter } from "next/navigation";
 import { useProyectosStore } from "@/lib/state/proyectosStore";
+import { useAutomationStore } from "@/lib/state/automationStore";
+import ImportQuoteModal from "@/components/cotizaciones/ImportQuoteModal";
 import {
     Search, FileText, Plus, Pencil, Trash2, Eye, Download,
     Building2, User, DollarSign, Cpu, CheckCircle, Clock, Filter, X, ArrowRight, Archive, Sparkles,
-    ChevronDown, Send, Users, Link2,
+    ChevronDown, Send, Users, Link2, UploadCloud,
 } from "lucide-react";
 import { CotizacionView } from "@/components/cotizaciones/CotizacionView";
 import AIBriefInput, { AiProposal } from "@/components/cotizaciones/AIBriefInput";
@@ -44,6 +46,7 @@ export default function CotizacionesPage() {
 
     const [showForm, setShowForm] = useState(false);
     const [showAiBrief, setShowAiBrief] = useState(false);
+    const [showImport, setShowImport] = useState(false);
     const [aiPrefilledData, setAiPrefilledData] = useState<AiProposal | null>(null);
     const [linkedLeadId, setLinkedLeadId] = useState<string | null>(null);
     const [editingCot, setEditingCot] = useState<Cotizacion | null>(null);
@@ -171,9 +174,14 @@ export default function CotizacionesPage() {
                     </h2>
                     <p className="text-muted-foreground text-sm mt-1">{filtered.length} propuestas registradas</p>
                 </div>
-                <button onClick={openCreate} className="mie-gradient text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-1 shadow-md">
-                    <Sparkles size={16} /> Nueva Propuesta con IA
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={() => setShowImport(true)} className="bg-card text-foreground px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 shadow-sm ring-1 ring-border hover:bg-surface-bright transition-all">
+                        <UploadCloud size={16} /> Importar Cotización
+                    </button>
+                    <button onClick={openCreate} className="mie-gradient text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                        <Sparkles size={16} /> Nueva con IA
+                    </button>
+                </div>
             </div>
 
             {/* Tabs */}
@@ -395,6 +403,32 @@ export default function CotizacionesPage() {
                     />
                 </div>
             </Modal>
+
+            {/* IMPORT MODAL */}
+            <ImportQuoteModal
+                isOpen={showImport}
+                onClose={() => setShowImport(false)}
+                empresas={empresas.map(e => e.nombre)}
+                contactos={contactos.map(c => ({ nombre: c.nombre, empresa: c.empresaNombre || "" }))}
+                onImportSuccess={(data) => {
+                    setShowImport(false);
+                    setAiPrefilledData(data);
+                    
+                    if (data.empresaNombre) {
+                        const matchedLead = leads.find(l => l.empresa.toLowerCase() === data.empresaNombre.toLowerCase());
+                        if (matchedLead) {
+                            setLinkedLeadId(matchedLead.id);
+                        } else {
+                            setLinkedLeadId(null);
+                        }
+                    } else {
+                        setLinkedLeadId(null);
+                    }
+                    
+                    setEditingCot(null);
+                    setShowForm(true);
+                }}
+            />
 
             {/* CREATE / EDIT FORM MODAL */}
             <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={editingCot ? `Editar Propuesta ${editingCot.codigo} V${editingCot.version}` : "Crear Propuesta Comercial"}>

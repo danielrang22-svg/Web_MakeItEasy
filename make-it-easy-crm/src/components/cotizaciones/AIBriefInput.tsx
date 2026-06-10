@@ -17,6 +17,7 @@ export interface AiProposal {
   feeMensual: number;
   moduloOpcionalFee: number;
   feeMensualIncluye: string;
+  estado?: string;
 }
 
 interface AIBriefInputProps {

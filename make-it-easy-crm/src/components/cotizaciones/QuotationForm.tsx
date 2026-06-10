@@ -144,6 +144,7 @@ export default function QuotationForm({
         setEmpresaNombre(aiPrefilled.empresaNombre || "");
         setContactoNombre(aiPrefilled.contactoNombre || "");
         setMoneda(aiPrefilled.moneda || "COP");
+        if (aiPrefilled.estado) setEstado(aiPrefilled.estado);
         if (aiPrefilled.prerrequisitos?.length) setPrerrequisitos(aiPrefilled.prerrequisitos);
         if (aiPrefilled.arquitectura?.length) setArquitectura(aiPrefilled.arquitectura);
         if (aiPrefilled.fases?.length) setFases(aiPrefilled.fases);

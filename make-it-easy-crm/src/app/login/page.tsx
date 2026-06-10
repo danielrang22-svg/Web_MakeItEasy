@@ -3,15 +3,8 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-function LoginForm() {
-  const router = useRouter();
+function SearchParamsHandler({ setError }: { setError: (e: string) => void }) {
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-
   useEffect(() => {
     const err = searchParams.get("error");
     if (err === "unauthorized") {
@@ -25,7 +18,19 @@ function LoginForm() {
     } else if (err === "no_email") {
       setError("No se pudo obtener tu correo de Google.");
     }
-  }, [searchParams]);
+  }, [searchParams, setError]);
+  return null;
+}
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +88,10 @@ function LoginForm() {
           <p className="text-sm text-[#adaaaa] mb-8">
             Ingresa tus credenciales para acceder al sistema
           </p>
+
+          <Suspense fallback={null}>
+            <SearchParamsHandler setError={setError} />
+          </Suspense>
 
           {/* Google Login */}
           <button
@@ -161,10 +170,3 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
-  );
-}
