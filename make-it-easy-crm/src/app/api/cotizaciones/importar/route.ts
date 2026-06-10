@@ -30,7 +30,9 @@ export async function POST(request: NextRequest) {
 
     // Extracción de texto según el formato
     if (file.name.toLowerCase().endsWith('.pdf')) {
-      const pdfParse = (await import('pdf-parse')).default;
+      const pdfParseModule = await import('pdf-parse');
+      const pdfParse = pdfParseModule.default || pdfParseModule;
+      // @ts-ignore
       const pdfData = await pdfParse(buffer);
       extractedText = pdfData.text;
     } else if (file.name.toLowerCase().endsWith('.docx')) {
