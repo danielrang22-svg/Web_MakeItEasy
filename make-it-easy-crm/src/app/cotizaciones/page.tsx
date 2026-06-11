@@ -24,9 +24,11 @@ import QuotationForm from "@/components/cotizaciones/QuotationForm";
 
 const ESTADO_STYLES: Record<EstadoCotizacion, { bg: string; text: string; dot: string; icon: React.ReactNode; label: string }> = {
     [EstadoCotizacion.BORRADOR]: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-400", dot: "#9ca3af", icon: <Clock size={12} />, label: "Borrador" },
-    [EstadoCotizacion.ENVIADA]:  { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-mie-primary", dot: "#3b82f6", icon: <Send size={12} />, label: "Enviada" },
-    [EstadoCotizacion.APROBADA]: { bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-600", dot: "#22c55e", icon: <CheckCircle size={12} />, label: "Aprobada" },
-    [EstadoCotizacion.RECHAZADA]:{ bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-500", dot: "#ef4444", icon: <XCircleIcon size={12} />, label: "Rechazada" },
+    [EstadoCotizacion.REVISION_TECNICA]: { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-600", dot: "#f59e0b", icon: <Eye size={12} />, label: "Revisión Técnica" },
+    [EstadoCotizacion.APROBADA_TECNICAMENTE]: { bg: "bg-teal-100 dark:bg-teal-900/30", text: "text-teal-600", dot: "#14b8a6", icon: <CheckCircle size={12} />, label: "Aprobada Tec." },
+    [EstadoCotizacion.ENVIADA_CLIENTE]:  { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-mie-primary", dot: "#3b82f6", icon: <Send size={12} />, label: "Enviada" },
+    [EstadoCotizacion.APROBADA_CLIENTE]: { bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-600", dot: "#22c55e", icon: <CheckCircle size={12} />, label: "Aprobada Cliente" },
+    [EstadoCotizacion.RECHAZADA_CLIENTE]:{ bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-500", dot: "#ef4444", icon: <XCircleIcon size={12} />, label: "Rechazada Cliente" },
 };
 
 function XCircleIcon({ size }: { size: number }) {
@@ -87,9 +89,9 @@ export default function CotizacionesPage() {
     let filtered = getFilteredCotizaciones(store);
     
     if (activeTab === "activas") {
-        filtered = filtered.filter(c => c.estado !== EstadoCotizacion.APROBADA);
+        filtered = filtered.filter(c => c.estado !== EstadoCotizacion.APROBADA_CLIENTE && c.estado !== EstadoCotizacion.RECHAZADA_CLIENTE);
     } else {
-        filtered = filtered.filter(c => c.estado === EstadoCotizacion.APROBADA);
+        filtered = filtered.filter(c => c.estado === EstadoCotizacion.APROBADA_CLIENTE || c.estado === EstadoCotizacion.RECHAZADA_CLIENTE);
     }
 
     if (filterEmpresa) filtered = filtered.filter((c) => c.empresaNombre === filterEmpresa);
@@ -151,8 +153,8 @@ export default function CotizacionesPage() {
             const proyecto = await generarDesdeCotizacion(cot);
             if (!proyecto) throw new Error("No se pudo generar");
             
-            // Auto update cotizacion status to APROBADA
-            await updateCotizacion(cot.id, { estado: EstadoCotizacion.APROBADA });
+            // Auto update cotizacion status to APROBADA_CLIENTE if not already
+            await updateCotizacion(cot.id, { estado: EstadoCotizacion.APROBADA_CLIENTE });
             
             setToast({ message: "Proyecto generado exitosamente", type: "success" });
             setTimeout(() => {
@@ -314,13 +316,13 @@ export default function CotizacionesPage() {
 
                             {/* Actions */}
                             <div className="flex gap-2 mt-3 flex-wrap items-center border-t border-border/50 pt-3">
-                                {cot.estado !== EstadoCotizacion.APROBADA ? (
+                                {cot.estado === EstadoCotizacion.APROBADA_CLIENTE && !proyectos.find(p => p.cotizacionId === cot.id) ? (
                                     <button 
                                         onClick={() => handleConvertirProyecto(cot)} 
                                         className="px-3 py-1.5 text-xs text-white bg-mie-secondary hover:bg-mie-secondary/90 rounded-lg flex items-center gap-1 font-bold shadow-sm shadow-mie-secondary/20 transition-all mr-2"
-                                        title="Aprobar y generar proyecto con flujos de automatización"
+                                        title="Generar proyecto con flujos de automatización"
                                     >
-                                        <Cpu size={14} /> Aprobar & Iniciar Proyecto <ArrowRight size={14} />
+                                        <Cpu size={14} /> 🚀 Iniciar Proyecto <ArrowRight size={14} />
                                     </button>
                                 ) : (() => {
                                     const existingProject = proyectos.find(p => p.cotizacionId === cot.id);
@@ -331,7 +333,7 @@ export default function CotizacionesPage() {
                                                 className="px-3 py-1.5 text-xs text-white bg-green-600 hover:bg-green-700 rounded-lg flex items-center gap-1 font-bold shadow-sm transition-all mr-2"
                                                 title="Ver proyecto existente"
                                             >
-                                                <CheckCircle size={14} /> Monitorear Integraciones <ArrowRight size={14} />
+                                                <CheckCircle size={14} /> Monitorear Proyecto <ArrowRight size={14} />
                                             </button>
                                         );
                                     }

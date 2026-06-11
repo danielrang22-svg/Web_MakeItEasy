@@ -37,6 +37,14 @@ export async function POST(request: NextRequest) {
         herramientasUsadas:   body.herramientasUsadas ?? '',
       },
     });
+
+    if (newProyecto.leadId) {
+      await prisma.lead.update({
+        where: { id: newProyecto.leadId },
+        data: { etapa: "EN_DESARROLLO" },
+      });
+    }
+
     return NextResponse.json(newProyecto, { status: 201 });
   } catch (error) {
     console.error('POST /api/proyectos error:', error);

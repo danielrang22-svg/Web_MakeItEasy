@@ -50,12 +50,24 @@ export async function PUT(request: NextRequest, props: { params: Promise<{ id: s
       data: cotizacionData
     });
 
-    // If proposal is approved, move lead to GANADO (won)
-    if (body.estado === "APROBADA" && updated.leadId) {
-        await prisma.lead.update({
-            where: { id: updated.leadId },
-            data: { etapa: "GANADO" }
-        });
+    // Automatic Pipeline Triggers
+    if (updated.leadId && body.estado) {
+        if (body.estado === "ENVIADA_CLIENTE") {
+            await prisma.lead.update({
+                where: { id: updated.leadId },
+                data: { etapa: "PROPUESTA" }
+            });
+        } else if (body.estado === "APROBADA_CLIENTE") {
+            await prisma.lead.update({
+                where: { id: updated.leadId },
+                data: { etapa: "ACEPTADO" }
+            });
+        } else if (body.estado === "RECHAZADA_CLIENTE") {
+            await prisma.lead.update({
+                where: { id: updated.leadId },
+                data: { etapa: "PERDIDO" }
+            });
+        }
     }
 
     auditLog("UPDATE_COTIZACION", id, auth.email);
