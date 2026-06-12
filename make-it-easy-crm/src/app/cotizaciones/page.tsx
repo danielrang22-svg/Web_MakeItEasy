@@ -63,6 +63,12 @@ export default function CotizacionesPage() {
     const [quickStateMenu, setQuickStateMenu] = useState<string | null>(null); // cotizacion id with open menu
     const quickStateRef = useRef<HTMLDivElement>(null);
 
+    // Initializing Project Modal
+    const [initProjectCot, setInitProjectCot] = useState<Cotizacion | null>(null);
+    const [createGithubRepo, setCreateGithubRepo] = useState(true);
+    const [githubRepoVisibility, setGithubRepoVisibility] = useState<"private" | "public">("private");
+    const [isInitializing, setIsInitializing] = useState(false);
+
     useEffect(() => { 
         loadCotizaciones(); 
         loadLeads(); 
@@ -148,21 +154,71 @@ export default function CotizacionesPage() {
         }
     }
 
-    async function handleConvertirProyecto(cot: Cotizacion) {
+    function openInitProject(cot: Cotizacion) {
+        setInitProjectCot(cot);
+        setCreateGithubRepo(true);
+        setGithubRepoVisibility("private");
+    }
+
+    async function handleInitProjectConfirmed(e: React.FormEvent) {
+        e.preventDefault();
+        if (!initProjectCot) return;
+        setIsInitializing(true);
+
         try {
-            const proyecto = await generarDesdeCotizacion(cot);
-            if (!proyecto) throw new Error("No se pudo generar");
+            const proyecto = await generarDesdeCotizacion(initProjectCot);
+            if (!proyecto) throw new Error("No se pudo generar el proyecto base");
             
-            // Auto update cotizacion status to APROBADA_CLIENTE if not already
-            await updateCotizacion(cot.id, { estado: EstadoCotizacion.APROBADA_CLIENTE });
+            await updateCotizacion(initProjectCot.id, { estado: EstadoCotizacion.APROBADA_CLIENTE });
             
-            setToast({ message: "Proyecto generado exitosamente", type: "success" });
+            let successMessage = "Proyecto generado exitosamente";
+
+            if (createGithubRepo) {
+                setToast({ message: "Creando repositorio en GitHub y configurando webhooks...", type: "info" });
+                
+                // Safe name parsing: mie-company-name
+                const safeName = `mie-${initProjectCot.empresaNombre.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                
+                const repoRes = await fetch("/api/github/repos", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        nombre: safeName,
+                        descripcion: `CRM Generated: ${initProjectCot.tituloPropuesta}`,
+                        privado: githubRepoVisibility === "private"
+                    })
+                });
+
+                if (repoRes.ok) {
+                    const repoData = await repoRes.json();
+                    if (repoData.full_name) {
+                        await fetch(`/api/proyectos/${proyecto.id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ githubRepo: repoData.full_name })
+                        });
+                        successMessage = "Proyecto y repositorio de GitHub creados exitosamente";
+                        if (!repoData.webhook_configured) {
+                            successMessage = "Repo creado, pero falló la configuración del Webhook.";
+                        }
+                    }
+                } else {
+                    const err = await repoRes.json();
+                    console.error("Github Error", err);
+                    setToast({ message: "Proyecto creado, pero falló la creación del repo en GitHub", type: "error" });
+                }
+            }
+
+            setToast({ message: successMessage, type: "success" });
             setTimeout(() => {
                 router.push(`/proyectos/${proyecto.id}`);
             }, 1000);
         } catch (error) {
             console.error(error);
             setToast({ message: "Error al generar proyecto", type: "error" });
+        } finally {
+            setIsInitializing(false);
+            setInitProjectCot(null);
         }
     }
 
@@ -318,7 +374,7 @@ export default function CotizacionesPage() {
                             <div className="flex gap-2 mt-3 flex-wrap items-center border-t border-border/50 pt-3">
                                 {cot.estado === EstadoCotizacion.APROBADA_CLIENTE && !proyectos.find(p => p.cotizacionId === cot.id) ? (
                                     <button 
-                                        onClick={() => handleConvertirProyecto(cot)} 
+                                        onClick={() => openInitProject(cot)} 
                                         className="px-3 py-1.5 text-xs text-white bg-mie-secondary hover:bg-mie-secondary/90 rounded-lg flex items-center gap-1 font-bold shadow-sm shadow-mie-secondary/20 transition-all mr-2"
                                         title="Generar proyecto con flujos de automatización"
                                     >
@@ -491,6 +547,80 @@ export default function CotizacionesPage() {
 
             <ConfirmDialog isOpen={!!deletingCot} title="Eliminar Propuesta" message={`¿Estás seguro de eliminar permanentemente la propuesta "${deletingCot?.codigo}"?`} onConfirm={handleDelete} onCancel={() => setDeletingCot(null)} />
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+            {/* Init Project Modal */}
+            <Modal isOpen={!!initProjectCot} onClose={() => !isInitializing && setInitProjectCot(null)} title="🚀 Inicializar Proyecto">
+                {initProjectCot && (
+                    <form onSubmit={handleInitProjectConfirmed} className="space-y-4">
+                        <div className="bg-muted/50 p-4 rounded-xl border border-border">
+                            <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">Cliente / Proyecto</p>
+                            <p className="text-sm font-bold text-foreground">{initProjectCot.empresaNombre}</p>
+                        </div>
+                        
+                        <div className="bg-muted p-4 rounded-xl border border-border mt-4">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    className="w-5 h-5 rounded border-border text-mie-primary focus:ring-mie-primary"
+                                    checked={createGithubRepo}
+                                    onChange={(e) => setCreateGithubRepo(e.target.checked)}
+                                    disabled={isInitializing}
+                                />
+                                <div>
+                                    <p className="font-bold text-sm flex items-center gap-2"><Github size={16}/> Crear repositorio en GitHub</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">Automáticamente crea el repositorio y le asocia los webhooks de Make It Easy.</p>
+                                </div>
+                            </label>
+
+                            {createGithubRepo && (
+                                <div className="mt-4 pt-4 border-t border-border space-y-3">
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Nombre propuesto</label>
+                                        <input 
+                                            type="text" 
+                                            readOnly 
+                                            className="w-full px-3 py-2 bg-background rounded-lg border border-border outline-none text-xs text-muted-foreground opacity-70" 
+                                            value={`mie-${initProjectCot.empresaNombre.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Visibilidad</label>
+                                        <select 
+                                            className="w-full px-3 py-2 bg-background rounded-lg border border-border outline-none text-sm font-medium"
+                                            value={githubRepoVisibility}
+                                            onChange={(e) => setGithubRepoVisibility(e.target.value as "private" | "public")}
+                                            disabled={isInitializing}
+                                        >
+                                            <option value="private">🔒 Privado (Solo tú e invitados)</option>
+                                            <option value="public">🌐 Público (Cualquiera en internet)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <button 
+                                type="button" 
+                                onClick={() => setInitProjectCot(null)}
+                                className="flex-1 bg-muted hover:bg-muted/80 text-foreground font-bold py-3 rounded-xl transition-colors"
+                                disabled={isInitializing}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="submit" 
+                                className="flex-1 bg-mie-primary hover:bg-mie-primary/90 text-white font-bold py-3 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-2"
+                                disabled={isInitializing}
+                            >
+                                {isInitializing ? (
+                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> Creando...</>
+                                ) : "Confirmar e Iniciar"}
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
         </div>
     );
 }

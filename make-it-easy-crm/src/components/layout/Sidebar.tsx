@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import {
     Home, LayoutDashboard, BarChart3, Users, Building2,
     Briefcase, FileText, Package, FolderKanban, Factory,
-    Settings, HelpCircle, Sparkles, Plus
+    Settings, HelpCircle, Sparkles, Plus, ShoppingCart
 } from "lucide-react";
 
 const menuItems = [
@@ -20,6 +20,7 @@ const menuItems = [
     { href: "/proyectos",    icon: FolderKanban,    label: "Proyectos" },
     { href: "/proveedores",  icon: Factory,         label: "Proveedores" },
     { href: "/vendedores",   icon: Users,           label: "Comerciales" },
+    { href: "/compras",      icon: ShoppingCart,    label: "Compras" },
     { href: "/reportes",     icon: BarChart3,       label: "Reportes" },
 ];
 

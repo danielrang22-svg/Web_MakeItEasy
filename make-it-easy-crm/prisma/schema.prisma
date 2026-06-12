@@ -141,10 +141,16 @@ model Proyecto {
   notas                String
   
   herramientasUsadas   String?  // Comma separated list of tools (n8n, Make, Stripe, etc.)
+  githubRepo           String?  // e.g. "owner/repo"
+  
   fechaCreacion        DateTime @default(now())
   fechaActualizacion   DateTime @updatedAt
 
   ordenes              AutomationFlow[]
+  tareas               Tarea[]
+  milestones           Milestone[]
+  bitacora             BitacoraProyecto[]
+  gastos               Gasto[]
   lead                 Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
   cotizacion           Cotizacion?        @relation(fields: [cotizacionId], references: [id], onDelete: SetNull)
 
@@ -152,6 +158,84 @@ model Proyecto {
   @@index([cotizacionId])
   @@map("proyectos")
 }
+
+model Tarea {
+  id            String    @id @default(uuid())
+  proyectoId    String
+  parentId      String?
+  milestoneId   String?
+  titulo        String
+  descripcion   String?
+  tipo          String    @default("development") // "product" | "development" | "bug"
+  estado        String    @default("PENDIENTE")   // "BACKLOG" | "PENDIENTE" | "EN_PROGRESO" | "REVISION" | "QA" | "COMPLETADO"
+  prioridad     Int       @default(0)             // 0=none 1=low 2=medium 3=high 4=urgent
+  asignadoEmail String?
+  estimado      Int?      // Story points
+  githubBranch  String?   // e.g. "feat/login"
+  githubPrNumber Int?     // associated PR number
+  fechaLimite   DateTime?
+  etiquetas     String?   // JSON array of strings
+  completadaEn  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  proyecto      Proyecto        @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  parent        Tarea?          @relation("TareaSubtareas", fields: [parentId], references: [id])
+  subtareas     Tarea[]         @relation("TareaSubtareas")
+  milestone     Milestone?      @relation(fields: [milestoneId], references: [id])
+  comentarios   ComentarioTarea[]
+
+  @@index([proyectoId])
+  @@index([parentId])
+  @@map("tareas")
+}
+
+model Milestone {
+  id            String    @id @default(uuid())
+  proyectoId    String
+  nombre        String
+  descripcion   String?
+  fechaObjetivo DateTime?
+  completado    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  proyecto      Proyecto  @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  tareas        Tarea[]
+
+  @@index([proyectoId])
+  @@map("milestones")
+}
+
+model ComentarioTarea {
+  id          String   @id @default(uuid())
+  tareaId     String
+  autorNombre String
+  autorEmail  String
+  cuerpo      String
+  githubCommentId String?
+  createdAt   DateTime @default(now())
+
+  tarea       Tarea    @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+
+  @@index([tareaId])
+  @@map("comentarios_tareas")
+}
+
+model BitacoraProyecto {
+  id            String   @id @default(uuid())
+  proyectoId    String
+  autorNombre   String
+  autorEmail    String
+  entrada       String
+  tipo          String   @default("NOTA") // "NOTA", "ACTUALIZACION", "DECISION"
+  createdAt     DateTime @default(now())
+
+  proyecto      Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+
+  @@index([proyectoId])
+  @@map("bitacora_proyectos")
+}
+
 
 model AutomationFlow {
   id                 String   @id @default(uuid())
@@ -195,6 +279,8 @@ model Proveedor {
   notas              String
   fechaCreacion      DateTime @default(now())
   fechaActualizacion DateTime @updatedAt
+
+  gastos             Gasto[]
 
   @@map("proveedores")
 }
@@ -242,4 +328,29 @@ model Agent {
   conexion     AiConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   
   @@map("agents")
+}
+
+model Gasto {
+  id                 String   @id @default(uuid())
+  concepto           String   // Ej: "Suscripción n8n", "Pago Freelancer"
+  monto              Float
+  moneda             String   @default("COP")
+  fecha              DateTime @default(now())
+  categoria          String   @default("GENERAL") // Ej: "SUSCRIPCION", "TERCEROS", "SOFTWARE"
+  recurrente         Boolean  @default(false)     // Para saber si es un pago mensual/anual
+  estado             String   @default("PAGADO")  // "PENDIENTE" | "PAGADO"
+  notas              String?
+
+  proyectoId         String?  
+  proveedorId        String?  
+
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  proyecto           Proyecto?  @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  proveedor          Proveedor? @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
+
+  @@index([proyectoId])
+  @@index([proveedorId])
+  @@map("gastos")
 }

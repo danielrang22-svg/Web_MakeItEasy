@@ -3,14 +3,28 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { useProyectosStore } from "@/lib/state/proyectosStore";
+import { useTareasStore, Tarea } from "@/lib/state/tareasStore";
 import { EstadoProyecto, Proyecto, AutomationFlow } from "@/lib/types";
 import { formatCurrency } from "@/lib/constants";
 import { Modal, Toast } from "@/components/ui/SharedUI";
 import {
     ArrowLeft, Clock, CalendarDays, Eye, CheckCircle,
-    Archive, DollarSign, Ban, Activity, Cpu, Layers, Play, Pause, AlertCircle, Plus, Trash2, Edit2, Wrench
+    Archive, DollarSign, Ban, Activity, Cpu, Layers, Play, Pause, AlertCircle, Plus, Trash2, Edit2, Wrench,
+    LayoutList, Github, Sparkles, BookOpen, List, Kanban, TrendingUp
 } from "lucide-react";
 import Link from "next/link";
+
+// Components
+import TaskBoard from "@/components/proyectos/TaskBoard";
+import TaskPanel from "@/components/proyectos/TaskPanel";
+import CreateTaskModal from "@/components/proyectos/CreateTaskModal";
+import AiTaskGenerator from "@/components/proyectos/AiTaskGenerator";
+import GitHubPanel from "@/components/proyectos/GitHubPanel";
+import MilestonesView from "@/components/proyectos/MilestonesView";
+import TaskListView from "@/components/proyectos/TaskListView";
+import BitacoraPanel from "@/components/proyectos/BitacoraPanel";
+import GastosPanel from "@/components/proyectos/GastosPanel";
+import { useGastosStore } from "@/lib/state/gastosStore";
 
 const ESTADO_PROYECTO_STYLES: Record<EstadoProyecto, { bg: string; text: string; label: string }> = {
     [EstadoProyecto.DIAGNOSTICO]: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-600 dark:text-blue-400", label: "DIAGNÓSTICO" },
@@ -27,12 +41,26 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
     const store = useProyectosStore();
     const { proyectos, ordenes, loadProyectos, loadOrdenes, loadCotizaciones, updateProyecto, getProyectoFinancials, getProjectProgress, cotizaciones } = store;
     
+    const { loadTareas, loadMilestones, tareas } = useTareasStore();
+
     const [proyecto, setProyecto] = useState<Proyecto | null>(null);
     const [flows, setFlows] = useState<AutomationFlow[]>([]);
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Modals & form state
+    // View tabs
+    const [activeTab, setActiveTab] = useState<"tasks" | "flows" | "github" | "bitacora" | "costos">("tasks");
+    const [taskViewMode, setTaskViewMode] = useState<"board" | "list">("board");
+
+    // Gastos store
+    const { fetchGastos, gastos } = useGastosStore();
+
+    // Tasks Modals
+    const [showCreateTask, setShowCreateTask] = useState(false);
+    const [showAiTask, setShowAiTask] = useState(false);
+    const [selectedTask, setSelectedTask] = useState<Tarea | null>(null);
+
+    // Flow Modals
     const [showFlowModal, setShowFlowModal] = useState(false);
     const [isEditingFlow, setIsEditingFlow] = useState(false);
     const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
@@ -50,7 +78,13 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
         loadProyectos();
         loadOrdenes();
         loadCotizaciones();
-    }, [loadProyectos, loadOrdenes, loadCotizaciones]);
+        loadTareas(id);
+        loadMilestones(id);
+        fetchGastos(id);
+    }, [id, loadProyectos, loadOrdenes, loadCotizaciones, loadTareas, loadMilestones, fetchGastos]);
+
+    const projectGastos = gastos.filter(g => g.proyectoId === id);
+    const totalCostos = projectGastos.reduce((sum, g) => sum + g.monto, 0);
 
     useEffect(() => {
         if (proyectos.length > 0) {
@@ -69,20 +103,12 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
     }
 
     const estilo = ESTADO_PROYECTO_STYLES[proyecto.estado];
-    const financials = getProyectoFinancials(proyecto.id);
-    const progressPercent = getProjectProgress(proyecto.id);
-
-    // Find associated quotation
     const cotizacion = cotizaciones.find(c => c.id === proyecto.cotizacionId);
-    let checklistItems: string[] = [];
-    if (cotizacion?.checklistInicio) {
-        try {
-            checklistItems = JSON.parse(cotizacion.checklistInicio);
-        } catch (e) {
-            console.error("Error parsing checklist", e);
-        }
-    }
-
+    const financials = getProyectoFinancials(proyecto.id);
+    
+    // Overall progress now considering tasks as well as basic stages
+    const tasksProgress = tareas.length > 0 ? Math.round((tareas.filter(t => t.estado === "COMPLETADO").length / tareas.length) * 100) : getProjectProgress(proyecto.id);
+    
     const handleStatusChange = async (newStatus: EstadoProyecto) => {
         setIsSaving(true);
         try {
@@ -95,6 +121,15 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
         }
     };
 
+    const handleGithubChange = async (repo: string) => {
+        try {
+            await updateProyecto(proyecto.id, { githubRepo: repo || null });
+            setToast({ message: "Repositorio GitHub actualizado", type: "success" });
+        } catch (e) {
+            setToast({ message: "Error al guardar repositorio", type: "error" });
+        }
+    };
+
     const handleToolsChange = async (tools: string) => {
         try {
             await updateProyecto(proyecto.id, { herramientasUsadas: tools });
@@ -104,43 +139,17 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
         }
     };
 
-    const handleNotesChange = async (notes: string) => {
-        try {
-            await updateProyecto(proyecto.id, { notas: notes });
-            setToast({ message: "Notas guardadas", type: "success" });
-        } catch (e) {
-            setToast({ message: "Error al guardar notas", type: "error" });
-        }
-    };
-
-    // Flow handlers
     const openCreateFlow = () => {
         setIsEditingFlow(false);
         setSelectedFlowId(null);
-        setFlowForm({
-            nombre: "",
-            tipo: "WhatsApp AI Agent",
-            estado: "PAUSADO",
-            ejecuciones24h: 0,
-            tasaExito: 100.0,
-            tiempoPromedio: 0.0,
-            notes: ""
-        } as any);
+        setFlowForm({ nombre: "", tipo: "WhatsApp AI Agent", estado: "PAUSADO", ejecuciones24h: 0, tasaExito: 100.0, tiempoPromedio: 0.0, notas: "" });
         setShowFlowModal(true);
     };
 
     const openEditFlow = (flow: AutomationFlow) => {
         setIsEditingFlow(true);
         setSelectedFlowId(flow.id);
-        setFlowForm({
-            nombre: flow.nombre,
-            tipo: flow.tipo,
-            estado: flow.estado,
-            ejecuciones24h: flow.ejecuciones24h,
-            tasaExito: flow.tasaExito,
-            tiempoPromedio: flow.tiempoPromedio,
-            notas: flow.notas
-        });
+        setFlowForm({ nombre: flow.nombre, tipo: flow.tipo, estado: flow.estado, ejecuciones24h: flow.ejecuciones24h, tasaExito: flow.tasaExito, tiempoPromedio: flow.tiempoPromedio, notas: flow.notas });
         setShowFlowModal(true);
     };
 
@@ -155,8 +164,6 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
             if (res.ok) {
                 setToast({ message: `Flujo ${flow.nombre} ${nextEstado === "ACTIVO" ? "Activado ⚡" : "Pausado ⏸️"}`, type: "success" });
                 loadOrdenes();
-            } else {
-                setToast({ message: "Error al alternar estado del flujo", type: "error" });
             }
         } catch {
             setToast({ message: "Error de conexión", type: "error" });
@@ -173,11 +180,9 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                     body: JSON.stringify(flowForm)
                 });
                 if (res.ok) {
-                    setToast({ message: "Flujo de automatización actualizado", type: "success" });
+                    setToast({ message: "Flujo actualizado", type: "success" });
                     setShowFlowModal(false);
                     loadOrdenes();
-                } else {
-                    setToast({ message: "Error al actualizar flujo", type: "error" });
                 }
             } else {
                 const res = await fetch("/api/flows", {
@@ -186,11 +191,9 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                     body: JSON.stringify({ ...flowForm, proyectoId: proyecto.id })
                 });
                 if (res.ok) {
-                    setToast({ message: "Flujo de automatización creado", type: "success" });
+                    setToast({ message: "Flujo creado", type: "success" });
                     setShowFlowModal(false);
                     loadOrdenes();
-                } else {
-                    setToast({ message: "Error al crear flujo", type: "error" });
                 }
             }
         } catch {
@@ -199,16 +202,12 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
     };
 
     const handleDeleteFlow = async (flowId: string) => {
-        if (!confirm("¿Estás seguro de eliminar este flujo de automatización?")) return;
+        if (!confirm("¿Estás seguro de eliminar este flujo?")) return;
         try {
-            const res = await fetch(`/api/flows/${flowId}`, {
-                method: "DELETE"
-            });
+            const res = await fetch(`/api/flows/${flowId}`, { method: "DELETE" });
             if (res.ok) {
                 setToast({ message: "Flujo eliminado", type: "info" });
                 loadOrdenes();
-            } else {
-                setToast({ message: "Error al eliminar flujo", type: "error" });
             }
         } catch {
             setToast({ message: "Error de red", type: "error" });
@@ -253,21 +252,21 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                 {/* Progress Card */}
                 <div className="p-4 bg-card ring-1 ring-border rounded-2xl flex flex-col justify-between shadow-sm">
                     <div>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Fases de Implementación</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Progreso General</p>
                         <div className="flex items-end gap-2">
-                            <p className="text-2xl font-black text-mie-blue">{progressPercent}%</p>
-                            <p className="text-xs text-muted-foreground mb-1">({proyecto.estado})</p>
+                            <p className="text-2xl font-black text-mie-blue">{tasksProgress}%</p>
+                            <p className="text-xs text-muted-foreground mb-1">({tareas.filter(t=>t.estado==="COMPLETADO").length}/{tareas.length} Tareas)</p>
                         </div>
                     </div>
                     <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mt-3">
-                        <div className="h-full bg-mie-blue rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
+                        <div className="h-full bg-mie-blue rounded-full transition-all duration-500" style={{ width: `${tasksProgress}%` }}></div>
                     </div>
                 </div>
 
                 {/* Integration Flows Summary */}
                 <div className="p-4 bg-card ring-1 ring-border rounded-2xl flex flex-col justify-between shadow-sm">
                     <div>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Flujos de Integración</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Flujos (Automations)</p>
                         <div className="flex gap-3 mt-1">
                             <div className="text-center flex-1 py-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 rounded-lg">
                                 <span className="text-sm font-bold block">{flows.filter(f => f.estado === "ACTIVO").length}</span>
@@ -277,21 +276,24 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                                 <span className="text-sm font-bold block">{flows.filter(f => f.estado === "PAUSADO").length}</span>
                                 <span className="text-[9px] uppercase font-bold opacity-80">Pausa</span>
                             </div>
-                            <div className="text-center flex-1 py-1 bg-red-50 dark:bg-red-950/20 text-red-600 rounded-lg">
-                                <span className="text-sm font-bold block">{flows.filter(f => f.estado === "ERROR").length}</span>
-                                <span className="text-[9px] uppercase font-bold opacity-80">Error</span>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Dates Card */}
+                {/* GitHub Card */}
                 <div className="p-4 bg-card ring-1 ring-border rounded-2xl flex flex-col justify-between shadow-sm text-sm">
                     <div>
                         <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
-                            <CalendarDays size={12} /> FECHA INICIO
+                            <Github size={12} /> GitHub Repo (owner/repo)
                         </p>
-                        <p className="font-bold text-foreground">{proyecto.fechaInicio.split("T")[0]}</p>
+                        <input 
+                            type="text" 
+                            className="bg-transparent border-none text-xs font-semibold text-foreground w-full focus:ring-0 outline-none p-0"
+                            value={proyecto.githubRepo || ""}
+                            onChange={(e) => setProyecto({...proyecto, githubRepo: e.target.value})}
+                            onBlur={(e) => handleGithubChange(e.target.value)}
+                            placeholder="danielrang22-svg/Web_MakeItEasy"
+                        />
                     </div>
                     <div className="mt-2 border-t border-border/50 pt-2">
                         <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Herramientas</p>
@@ -299,280 +301,299 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                             type="text" 
                             className="bg-transparent border-none text-xs font-semibold text-mie-purple w-full focus:ring-0 outline-none p-0"
                             value={proyecto.herramientasUsadas || ""}
-                            onChange={(e) => handleToolsChange(e.target.value)}
+                            onChange={(e) => setProyecto({...proyecto, herramientasUsadas: e.target.value})}
+                            onBlur={(e) => handleToolsChange(e.target.value)}
                             placeholder="n8n, Make, OpenAI..."
                         />
                     </div>
                 </div>
 
-                {/* Commercial Summary Card */}
+                {/* Commercial Summary Card (Now ROI metrics) */}
                 <div className="p-4 bg-card ring-1 ring-border rounded-2xl flex flex-col justify-center shadow-sm">
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Inversión Core / Mensual</p>
-                    <p className="text-lg font-black text-foreground">{formatCurrency(financials.ingreso, cotizacion?.moneda || "COP")}</p>
-                    <p className="text-xs text-emerald-600 font-bold mt-1">+{formatCurrency(cotizacion?.feeMensual || 0, cotizacion?.moneda || "COP")}/mes support</p>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Ingresos vs Costos</p>
+                    <div className="flex justify-between items-end mb-1">
+                        <span className="text-xs font-bold text-muted-foreground">Ingreso:</span>
+                        <span className="text-sm font-black text-foreground">{formatCurrency(financials.ingreso, cotizacion?.moneda || "COP")}</span>
+                    </div>
+                    <div className="flex justify-between items-end mb-2">
+                        <span className="text-xs font-bold text-muted-foreground">Costos:</span>
+                        <span className="text-sm font-black text-rose-500">-{formatCurrency(totalCostos)}</span>
+                    </div>
+                    <div className="flex justify-between items-end border-t border-border pt-1">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Rentabilidad Bruta</span>
+                        <span className="text-lg font-black text-emerald-600 flex items-center gap-1">
+                            <TrendingUp size={14} /> {formatCurrency(financials.ingreso - totalCostos, cotizacion?.moneda || "COP")}
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            {/* Flows & Checklist Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Dashboard Section */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-6">
-                            <div>
-                                <h2 className="text-lg font-bold flex items-center gap-2">
-                                    <Activity size={20} className="text-mie-blue" />
-                                    Orquestador de Integraciones
-                                </h2>
-                                <p className="text-xs text-muted-foreground mt-0.5">Monitoreo de agentes y sincronizadores n8n/Make en producción</p>
-                            </div>
-                            <button 
-                                onClick={openCreateFlow}
-                                className="bg-mie-blue/10 hover:bg-mie-blue/20 text-mie-blue px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 border border-mie-blue/10 transition-colors"
-                            >
-                                <Plus size={14} /> Nuevo Flujo
-                            </button>
-                        </div>
+            {/* TAB SELECTOR */}
+            <div className="flex gap-4 border-b border-border mb-6">
+                <button 
+                    onClick={() => setActiveTab("tasks")}
+                    className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "tasks" ? "border-mie-primary text-mie-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                >
+                    <LayoutList size={16}/> Tablero de Tareas
+                </button>
+                <button 
+                    onClick={() => setActiveTab("flows")}
+                    className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "flows" ? "border-mie-primary text-mie-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                >
+                    <Activity size={16}/> Integraciones n8n
+                </button>
+                <button 
+                    onClick={() => setActiveTab("github")}
+                    className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "github" ? "border-mie-primary text-mie-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                >
+                    <Github size={16}/> GitHub Webhooks
+                </button>
+                <button 
+                    onClick={() => setActiveTab("bitacora")}
+                    className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "bitacora" ? "border-mie-primary text-mie-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                >
+                    <BookOpen size={16}/> Bitácora
+                </button>
+                <button 
+                    onClick={() => setActiveTab("costos")}
+                    className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "costos" ? "border-mie-primary text-mie-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                >
+                    <DollarSign size={16}/> Costos
+                </button>
+            </div>
 
-                        {/* Flows List */}
-                        <div className="space-y-4">
-                            {flows.map((flow) => {
-                                const isAct = flow.estado === "ACTIVO";
-                                const isErr = flow.estado === "ERROR";
-                                return (
-                                    <div key={flow.id} className="p-4 border border-border rounded-2xl bg-card hover:border-mie-blue/30 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative group">
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="font-bold text-sm text-foreground">{flow.nombre}</span>
-                                                <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-semibold">{flow.tipo}</span>
-                                                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase flex items-center gap-1 ${
-                                                    isAct ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 
-                                                    isErr ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/20'
-                                                }`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${isAct ? 'bg-emerald-500 animate-pulse' : isErr ? 'bg-rose-500 animate-ping' : 'bg-amber-500'}`}></span>
-                                                    {flow.estado}
-                                                </span>
-                                            </div>
-                                            {flow.notas && <p className="text-xs text-muted-foreground">{flow.notas}</p>}
-                                            
-                                            {/* Runtime metrics */}
-                                            <div className="flex items-center gap-4 pt-1 text-[11px] text-muted-foreground">
-                                                <span>Ejecuciones (24h): <strong className="text-foreground">{flow.ejecuciones24h}</strong></span>
-                                                <span>Tasa Éxito: <strong className={flow.tasaExito < 98 ? "text-amber-500" : "text-emerald-500"}>{flow.tasaExito}%</strong></span>
-                                                <span>Tiempo prom: <strong className="text-foreground">{flow.tiempoPromedio}s</strong></span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                                            <button 
-                                                onClick={() => toggleFlowStatus(flow)}
-                                                className={`p-2 rounded-xl border border-border hover:bg-muted transition-colors ${isAct ? "text-amber-500" : "text-emerald-600"}`}
-                                                title={isAct ? "Pausar Integración" : "Activar Integración"}
-                                            >
-                                                {isAct ? <Pause size={14} /> : <Play size={14} />}
-                                            </button>
-                                            <button 
-                                                onClick={() => openEditFlow(flow)}
-                                                className="p-2 rounded-xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                                title="Editar Parámetros"
-                                            >
-                                                <Edit2 size={14} />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDeleteFlow(flow.id)}
-                                                className="p-2 rounded-xl border border-border hover:bg-rose-50 dark:hover:bg-rose-950/20 text-red-500 transition-colors"
-                                                title="Eliminar Flujo"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
+            {/* MAIN CONTENT AREA */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                
+                {/* Left Area (Takes up 3 columns) */}
+                <div className="lg:col-span-3 space-y-6">
+                    
+                    {activeTab === "tasks" && (
+                        <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm min-h-[500px]">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h2 className="text-lg font-bold flex items-center gap-2">
+                                        <LayoutList size={20} className="text-mie-primary" />
+                                        Tablero de Tareas
+                                    </h2>
+                                    <p className="text-xs text-muted-foreground mt-0.5">Gestión de tareas, bugs y requerimientos del proyecto</p>
+                                </div>
+                                <div className="flex gap-2 items-center">
+                                    <div className="flex bg-muted/50 p-1 rounded-xl mr-2">
+                                        <button 
+                                            onClick={() => setTaskViewMode("board")}
+                                            className={`p-1.5 rounded-lg transition-colors ${taskViewMode === "board" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                                        >
+                                            <Kanban size={14} />
+                                        </button>
+                                        <button 
+                                            onClick={() => setTaskViewMode("list")}
+                                            className={`p-1.5 rounded-lg transition-colors ${taskViewMode === "list" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                                        >
+                                            <List size={14} />
+                                        </button>
                                     </div>
-                                );
-                            })}
-
-                            {flows.length === 0 && (
-                                <div className="text-center py-10 bg-muted/10 border border-dashed border-border rounded-2xl">
-                                    <Wrench size={32} className="mx-auto mb-2 text-muted-foreground opacity-30" />
-                                    <p className="text-muted-foreground text-xs font-semibold">No se han registrado flujos de integración.</p>
-                                    <button onClick={openCreateFlow} className="mt-2 text-xs font-bold text-mie-blue hover:underline">
-                                        Crear primer flujo ahora
+                                    <button 
+                                        onClick={() => setShowAiTask(true)}
+                                        className="bg-mie-purple/10 hover:bg-mie-purple/20 text-mie-purple px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
+                                    >
+                                        <Sparkles size={14} /> IA Generador
                                     </button>
+                                    <button 
+                                        onClick={() => setShowCreateTask(true)}
+                                        className="bg-mie-primary text-white hover:bg-mie-primary/90 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
+                                    >
+                                        <Plus size={14} /> Nueva Tarea
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {taskViewMode === "board" ? (
+                                <TaskBoard onTaskClick={(t) => setSelectedTask(t)} />
+                            ) : (
+                                <div className="h-[500px]">
+                                    <TaskListView tareas={tareas} />
                                 </div>
                             )}
                         </div>
-                    </div>
+                    )}
 
-                    {/* Project Notes Section */}
-                    <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm">
-                        <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><Cpu size={16} className="text-mie-purple" /> Notas y Documentación Técnica</h3>
-                        <textarea
-                            className="w-full p-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-mie-purple outline-none resize-none text-xs text-foreground"
-                            placeholder="Enlace a repositorios, credenciales de staging, variables de entorno..."
-                            rows={6}
-                            defaultValue={proyecto.notas || ""}
-                            onBlur={(e) => handleNotesChange(e.target.value)}
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-2 text-right">Se guarda automáticamente al hacer click fuera del cuadro de texto</p>
-                    </div>
-                </div>
-
-                {/* Right Side: Kickoff Checklist & Info */}
-                <div className="space-y-6">
-                    {/* Checklist panel */}
-                    <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm">
-                        <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
-                            <CheckCircle size={16} className="text-mie-purple" />
-                            Kickoff & Prerrequisitos
-                        </h3>
-                        {checklistItems.length > 0 ? (
-                            <ul className="space-y-3">
-                                {checklistItems.map((item, idx) => (
-                                    <li key={idx} className="flex items-start gap-2.5 text-xs text-foreground leading-relaxed">
-                                        <input 
-                                            type="checkbox" 
-                                            className="mt-0.5 rounded border-border text-mie-purple focus:ring-mie-purple" 
-                                        />
-                                        <span>{item}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <div className="text-center py-6 bg-muted/20 rounded-xl text-xs text-muted-foreground">
-                                No se configuró checklist en la propuesta de este proyecto.
+                    {activeTab === "flows" && (
+                        <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm min-h-[500px]">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h2 className="text-lg font-bold flex items-center gap-2">
+                                        <Activity size={20} className="text-mie-blue" />
+                                        Orquestador de Integraciones
+                                    </h2>
+                                    <p className="text-xs text-muted-foreground mt-0.5">Monitoreo de agentes y sincronizadores n8n/Make en producción</p>
+                                </div>
+                                <button 
+                                    onClick={openCreateFlow}
+                                    className="bg-mie-blue/10 hover:bg-mie-blue/20 text-mie-blue px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 border border-mie-blue/10 transition-colors"
+                                >
+                                    <Plus size={14} /> Nuevo Flujo
+                                </button>
                             </div>
-                        )}
-                    </div>
 
-                    {/* System specs / proposal info */}
-                    {cotizacion && (
-                        <div className="bg-muted/10 border border-border rounded-3xl p-6 space-y-4">
-                            <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">Resumen de Propuesta Asociada</h3>
-                            <div className="space-y-2 text-xs">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Propuesta Código:</span>
-                                    <span className="font-bold text-foreground">{cotizacion.codigo}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Validez Propuesta:</span>
-                                    <span className="font-bold text-foreground">{cotizacion.validez}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Responsable Comercial:</span>
-                                    <span className="font-bold text-foreground">{cotizacion.vendedor}</span>
-                                </div>
-                            </div>
-                            <div className="border-t border-border/50 pt-3">
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">El Desafío de Negocio:</span>
-                                <p className="text-[11px] text-muted-foreground line-clamp-4 leading-relaxed italic">{cotizacion.desafioNegocio}</p>
+                            <div className="space-y-4">
+                                {flows.map((flow) => {
+                                    const isAct = flow.estado === "ACTIVO";
+                                    const isErr = flow.estado === "ERROR";
+                                    return (
+                                        <div key={flow.id} className="p-4 border border-border rounded-2xl bg-card hover:border-mie-blue/30 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative group">
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="font-bold text-sm text-foreground">{flow.nombre}</span>
+                                                    <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-semibold">{flow.tipo}</span>
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase flex items-center gap-1 ${
+                                                        isAct ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 
+                                                        isErr ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/20'
+                                                    }`}>
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${isAct ? 'bg-emerald-500 animate-pulse' : isErr ? 'bg-rose-500 animate-ping' : 'bg-amber-500'}`}></span>
+                                                        {flow.estado}
+                                                    </span>
+                                                </div>
+                                                {flow.notas && <p className="text-xs text-muted-foreground">{flow.notas}</p>}
+                                                <div className="flex items-center gap-4 pt-1 text-[11px] text-muted-foreground">
+                                                    <span>Ejecuciones (24h): <strong className="text-foreground">{flow.ejecuciones24h}</strong></span>
+                                                    <span>Tasa Éxito: <strong className={flow.tasaExito < 98 ? "text-amber-500" : "text-emerald-500"}>{flow.tasaExito}%</strong></span>
+                                                    <span>Tiempo prom: <strong className="text-foreground">{flow.tiempoPromedio}s</strong></span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                                                <button onClick={() => toggleFlowStatus(flow)} className={`p-2 rounded-xl border border-border hover:bg-muted transition-colors ${isAct ? "text-amber-500" : "text-emerald-600"}`}>
+                                                    {isAct ? <Pause size={14} /> : <Play size={14} />}
+                                                </button>
+                                                <button onClick={() => openEditFlow(flow)} className="p-2 rounded-xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                                                    <Edit2 size={14} />
+                                                </button>
+                                                <button onClick={() => handleDeleteFlow(flow.id)} className="p-2 rounded-xl border border-border hover:bg-rose-50 dark:hover:bg-rose-950/20 text-red-500 transition-colors">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {flows.length === 0 && (
+                                    <div className="text-center py-10 bg-muted/10 border border-dashed border-border rounded-2xl">
+                                        <Wrench size={32} className="mx-auto mb-2 text-muted-foreground opacity-30" />
+                                        <p className="text-muted-foreground text-xs font-semibold">No se han registrado flujos de integración.</p>
+                                        <button onClick={openCreateFlow} className="mt-2 text-xs font-bold text-mie-blue hover:underline">
+                                            Crear primer flujo ahora
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
+
+                    {activeTab === "github" && (
+                        <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm min-h-[500px]">
+                            <div className="mb-4">
+                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                    <Github size={20} className="text-foreground" />
+                                    Conexión GitHub
+                                </h2>
+                                <p className="text-xs text-muted-foreground mt-0.5">Control de versiones, PRs y commits para este proyecto</p>
+                            </div>
+                            <div className="h-[400px]">
+                                <GitHubPanel githubRepo={proyecto.githubRepo} />
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === "bitacora" && (
+                        <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm min-h-[500px]">
+                            <BitacoraPanel proyectoId={proyecto.id} />
+                        </div>
+                    )}
+
+                    {activeTab === "costos" && (
+                        <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm min-h-[500px]">
+                            <GastosPanel proyectoId={proyecto.id} />
+                        </div>
+                    )}
+
+                </div>
+
+                {/* Right Side (1 column) */}
+                <div className="space-y-6">
+                    {/* Milestones Panel */}
+                    <div className="h-[300px]">
+                        <MilestonesView proyectoId={proyecto.id} />
+                    </div>
+
+                    {/* Notes Panel */}
+                    <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm">
+                        <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><Cpu size={16} className="text-mie-purple" /> Notas Técnicas</h3>
+                        <textarea
+                            className="w-full p-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-mie-purple outline-none resize-none text-xs text-foreground"
+                            placeholder="Enlace a repositorios, credenciales de staging..."
+                            rows={6}
+                            value={proyecto.notas || ""}
+                            onChange={(e) => setProyecto({...proyecto, notas: e.target.value})}
+                            onBlur={(e) => handleNotesChange(e.target.value)}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* Flow Create/Edit Modal */}
-            <Modal isOpen={showFlowModal} onClose={() => setShowFlowModal(false)} title={isEditingFlow ? "Editar Integración / Flow" : "Agregar Nueva Integración"}>
+            {/* Modals */}
+            {showCreateTask && (
+                <CreateTaskModal 
+                    proyectoId={proyecto.id} 
+                    onClose={() => setShowCreateTask(false)} 
+                />
+            )}
+            
+            {showAiTask && (
+                <AiTaskGenerator 
+                    proyectoId={proyecto.id} 
+                    cotizacionId={proyecto.cotizacionId}
+                    onClose={() => setShowAiTask(false)}
+                    onSuccess={() => {
+                        setShowAiTask(false);
+                        setToast({ message: "Tareas generadas con éxito", type: "success" });
+                        loadTareas(proyecto.id);
+                    }}
+                />
+            )}
+
+            {selectedTask && (
+                <TaskPanel 
+                    task={selectedTask} 
+                    onClose={() => setSelectedTask(null)} 
+                />
+            )}
+
+            <Modal isOpen={showFlowModal} onClose={() => setShowFlowModal(false)} title={isEditingFlow ? "Editar Integración" : "Agregar Integración"}>
                 <form onSubmit={handleFlowSubmit} className="space-y-4 text-sm">
                     <div>
                         <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Nombre del Flujo *</label>
-                        <input
-                            type="text"
-                            required
-                            className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-mie-blue outline-none"
-                            placeholder="Ej: Sincronización Stripe a CRM"
-                            value={flowForm.nombre}
-                            onChange={(e) => setFlowForm(prev => ({ ...prev, nombre: e.target.value }))}
-                        />
+                        <input type="text" required className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-mie-blue outline-none" value={flowForm.nombre} onChange={(e) => setFlowForm(prev => ({ ...prev, nombre: e.target.value }))} />
                     </div>
-
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Tipo de Integración</label>
-                            <select
-                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-mie-blue outline-none"
-                                value={flowForm.tipo}
-                                onChange={(e) => setFlowForm(prev => ({ ...prev, tipo: e.target.value }))}
-                            >
+                            <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Tipo</label>
+                            <select className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border outline-none" value={flowForm.tipo} onChange={(e) => setFlowForm(prev => ({ ...prev, tipo: e.target.value }))}>
                                 <option value="WhatsApp AI Agent">WhatsApp AI Agent</option>
                                 <option value="CRM Sync">CRM Sync</option>
                                 <option value="Invoicing Bot">Invoicing Bot</option>
-                                <option value="Web Catalogo Sync">Web Catalogo Sync</option>
-                                <option value="Custom API Hook">Custom API Hook</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Estado Operacional</label>
-                            <select
-                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-mie-blue outline-none"
-                                value={flowForm.estado}
-                                onChange={(e) => setFlowForm(prev => ({ ...prev, estado: e.target.value as any }))}
-                            >
-                                <option value="ACTIVO">ACTIVO (En ejecución)</option>
-                                <option value="PAUSADO">PAUSADO (Detenido)</option>
-                                <option value="ERROR">ERROR (Falla de Ejecución)</option>
+                            <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Estado</label>
+                            <select className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border outline-none" value={flowForm.estado} onChange={(e) => setFlowForm(prev => ({ ...prev, estado: e.target.value as any }))}>
+                                <option value="ACTIVO">ACTIVO</option>
+                                <option value="PAUSADO">PAUSADO</option>
+                                <option value="ERROR">ERROR</option>
                             </select>
                         </div>
                     </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                        <div>
-                            <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Ejecuciones (24h)</label>
-                            <input
-                                type="number"
-                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-mie-blue outline-none"
-                                value={flowForm.ejecuciones24h}
-                                onChange={(e) => setFlowForm(prev => ({ ...prev, ejecuciones24h: Number(e.target.value) }))}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Tasa Éxito %</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                max="100"
-                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-mie-blue outline-none"
-                                value={flowForm.tasaExito}
-                                onChange={(e) => setFlowForm(prev => ({ ...prev, tasaExito: Number(e.target.value) }))}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Tiempo Promedio</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-mie-blue outline-none"
-                                value={flowForm.tiempoPromedio}
-                                onChange={(e) => setFlowForm(prev => ({ ...prev, tiempoPromedio: Number(e.target.value) }))}
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Notas de la Integración</label>
-                        <textarea
-                            className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-mie-blue outline-none resize-none"
-                            rows={3}
-                            placeholder="Describa qué automatiza este flujo..."
-                            value={flowForm.notas}
-                            onChange={(e) => setFlowForm(prev => ({ ...prev, notas: e.target.value }))}
-                        />
-                    </div>
-
                     <div className="flex gap-3 pt-3">
-                        <button
-                            type="submit"
-                            className="flex-1 bg-mie-blue hover:bg-mie-blue/90 text-white font-bold py-3 rounded-xl shadow-md transition-all active:scale-[0.98]"
-                        >
-                            {isEditingFlow ? "Guardar Cambios" : "Crear Flujo"}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setShowFlowModal(false)}
-                            className="px-6 py-3 rounded-xl ring-1 ring-border font-bold text-muted-foreground hover:bg-muted transition-all active:scale-[0.98]"
-                        >
-                            Cancelar
-                        </button>
+                        <button type="submit" className="flex-1 bg-mie-blue text-white font-bold py-3 rounded-xl">{isEditingFlow ? "Guardar" : "Crear"}</button>
                     </div>
                 </form>
             </Modal>

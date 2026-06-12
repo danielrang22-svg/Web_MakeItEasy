@@ -3,6 +3,7 @@
 import { useLeadsStore, getLeadsByStage, getStageValue, getTotalPipelineValue } from "@/lib/state/leadsStore";
 import { useCotizacionesStore } from "@/lib/state/cotizacionesStore";
 import { useProyectosStore } from "@/lib/state/proyectosStore";
+import { useGastosStore } from "@/lib/state/gastosStore";
 import { Etapa, EstadoCotizacion, EstadoProyecto, Cotizacion } from "@/lib/types";
 import { PIPELINE_STAGES, formatCurrency } from "@/lib/constants";
 import { useEffect, useState } from "react";
@@ -16,6 +17,7 @@ export default function ReportesPage() {
     const { leads, loadLeads } = useLeadsStore();
     const { cotizaciones, loadCotizaciones } = useCotizacionesStore();
     const { proyectos, ordenes, loadProyectos, loadOrdenes } = useProyectosStore();
+    const { gastos, fetchGastos } = useGastosStore();
 
     const [fechaDesde, setFechaDesde] = useState("");
     const [fechaHasta, setFechaHasta] = useState("");
@@ -65,7 +67,8 @@ export default function ReportesPage() {
         loadCotizaciones();
         loadProyectos();
         loadOrdenes();
-    }, [loadLeads, loadCotizaciones, loadProyectos, loadOrdenes]);
+        fetchGastos();
+    }, [loadLeads, loadCotizaciones, loadProyectos, loadOrdenes, fetchGastos]);
 
     const computeCotizacionTotal = (c: Cotizacion) => {
         return c.totalProyectoCore + c.moduloOpcionalFee;
@@ -83,6 +86,7 @@ export default function ReportesPage() {
     const filteredLeads = leads.filter(filterByDate);
     const filteredCotizaciones = cotizaciones.filter(filterByDate);
     const filteredProyectos = proyectos.filter(filterByDate);
+    const filteredGastos = gastos.filter(filterByDate);
 
     // --- LEADS ---
     const totalValue = getTotalPipelineValue(filteredLeads);
@@ -110,7 +114,7 @@ export default function ReportesPage() {
     const proyectosCompletados = filteredProyectos.filter(p => p.estado === EstadoProyecto.SOPORTE);
     
     const filteredOrdenes = ordenes.filter(o => filteredProyectos.find(p => p.id === o.proyectoId));
-    const costoProduccion = 0;
+    const costoProduccion = filteredGastos.reduce((acc, g) => acc + g.monto, 0);
     
     const ventaProduccion = filteredProyectos.reduce((acc, p) => {
         const coti = cotizaciones.find(c => c.id === p.cotizacionId);
@@ -118,6 +122,18 @@ export default function ReportesPage() {
     }, 0);
 
     const gananciaProduccion = ventaProduccion - costoProduccion;
+
+    // --- GASTOS BREAKDOWN ---
+    const gastosPorCategoria = filteredGastos.reduce((acc: any, g) => {
+        acc[g.categoria] = (acc[g.categoria] || 0) + g.monto;
+        return acc;
+    }, {});
+    
+    const categoriasGastos = Object.keys(gastosPorCategoria).map(cat => ({
+        categoria: cat,
+        monto: gastosPorCategoria[cat],
+        porcentaje: costoProduccion > 0 ? (gastosPorCategoria[cat] / costoProduccion) * 100 : 0
+    })).sort((a, b) => b.monto - a.monto);
 
     return (
         <div className="px-5 pb-32">
@@ -269,23 +285,23 @@ export default function ReportesPage() {
                 <Factory size={18} /> Balance de Producción y Ganancia
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                <div className="p-4 ring-1 ring-blue-500/20 rounded-2xl flex justify-between items-center">
+                <div className="p-4 ring-1 ring-blue-500/20 rounded-2xl flex justify-between items-center bg-card">
                     <div>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase flex items-center gap-1">Venta Producción (Precio Cliente)</p>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase flex items-center gap-1">Ingresos de Proyectos (Facturado)</p>
                       <p className="text-2xl font-bold text-mie-primary">{formatCurrency(ventaProduccion)}</p>
                     </div>
                     <DollarSign size={24} className="text-mie-primary opacity-40" />
                 </div>
-                <div className="p-4 ring-1 ring-red-500/20 rounded-2xl flex justify-between items-center">
+                <div className="p-4 ring-1 ring-red-500/20 rounded-2xl flex justify-between items-center bg-card">
                     <div>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase flex items-center gap-1">Costos Fabricación (Proveedores)</p>
-                      <p className="text-2xl font-bold text-red-500">{formatCurrency(costoProduccion)}</p>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase flex items-center gap-1">Gastos y Costos Totales</p>
+                      <p className="text-2xl font-bold text-red-500">-{formatCurrency(costoProduccion)}</p>
                     </div>
                     <TrendingUp size={24} className="text-red-500/40" />
                 </div>
-                <div className="p-4 ring-1 ring-emerald-500/20 rounded-2xl flex justify-between items-center">
+                <div className="p-4 ring-1 ring-emerald-500/20 rounded-2xl flex justify-between items-center bg-card">
                     <div>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase flex items-center gap-1">Ganancia Estimada (Bruta)</p>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase flex items-center gap-1">Rentabilidad Neta (Ganancia)</p>
                       <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(gananciaProduccion)}</p>
                     </div>
                     <LineChart size={24} className="text-emerald-500 opacity-40" />
@@ -348,6 +364,39 @@ export default function ReportesPage() {
                         })}
                     </div>
                 </div>
+            </div>
+
+            {/* SECCIÓN DESGLOSE DE GASTOS */}
+            <h3 className="font-bold text-lg mb-3 flex items-center gap-2 text-muted-foreground mt-8">
+                <DollarSign size={18} className="text-rose-500" /> Desglose de Gastos por Categoría
+            </h3>
+            <div className="bg-card ring-1 ring-border rounded-3xl p-5">
+                {categoriasGastos.length > 0 ? (
+                    <div className="space-y-4">
+                        {categoriasGastos.map((cat, i) => (
+                            <div key={cat.categoria} className="flex items-center gap-3">
+                                <div className="w-24 text-xs font-bold text-right flex-shrink-0 text-muted-foreground truncate">
+                                    {cat.categoria}
+                                </div>
+                                <div className="flex-1 h-6 bg-muted rounded-xl overflow-hidden relative">
+                                    <div
+                                        className="h-full rounded-xl flex items-center px-3 transition-all duration-500 bg-rose-500/80"
+                                        style={{ width: `${Math.max(cat.porcentaje, 2)}%` }}
+                                    >
+                                        <span className="text-white text-[10px] font-bold whitespace-nowrap drop-shadow-md">
+                                            {cat.porcentaje.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="w-24 text-xs font-black text-right flex-shrink-0 text-text-primary">
+                                    {formatCurrency(cat.monto)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-muted-foreground text-sm text-center py-4">No hay gastos registrados en este período.</p>
+                )}
             </div>
 
         </div>

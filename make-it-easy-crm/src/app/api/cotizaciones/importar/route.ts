@@ -30,8 +30,7 @@ export async function POST(request: NextRequest) {
 
     // Extracción de texto según el formato
     if (file.name.toLowerCase().endsWith('.pdf')) {
-      const pdfParseModule = await import('pdf-parse');
-      const pdfParse = pdfParseModule.default || pdfParseModule;
+      const pdfParse = require('pdf-parse');
       // @ts-ignore
       const pdfData = await pdfParse(buffer);
       extractedText = pdfData.text;

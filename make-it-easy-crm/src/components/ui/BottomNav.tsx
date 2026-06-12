@@ -6,7 +6,7 @@ import { useState } from "react";
 import {
     Home, LayoutDashboard, BarChart3, Settings, Plus,
     Users, Building2, Briefcase, X, FileText,
-    FolderKanban, Factory, Package, Layers
+    FolderKanban, Factory, Package, Layers, ShoppingCart
 } from "lucide-react";
 
 interface BottomNavProps {
@@ -17,7 +17,7 @@ export default function BottomNav({ onAddLead }: BottomNavProps) {
     const pathname = usePathname();
     const [showCrmMenu, setShowCrmMenu] = useState(false);
 
-    const crmPaths = ["/leads", "/contactos", "/empresas", "/cotizaciones", "/productos", "/proyectos", "/proveedores", "/vendedores"];
+    const crmPaths = ["/leads", "/contactos", "/empresas", "/cotizaciones", "/productos", "/proyectos", "/proveedores", "/vendedores", "/compras"];
     const isCrmActive = crmPaths.some(p => pathname === p || pathname.startsWith(p + "/"));
 
     const tabs = [
@@ -36,6 +36,7 @@ export default function BottomNav({ onAddLead }: BottomNavProps) {
         { href: "/productos",    icon: Package,       label: "Productos",    color: "primary" },
         { href: "/proyectos",    icon: FolderKanban,  label: "Proyectos",    color: "tertiary" },
         { href: "/proveedores",  icon: Factory,       label: "Proveedores",  color: "primary" },
+        { href: "/compras",      icon: ShoppingCart,  label: "Compras",      color: "secondary" },
         { href: "/vendedores",   icon: Users,         label: "Comerciales",  color: "secondary" },
     ];
 

@@ -3,8 +3,16 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-function SearchParamsHandler({ setError }: { setError: (e: string) => void }) {
+function LoginContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
   useEffect(() => {
     const err = searchParams.get("error");
     if (err === "unauthorized") {
@@ -18,19 +26,7 @@ function SearchParamsHandler({ setError }: { setError: (e: string) => void }) {
     } else if (err === "no_email") {
       setError("No se pudo obtener tu correo de Google.");
     }
-  }, [searchParams, setError]);
-  return null;
-}
-
-export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-
-
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,10 +85,6 @@ export default function LoginPage() {
             Ingresa tus credenciales para acceder al sistema
           </p>
 
-          <Suspense fallback={null}>
-            <SearchParamsHandler setError={setError} />
-          </Suspense>
-
           {/* Google Login */}
           <button
             type="button"
@@ -129,6 +121,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@makeiteasycol.com"
                   required
+                  suppressHydrationWarning
                   className="w-full px-4 py-4 bg-[#131313] border border-[#484847]/40 rounded-xl text-white placeholder:text-[#484847] focus:border-[#81ecff] focus:ring-1 focus:ring-[#81ecff] outline-none transition-all"
                 />
               </div>
@@ -145,13 +138,14 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  suppressHydrationWarning
                   className="w-full px-4 py-4 bg-[#131313] border border-[#484847]/40 rounded-xl text-white placeholder:text-[#484847] focus:border-[#81ecff] focus:ring-1 focus:ring-[#81ecff] outline-none transition-all"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-[#ff6e84] text-sm bg-[#ff6e84]/10 px-4 py-3 rounded-xl border border-[#ff6e84]/20">
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-semibold text-center">
                 {error}
               </div>
             )}
@@ -159,14 +153,30 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-[#81ecff] to-[#ff59e3] text-[#0e0e0e] font-black uppercase tracking-widest text-sm py-4 rounded-xl hover:shadow-[0_0_20px_rgba(129,236,255,0.3)] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-gradient-to-r from-[#81ecff] to-[#ff59e3] hover:opacity-90 text-[#0e0e0e] font-bold text-sm rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(129,236,255,0.3)]"
             >
-              {loading ? "Verificando..." : "Ingresar"}
+              {loading ? "Iniciando sesión..." : "Ingresar"}
             </button>
           </form>
         </div>
+
+        {/* Footer */}
+        <p className="text-center text-[10px] text-[#484847] mt-8 uppercase tracking-widest font-bold">
+          Make It Easy © {new Date().getFullYear()}
+        </p>
       </div>
     </div>
   );
 }
 
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0e0e0e] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#81ecff] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
+  );
+}
