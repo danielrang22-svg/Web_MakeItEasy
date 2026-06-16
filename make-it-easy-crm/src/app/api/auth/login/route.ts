@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
       const current = loginAttempts.get(ip) || { count: 0, lastAttempt: now };
       loginAttempts.set(ip, { count: current.count + 1, lastAttempt: now });
 
-      console.log(`[AUTH] ${new Date().toISOString()} | LOGIN_FAIL | email: ${email} | reason: google_only_account | ip: ${ip}`);
-      return NextResponse.json({ error: "Esta cuenta solo puede iniciar sesión con Google" }, { status: 401 });
+      console.log(`[AUTH] ${new Date().toISOString()} | LOGIN_FAIL | email: ${email} | reason: no_password_configured | ip: ${ip}`);
+      return NextResponse.json({ error: "Tu cuenta no tiene una contraseña asignada. Contacta al administrador." }, { status: 401 });
     }
 
     const passwordMatch = await bcrypt.compare(password, user.passwordHash);
