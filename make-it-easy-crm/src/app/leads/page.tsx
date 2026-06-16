@@ -41,7 +41,7 @@ export default function LeadsPage() {
   const totalValue = getTotalPipelineValue(leads);
 
   const aiQualifiedCount = leads.filter(l =>
-    l.etapa === Etapa.GANADO || l.etapa === Etapa.NEGOCIACION || l.etapa === Etapa.PROPUESTA
+    l.etapa === Etapa.GANADO || l.etapa === Etapa.PROPUESTA || l.etapa === Etapa.ACEPTADO
   ).length;
 
   function handleCreate(data: LeadCreateData) {
