@@ -8,6 +8,7 @@ import { PIPELINE_STAGES, formatCurrency, formatDate, getStageConfig } from "@/l
 import { Modal, Toast, Badge } from "@/components/ui/SharedUI";
 import LeadForm from "@/components/leads/LeadForm";
 import Link from "next/link";
+import * as XLSX from "xlsx";
 import {
   TrendingUp, Users, Trophy, ArrowRight, Building2,
   Plus, FolderKanban, Package, Zap, BarChart3, ChevronRight,
@@ -40,6 +41,9 @@ export default function DashboardPage() {
   const { proyectos, loadProyectos, ordenes, loadOrdenes, getProjectProgress, cotizaciones, loadCotizaciones } = useProyectosStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [timeFilter, setTimeFilter] = useState<"all" | "today" | "week" | "month" | "year">("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [sectorFilter, setSectorFilter] = useState<string>("all");
 
   useEffect(() => {
     loadLeads();
@@ -48,16 +52,95 @@ export default function DashboardPage() {
     loadCotizaciones();
   }, [loadLeads, loadProyectos, loadOrdenes, loadCotizaciones]);
 
-  const totalValue   = getTotalPipelineValue(leads);
-  const activeLeads  = leads.filter(l => l.etapa !== Etapa.PERDIDO && l.etapa !== Etapa.GANADO);
-  const wonLeads     = leads.filter(l => l.etapa === Etapa.GANADO);
-  const wonValue     = getStageValue(leads, Etapa.GANADO);
-  const recentLeads  = [...leads]
+  // Extract unique non-null lead sources and sectors
+  const availableSources = Array.from(new Set(leads.map(l => l.origenLead).filter(Boolean))) as string[];
+  const availableSectors = Array.from(new Set(leads.map(l => l.sector).filter(Boolean))) as string[];
+
+  // Date filter helper
+  const isWithinPeriod = (dateStr: string) => {
+    if (timeFilter === "all") return true;
+    const date = new Date(dateStr);
+    const now = new Date();
+    
+    if (timeFilter === "today") {
+      return date.toDateString() === now.toDateString();
+    }
+    if (timeFilter === "week") {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(now.getDate() - 7);
+      return date >= oneWeekAgo && date <= now;
+    }
+    if (timeFilter === "month") {
+      return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+    }
+    if (timeFilter === "year") {
+      return date.getFullYear() === now.getFullYear();
+    }
+    return true;
+  };
+
+  // Filtered datasets
+  const filteredLeads = leads.filter(l => {
+    const matchesTime = isWithinPeriod(l.fechaCreacion);
+    const matchesSource = sourceFilter === "all" || l.origenLead === sourceFilter;
+    const matchesSector = sectorFilter === "all" || l.sector === sectorFilter;
+    return matchesTime && matchesSource && matchesSector;
+  });
+  const filteredCotizaciones = cotizaciones.filter(c => isWithinPeriod(c.fechaCreacion || c.fecha));
+  const filteredProyectos = proyectos.filter(p => isWithinPeriod(p.fechaCreacion));
+
+  // KPIs calculations
+  const totalValue   = getTotalPipelineValue(filteredLeads);
+  const activeLeads  = filteredLeads.filter(l => l.etapa !== Etapa.PERDIDO && l.etapa !== Etapa.GANADO);
+  const wonLeads     = filteredLeads.filter(l => l.etapa === Etapa.GANADO);
+  const wonValue     = getStageValue(filteredLeads, Etapa.GANADO);
+  const recentLeads  = [...filteredLeads]
     .sort((a, b) => new Date(b.fechaCreacion).getTime() - new Date(a.fechaCreacion).getTime())
     .slice(0, 5);
-  const activeProjects = proyectos
+  const activeProjects = filteredProyectos
     .filter(p => p.estado !== EstadoProyecto.SOPORTE)
     .slice(0, 4);
+
+  // Excel Export Handler
+  const handleExportData = () => {
+    if (filteredLeads.length === 0 && filteredProyectos.length === 0) {
+      setToast({ message: "No hay datos para exportar en este período", type: "error" });
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+
+    if (filteredLeads.length > 0) {
+      const leadsData = filteredLeads.map(l => ({
+        Contacto: l.nombreContacto,
+        Empresa: l.empresa,
+        Valor: l.valorEstimado,
+        Etapa: l.etapa,
+        Email: l.email || "",
+        Teléfono: l.telefono || "",
+        Origen: l.origenLead || "",
+        Sector: l.sector || "",
+        Fecha: new Date(l.fechaCreacion).toLocaleDateString()
+      }));
+      const wsLeads = XLSX.utils.json_to_sheet(leadsData);
+      XLSX.utils.book_append_sheet(wb, wsLeads, "Leads");
+    }
+
+    if (filteredProyectos.length > 0) {
+      const projectsData = filteredProyectos.map(p => ({
+        Proyecto: p.titulo,
+        Cliente: p.clienteNombre,
+        Estado: p.estado,
+        Herramientas: p.herramientasUsadas || "",
+        "Fecha de Inicio": new Date(p.fechaInicio).toLocaleDateString()
+      }));
+      const wsProjects = XLSX.utils.json_to_sheet(projectsData);
+      XLSX.utils.book_append_sheet(wb, wsProjects, "Proyectos");
+    }
+
+    XLSX.writeFile(wb, `mie-crm-dashboard-${timeFilter}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    setToast({ message: "Reporte de ventas exportado en Excel", type: "success" });
+  };
 
   // Group approved client quote totals by month of current year
   const getMonthlySales = () => {
@@ -65,7 +148,7 @@ export default function DashboardPage() {
     const currentYear = new Date().getFullYear();
     const monthlyTotals = Array(12).fill(0);
 
-    cotizaciones.forEach(c => {
+    filteredCotizaciones.forEach(c => {
       if (c.estado === "APROBADA_CLIENTE") {
         const date = new Date(c.fechaCreacion || c.fecha);
         if (date.getFullYear() === currentYear) {
@@ -84,6 +167,26 @@ export default function DashboardPage() {
   };
 
   const monthlySales = getMonthlySales();
+
+  // Dynamic Sales Cycle Calculation
+  const getAverageSalesCycle = () => {
+    const won = filteredLeads.filter(l => l.etapa === Etapa.GANADO);
+    if (won.length === 0) return { label: "0 días", text: "Sin leads ganados" };
+
+    let totalDays = 0;
+    won.forEach(l => {
+      const start = new Date(l.fechaCreacion);
+      const end = new Date(l.fechaActualizacion || l.fechaCreacion);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+      totalDays += diffDays;
+    });
+
+    const avg = Math.round(totalDays / won.length);
+    return { label: `${avg} días`, text: won.length === 1 ? "Basado en 1 lead" : `Basado en ${won.length} leads` };
+  };
+
+  const salesCycle = getAverageSalesCycle();
 
   async function handleCreate(data: LeadCreateData) {
     await createLead(data);
@@ -104,31 +207,96 @@ export default function DashboardPage() {
       `}</style>
 
       {/* ── Hero greeting / Header Section ── */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
-            Sales Overview
-          </h2>
-          <p className="font-sans text-xs text-text-secondary mt-1">
-            Rendimiento en tiempo real y métricas clave.
-          </p>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h2 className="font-display text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
+              Sales Overview
+            </h2>
+            <p className="font-sans text-xs text-text-secondary mt-1">
+              Rendimiento en tiempo real y métricas clave.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 self-stretch md:self-auto justify-end">
+            <button
+              onClick={handleExportData}
+              className="glass-panel px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 hover:bg-surface-bright transition-colors text-text-primary border border-border-glass"
+            >
+              <Download size={14} className="text-text-secondary" />
+              Exportar
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-container to-primary text-on-primary-fixed rounded-lg text-xs font-bold hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(138,235,255,0.2)]"
+            >
+              <Plus size={14} strokeWidth={2.5} />
+              Nuevo Lead
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="glass-panel px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 hover:bg-surface-bright transition-colors text-text-primary border border-border-glass">
+
+        {/* ── Filters Bar ── */}
+        <div className="flex flex-wrap items-center gap-3 bg-surface-container/30 p-3 rounded-xl border border-border-glass/50">
+          <div className="flex items-center gap-2">
             <Calendar size={14} className="text-text-secondary" />
-            Este Mes
-          </button>
-          <button className="glass-panel px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 hover:bg-surface-bright transition-colors text-text-primary border border-border-glass">
-            <Download size={14} className="text-text-secondary" />
-            Exportar
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-container to-primary text-on-primary-fixed rounded-lg text-xs font-bold hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(138,235,255,0.2)]"
-          >
-            <Plus size={14} strokeWidth={2.5} />
-            Nuevo Lead
-          </button>
+            <span className="text-xs font-bold text-text-secondary mr-1">Filtros:</span>
+          </div>
+
+          {/* Time Filter Select */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+            <select
+              value={timeFilter}
+              onChange={(e) => setTimeFilter(e.target.value as any)}
+              className="glass-panel px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-container border border-border-glass text-text-primary outline-none focus:border-primary cursor-pointer"
+            >
+              <option value="all" className="bg-surface-dim text-text-primary">Todos los tiempos</option>
+              <option value="today" className="bg-surface-dim text-text-primary">Hoy</option>
+              <option value="week" className="bg-surface-dim text-text-primary">Esta Semana</option>
+              <option value="month" className="bg-surface-dim text-text-primary">Este Mes</option>
+              <option value="year" className="bg-surface-dim text-text-primary">Este Año</option>
+            </select>
+          </div>
+
+          {/* Source Filter Select */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+              className="glass-panel px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-container border border-border-glass text-text-primary outline-none focus:border-primary cursor-pointer"
+            >
+              <option value="all" className="bg-surface-dim text-text-primary">Todos los orígenes</option>
+              {availableSources.map(source => (
+                <option key={source} value={source} className="bg-surface-dim text-text-primary">{source}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sector Filter Select */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+            <select
+              value={sectorFilter}
+              onChange={(e) => setSectorFilter(e.target.value)}
+              className="glass-panel px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-container border border-border-glass text-text-primary outline-none focus:border-primary cursor-pointer"
+            >
+              <option value="all" className="bg-surface-dim text-text-primary">Todos los sectores</option>
+              {availableSectors.map(sector => (
+                <option key={sector} value={sector} className="bg-surface-dim text-text-primary">{sector}</option>
+              ))}
+            </select>
+          </div>
+          
+          {(timeFilter !== "all" || sourceFilter !== "all" || sectorFilter !== "all") && (
+            <button
+              onClick={() => {
+                setTimeFilter("all");
+                setSourceFilter("all");
+                setSectorFilter("all");
+              }}
+              className="text-[10px] text-primary hover:underline ml-auto font-bold"
+            >
+              Limpiar filtros
+            </button>
+          )}
         </div>
       </div>
 
@@ -163,7 +331,7 @@ export default function DashboardPage() {
             <div>
               <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Ciclo de Ventas</p>
               <h3 className="text-3xl font-black text-text-primary mt-1 tracking-tight">
-                -40%
+                {salesCycle.label}
               </h3>
             </div>
             <div className="p-2 bg-secondary/20 rounded-lg text-secondary">
@@ -175,7 +343,7 @@ export default function DashboardPage() {
               <CheckCircle2 size={10} className="mr-1" />
               Optimizado por AI
             </span>
-            <span className="text-[10px] text-text-secondary ml-2">Avg. 14 días</span>
+            <span className="text-[10px] text-text-secondary ml-2">{salesCycle.text}</span>
           </div>
         </div>
 
