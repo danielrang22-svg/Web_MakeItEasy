@@ -200,7 +200,7 @@ export default function DashboardPage() {
       {/* ── Main Content Grid: Charts and AI Activity ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sales Growth Chart */}
-        <div className="lg:col-span-2 glass-panel rounded-xl p-6 flex flex-col border border-border-glass">
+        <div className="lg:col-span-3 glass-panel rounded-xl p-6 flex flex-col border border-border-glass">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-base font-bold text-text-primary tracking-tight">Sales Growth</h3>
@@ -246,56 +246,6 @@ export default function DashboardPage() {
             {/* Trend line */}
             <div className="absolute top-[45%] left-0 w-full h-[2px] bg-secondary/40 rotate-[-12deg] transform origin-left pointer-events-none"></div>
           </div>
-        </div>
-
-        {/* Actividad IA */}
-        <div className="glass-panel rounded-xl p-6 flex flex-col border border-border-glass">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-base font-bold text-text-primary tracking-tight">Actividad IA</h3>
-            <button className="text-text-secondary hover:text-primary transition-colors">
-              <MoreHorizontal size={18} />
-            </button>
-          </div>
-          <div className="space-y-4 flex-1 overflow-y-auto pr-1">
-            {/* Item 1 */}
-            <div className="flex gap-4 items-start p-3 rounded-lg hover:bg-surface-container-high/40 transition-colors border-l-2 border-secondary bg-surface-container-low/20">
-              <div className="w-9 h-9 rounded-full bg-secondary/20 flex items-center justify-center text-secondary shrink-0 ai-pulse">
-                <Bot size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-text-primary truncate">Agent Alpha contactó 45 leads</p>
-                <p className="text-[10px] text-text-secondary mt-0.5">Hace 10 min • 12 respuestas positivas</p>
-                <div className="mt-2">
-                  <span className="px-2 py-0.5 bg-secondary/10 text-[9px] text-secondary border border-secondary/20 rounded">
-                    Outreach
-                  </span>
-                </div>
-              </div>
-            </div>
-            {/* Item 2 */}
-            <div className="flex gap-4 items-start p-3 rounded-lg hover:bg-surface-container-high/40 transition-colors border-l-2 border-primary bg-surface-container-low/20">
-              <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                <TrendingUp size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-text-primary truncate">Análisis de Pipeline completado</p>
-                <p className="text-[10px] text-text-secondary mt-0.5">Hace 1 hora • Alta probabilidad de cierre Q3</p>
-              </div>
-            </div>
-            {/* Item 3 */}
-            <div className="flex gap-4 items-start p-3 rounded-lg hover:bg-surface-container-high/40 transition-colors border-l-2 border-tertiary bg-surface-container-low/20">
-              <div className="w-9 h-9 rounded-full bg-tertiary/20 flex items-center justify-center text-tertiary shrink-0">
-                <Zap size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-text-primary truncate">Workflow 'Onboarding' optimizado</p>
-                <p className="text-[10px] text-text-secondary mt-0.5">Hace 3 horas • Tiempo reducido en 40%</p>
-              </div>
-            </div>
-          </div>
-          <button className="mt-4 pt-3 border-t border-border-glass/40 w-full text-center text-xs text-text-secondary hover:text-primary transition-colors">
-            Ver todo el registro
-          </button>
         </div>
       </div>
 

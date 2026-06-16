@@ -9,6 +9,8 @@ export async function DELETE(request: NextRequest) {
 
     // Limpia todas las tablas transaccionales en una única operación segura (ignora Usuarios)
     await prisma.$transaction([
+      prisma.gasto.deleteMany({}),
+      prisma.proveedor.deleteMany({}),
       prisma.automationFlow.deleteMany({}),
       prisma.proyecto.deleteMany({}),
       prisma.cotizacion.deleteMany({}),
