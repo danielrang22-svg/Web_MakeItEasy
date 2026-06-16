@@ -30,12 +30,13 @@ export async function POST(request: NextRequest) {
 
     if (cotizacionId) {
       const cotizacion = await prisma.cotizacion.findUnique({
-        where: { id: cotizacionId },
-        include: { lineas: true }
+        where: { id: cotizacionId }
       });
       if (cotizacion) {
-        context += `Cotización: ${cotizacion.id}\n`;
-        context += `Líneas de la cotización:\n${JSON.stringify(cotizacion.lineas, null, 2)}\n\n`;
+        context += `Cotización: ${cotizacion.tituloPropuesta || 'Propuesta Comercial'}\n`;
+        if (cotizacion.fasesJson) {
+          context += `Fases de la cotización:\n${cotizacion.fasesJson}\n\n`;
+        }
       }
     }
 
