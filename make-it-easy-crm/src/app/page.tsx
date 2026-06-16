@@ -37,7 +37,7 @@ function SectionHeader({ label, href, linkLabel }: { label: string; href?: strin
 // ── Main Dashboard ────────────────────────────────────
 export default function DashboardPage() {
   const { leads, loadLeads, createLead } = useLeadsStore();
-  const { proyectos, loadProyectos, ordenes, loadOrdenes, getProjectProgress } = useProyectosStore();
+  const { proyectos, loadProyectos, ordenes, loadOrdenes, getProjectProgress, cotizaciones, loadCotizaciones } = useProyectosStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
@@ -45,7 +45,8 @@ export default function DashboardPage() {
     loadLeads();
     loadProyectos();
     loadOrdenes();
-  }, [loadLeads, loadProyectos, loadOrdenes]);
+    loadCotizaciones();
+  }, [loadLeads, loadProyectos, loadOrdenes, loadCotizaciones]);
 
   const totalValue   = getTotalPipelineValue(leads);
   const activeLeads  = leads.filter(l => l.etapa !== Etapa.PERDIDO && l.etapa !== Etapa.GANADO);
@@ -57,6 +58,32 @@ export default function DashboardPage() {
   const activeProjects = proyectos
     .filter(p => p.estado !== EstadoProyecto.SOPORTE)
     .slice(0, 4);
+
+  // Group approved client quote totals by month of current year
+  const getMonthlySales = () => {
+    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const currentYear = new Date().getFullYear();
+    const monthlyTotals = Array(12).fill(0);
+
+    cotizaciones.forEach(c => {
+      if (c.estado === "APROBADA_CLIENTE") {
+        const date = new Date(c.fechaCreacion || c.fecha);
+        if (date.getFullYear() === currentYear) {
+          const monthIndex = date.getMonth();
+          monthlyTotals[monthIndex] += (c.totalProyectoCore + c.moduloOpcionalFee);
+        }
+      }
+    });
+
+    const maxVal = Math.max(...monthlyTotals, 1);
+    return months.map((name, index) => {
+      const value = monthlyTotals[index];
+      const percent = Math.min(Math.round((value / maxVal) * 90), 90);
+      return { name, value, percent: percent > 0 ? percent : 5 };
+    });
+  };
+
+  const monthlySales = getMonthlySales();
 
   async function handleCreate(data: LeadCreateData) {
     await createLead(data);
@@ -215,7 +242,7 @@ export default function DashboardPage() {
               </span>
             </div>
           </div>
-          {/* Simulated Chart */}
+          {/* Real Monthly Sales Chart */}
           <div className="flex-1 min-h-[250px] w-full relative flex items-end justify-between px-4 pb-8 pt-10 border-b border-l border-border-glass/40">
             {/* Grid lines */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10">
@@ -225,26 +252,20 @@ export default function DashboardPage() {
               <div className="border-t border-border-glass w-full h-0"></div>
             </div>
             {/* Bars */}
-            <div className="w-1/12 h-[30%] bg-surface-container-high rounded-t-sm relative group cursor-pointer hover:bg-surface-bright transition-colors">
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-surface-bright text-text-primary px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">Ene: $12k</div>
-            </div>
-            <div className="w-1/12 h-[45%] bg-surface-container-high rounded-t-sm relative group cursor-pointer hover:bg-surface-bright transition-colors">
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-surface-bright text-text-primary px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">Feb: $18k</div>
-            </div>
-            <div className="w-1/12 h-[40%] bg-surface-container-high rounded-t-sm relative group cursor-pointer hover:bg-surface-bright transition-colors">
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-surface-bright text-text-primary px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">Mar: $16k</div>
-            </div>
-            <div className="w-1/12 h-[60%] bg-gradient-to-t from-primary/20 to-primary rounded-t-sm relative group cursor-pointer shadow-[0_0_15px_rgba(138,235,255,0.3)]">
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-surface-bright text-text-primary px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">Abr: $24k</div>
-            </div>
-            <div className="w-1/12 h-[75%] bg-gradient-to-t from-primary/20 to-primary rounded-t-sm relative group cursor-pointer shadow-[0_0_15px_rgba(138,235,255,0.3)]">
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-surface-bright text-text-primary px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">May: $30k</div>
-            </div>
-            <div className="w-1/12 h-[90%] bg-gradient-to-t from-primary/20 to-primary rounded-t-sm relative group cursor-pointer shadow-[0_0_15px_rgba(138,235,255,0.3)]">
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-surface-bright text-text-primary px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">Jun: $36k</div>
-            </div>
-            {/* Trend line */}
-            <div className="absolute top-[45%] left-0 w-full h-[2px] bg-secondary/40 rotate-[-12deg] transform origin-left pointer-events-none"></div>
+            {monthlySales.map(m => (
+              <div 
+                key={m.name} 
+                style={{ height: `${m.percent}%`, width: "6%" }}
+                className="bg-gradient-to-t from-primary/20 to-primary rounded-t-sm relative group cursor-pointer hover:bg-surface-bright transition-colors shadow-[0_0_15px_rgba(138,235,255,0.15)] flex flex-col justify-end"
+              >
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-surface-bright text-text-primary px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 shadow-lg">
+                  {m.name}: {formatCurrency(m.value)}
+                </div>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-[10px] text-text-secondary font-semibold">
+                  {m.name}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
