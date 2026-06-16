@@ -9,7 +9,7 @@ interface User {
   id: string;
   email: string;
   nombre: string;
-  rol: "admin" | "ventas";
+  rol: "admin" | "ventas" | "comercial";
   activo: boolean;
   fechaCreacion: string;
 }
@@ -136,15 +136,23 @@ export default function UsuariosPage() {
               {usuarios.map(u => (
                 <tr key={u.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${!u.activo ? "opacity-60" : ""}`}>
                   <td className="py-4 px-5 font-bold flex items-center gap-2">
-                    <div className={`p-2 rounded-full ${u.rol === "admin" ? "bg-red-100 text-red-600 dark:bg-red-900/30" : "bg-blue-100 text-mie-primary dark:bg-blue-900/30"}`}>
-                      {u.rol === "admin" ? <Shield size={16} /> : <Users size={16} />}
+                    <div className={`p-2 rounded-full ${
+                      u.rol === "admin" ? "bg-red-100 text-red-600 dark:bg-red-900/30" 
+                      : u.rol === "comercial" ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30"
+                      : "bg-blue-100 text-mie-primary dark:bg-blue-900/30"
+                    }`}>
+                      {u.rol === "admin" ? <Shield size={16} /> : u.rol === "comercial" ? <Users size={16} /> : <Users size={16} />}
                     </div>
                     {u.nombre}
                   </td>
                   <td className="py-4 px-5">{u.email}</td>
                   <td className="py-4 px-5">
-                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${u.rol === "admin" ? "bg-red-100 text-red-600 dark:bg-red-900/30" : "bg-blue-100 text-mie-primary dark:bg-blue-900/30"}`}>
-                      {u.rol}
+                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                      u.rol === "admin" ? "bg-red-100 text-red-600 dark:bg-red-900/30" 
+                      : u.rol === "comercial" ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30"
+                      : "bg-blue-100 text-mie-primary dark:bg-blue-900/30"
+                    }`}>
+                      {u.rol === "admin" ? "Admin" : u.rol === "comercial" ? "Comercial" : "Ventas"}
                     </span>
                   </td>
                   <td className="py-4 px-5 text-center">
@@ -203,8 +211,10 @@ export default function UsuariosPage() {
             <label className="block text-xs font-bold uppercase text-muted-foreground mb-1">Nivel de Acceso (Rol)</label>
             <select name="rol" required defaultValue={editingUser?.rol || "ventas"} className="w-full p-3 rounded-xl bg-card border border-border focus:ring-2 focus:ring-mie-secondary outline-none">
               <option value="ventas">🧑‍💼 Equipo de Ventas (Estándar)</option>
-              <option value="admin">🛡️ Administrador General</option>
+              <option value="comercial">💼 Representante Comercial (Solo Ventas)</option>
+              <option value="admin">🛡️ Administrador General (Acceso Total)</option>
             </select>
+            <p className="text-[10px] text-muted-foreground mt-1.5 ml-1">Comercial: solo ve leads, pipeline y compras. No ve propuestas técnicas ni reportes internos.</p>
           </div>
 
           <div className="pt-4 flex gap-3">

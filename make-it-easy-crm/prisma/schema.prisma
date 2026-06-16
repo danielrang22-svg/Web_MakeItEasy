@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -261,7 +261,7 @@ model Usuario {
   email              String   @unique
   passwordHash       String?
   nombre             String
-  rol                String   @default("ventas") // "admin" o "ventas"
+  rol                String   @default("ventas") // "admin" | "ventas" | "comercial"
   activo             Boolean  @default(true)
   fechaCreacion      DateTime @default(now())
   fechaActualizacion DateTime @updatedAt

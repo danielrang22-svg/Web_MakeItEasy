@@ -9,19 +9,21 @@ import {
     Settings, HelpCircle, Sparkles, Plus, ShoppingCart
 } from "lucide-react";
 
-const menuItems = [
-    { href: "/",             icon: Home,            label: "Dashboard" },
-    { href: "/leads",        icon: Briefcase,       label: "Leads" },
-    { href: "/kanban",       icon: LayoutDashboard, label: "Pipeline" },
-    { href: "/contactos",    icon: Users,           label: "Contactos" },
-    { href: "/empresas",     icon: Building2,       label: "Empresas" },
-    { href: "/cotizaciones", icon: FileText,        label: "Cotizaciones" },
-    { href: "/productos",    icon: Package,         label: "Productos" },
-    { href: "/proyectos",    icon: FolderKanban,    label: "Proyectos" },
-    { href: "/proveedores",  icon: Factory,         label: "Proveedores" },
-    { href: "/vendedores",   icon: Users,           label: "Comerciales" },
-    { href: "/compras",      icon: ShoppingCart,    label: "Compras" },
-    { href: "/reportes",     icon: BarChart3,       label: "Reportes" },
+// Items accesibles por todos los roles
+const ALL_MENU_ITEMS = [
+    { href: "/",             icon: Home,            label: "Dashboard",     roles: ["admin", "ventas", "comercial"] },
+    { href: "/leads",        icon: Briefcase,       label: "Leads",         roles: ["admin", "ventas", "comercial"] },
+    { href: "/kanban",       icon: LayoutDashboard, label: "Pipeline",      roles: ["admin", "ventas", "comercial"] },
+    { href: "/contactos",    icon: Users,           label: "Contactos",     roles: ["admin", "ventas", "comercial"] },
+    { href: "/empresas",     icon: Building2,       label: "Empresas",      roles: ["admin", "ventas", "comercial"] },
+    { href: "/compras",      icon: ShoppingCart,    label: "Compras",       roles: ["admin", "ventas", "comercial"] },
+    // Sección técnica — oculta para rol 'comercial'
+    { href: "/cotizaciones", icon: FileText,        label: "Cotizaciones",  roles: ["admin", "ventas"] },
+    { href: "/productos",    icon: Package,         label: "Productos",     roles: ["admin", "ventas"] },
+    { href: "/proyectos",    icon: FolderKanban,    label: "Proyectos",     roles: ["admin", "ventas"] },
+    { href: "/proveedores",  icon: Factory,         label: "Proveedores",   roles: ["admin"] },
+    { href: "/vendedores",   icon: Users,           label: "Comerciales",   roles: ["admin"] },
+    { href: "/reportes",     icon: BarChart3,       label: "Reportes",      roles: ["admin", "ventas"] },
 ];
 
 export default function Sidebar() {
@@ -43,6 +45,11 @@ export default function Sidebar() {
         }
     }, []);
 
+    // Filtrar menú según rol del usuario
+    const menuItems = ALL_MENU_ITEMS.filter(item => 
+        !user?.role || item.roles.includes(user.role)
+    );
+
     function isActive(href: string) {
         return href === "/"
             ? pathname === "/"
@@ -52,6 +59,7 @@ export default function Sidebar() {
     const initials = user?.nombre
         ? user.nombre.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()
         : "U";
+
 
     return (
         <aside
