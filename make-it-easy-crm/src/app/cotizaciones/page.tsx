@@ -11,7 +11,6 @@ import { formatCurrency } from "@/lib/constants";
 import { Modal, Toast, ConfirmDialog } from "@/components/ui/SharedUI";
 import { useRouter } from "next/navigation";
 import { useProyectosStore } from "@/lib/state/proyectosStore";
-import { useAutomationStore } from "@/lib/state/automationStore";
 import ImportQuoteModal from "@/components/cotizaciones/ImportQuoteModal";
 import {
     Search, FileText, Plus, Pencil, Trash2, Eye, Download,
