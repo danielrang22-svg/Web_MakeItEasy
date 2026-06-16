@@ -15,7 +15,7 @@ import ImportQuoteModal from "@/components/cotizaciones/ImportQuoteModal";
 import {
     Search, FileText, Plus, Pencil, Trash2, Eye, Download,
     Building2, User, DollarSign, Cpu, CheckCircle, Clock, Filter, X, ArrowRight, Archive, Sparkles,
-    ChevronDown, Send, Users, Link2, UploadCloud,
+    ChevronDown, Send, Users, Link2, UploadCloud, Github
 } from "lucide-react";
 import { CotizacionView } from "@/components/cotizaciones/CotizacionView";
 import AIBriefInput, { AiProposal } from "@/components/cotizaciones/AIBriefInput";
