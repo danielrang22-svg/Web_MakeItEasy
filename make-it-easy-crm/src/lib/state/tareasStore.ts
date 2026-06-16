@@ -15,7 +15,8 @@ export interface Tarea {
   githubBranch: string | null;
   fechaLimite: string | null;
   etiquetas: string | null;
-  completadaEn: string | null;
+  completadaEn?: string | null;
+  githubPrNumber?: number | null;
   createdAt: string;
   updatedAt: string;
   subtareas?: Tarea[];

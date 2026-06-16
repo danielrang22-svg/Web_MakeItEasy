@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import OpenAI from "openai";
 import { verifyAuthRole } from "@/lib/auth";
-const pdf = require("pdf-parse");
 import mammoth from "mammoth";
 
 export async function POST(request: NextRequest) {
@@ -40,6 +39,7 @@ export async function POST(request: NextRequest) {
       const isImage = mimeType.startsWith("image/");
 
       if (isPdf) {
+        const pdf = require("pdf-parse");
         const arrayBuffer = await file.arrayBuffer();
         const pdfData = await pdf(Buffer.from(arrayBuffer));
         documentText += `\n--- CONTENIDO DEL ARCHIVO PDF (${file.name}) ---\n${pdfData.text}\n`;

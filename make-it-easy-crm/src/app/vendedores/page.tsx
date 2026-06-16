@@ -81,10 +81,10 @@ export default function VendedoresPage() {
         const valor = computeCotizacionTotal(c);
         data.valorTotal += valor;
 
-        if (c.estado === EstadoCotizacion.APROBADA) {
+        if (c.estado === EstadoCotizacion.APROBADA_CLIENTE) {
             data.aprobadas++;
             data.valorAprobado += valor;
-        } else if (c.estado === EstadoCotizacion.RECHAZADA) {
+        } else if (c.estado === EstadoCotizacion.RECHAZADA_CLIENTE) {
             data.rechazadas++;
         } else {
             data.pendientes++;

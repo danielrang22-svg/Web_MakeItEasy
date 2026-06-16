@@ -139,6 +139,15 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
         }
     };
 
+    const handleNotesChange = async (notes: string) => {
+        try {
+            await updateProyecto(proyecto.id, { notas: notes });
+            setToast({ message: "Notas actualizadas", type: "success" });
+        } catch (e) {
+            setToast({ message: "Error al guardar notas", type: "error" });
+        }
+    };
+
     const openCreateFlow = () => {
         setIsEditingFlow(false);
         setSelectedFlowId(null);
@@ -499,7 +508,7 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                                 <p className="text-xs text-muted-foreground mt-0.5">Control de versiones, PRs y commits para este proyecto</p>
                             </div>
                             <div className="h-[400px]">
-                                <GitHubPanel githubRepo={proyecto.githubRepo} />
+                                <GitHubPanel githubRepo={proyecto.githubRepo || null} />
                             </div>
                         </div>
                     )}

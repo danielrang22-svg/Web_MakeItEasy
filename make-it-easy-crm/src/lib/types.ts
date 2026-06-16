@@ -178,6 +178,7 @@ export interface Proyecto {
   fechaEntregaEstimada: string | null; // ISO string
   notas: string;
   herramientasUsadas: string | null;
+  githubRepo?: string | null;
   fechaCreacion: string;
   fechaActualizacion: string;
 }

@@ -14,7 +14,7 @@ interface LeadTableProps {
 function getAiState(etapa: Etapa) {
   switch (etapa) {
     case Etapa.GANADO:
-    case Etapa.NEGOCIACION:
+    case Etapa.ACEPTADO:
     case Etapa.PROPUESTA:
       return {
         label: "Calificado",

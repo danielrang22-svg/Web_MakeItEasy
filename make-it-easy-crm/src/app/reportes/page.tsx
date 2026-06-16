@@ -102,8 +102,8 @@ export default function ReportesPage() {
     const topLeads = [...activeLeads].sort((a, b) => b.valorEstimado - a.valorEstimado).slice(0, 5);
 
     // --- COTIZACIONES ---
-    const cotizacionesAprobadas = filteredCotizaciones.filter(c => c.estado === EstadoCotizacion.APROBADA);
-    const cotizacionesRechazadas = filteredCotizaciones.filter(c => c.estado === EstadoCotizacion.RECHAZADA);
+    const cotizacionesAprobadas = filteredCotizaciones.filter(c => c.estado === EstadoCotizacion.APROBADA_CLIENTE);
+    const cotizacionesRechazadas = filteredCotizaciones.filter(c => c.estado === EstadoCotizacion.RECHAZADA_CLIENTE);
     const valorCotizado = filteredCotizaciones.reduce((acc, c) => acc + computeCotizacionTotal(c), 0);
     const tasaAprobacion = filteredCotizaciones.length > 0 
         ? ((cotizacionesAprobadas.length / filteredCotizaciones.length) * 100).toFixed(1) 
