@@ -25,7 +25,8 @@ export async function middleware(request: NextRequest) {
     pathname.endsWith(".jpeg") ||
     pathname.endsWith(".svg") ||
     pathname.endsWith(".css") ||
-    pathname.endsWith(".js")
+    pathname.endsWith(".js") ||
+    pathname.endsWith(".txt")
   ) {
     return NextResponse.next();
   }
