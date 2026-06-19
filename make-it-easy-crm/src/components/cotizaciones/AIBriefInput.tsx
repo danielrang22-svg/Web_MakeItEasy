@@ -281,6 +281,7 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
                   onChange={handleFileSelect} 
                   className="hidden" 
                   multiple
+                  accept="audio/*,video/mp4,.m4a,.mp3,.wav,.ogg,.opus,.oga,.weba,.caf,.pdf,.txt,.md,.docx,.xlsx,.csv,image/*"
                 />
                 <button
                   type="button"
