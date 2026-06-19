@@ -17,6 +17,9 @@ export default function ComprasPage() {
     const [filterDate, setFilterDate] = useState("TODOS");
     const [showModal, setShowModal] = useState(false);
     const [usuarios, setUsuarios] = useState<any[]>([]);
+    const [proveedores, setProveedores] = useState<any[]>([]);
+    const [nuevoProveedorNombre, setNuevoProveedorNombre] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -26,6 +29,7 @@ export default function ComprasPage() {
         categoria: "GENERAL",
         fecha: new Date().toISOString().split('T')[0], // YYYY-MM-DD format for date input
         proyectoId: "",
+        proveedorId: "",
         usuarioId: "",
         recurrente: false,
         estado: "PAGADO"
@@ -35,6 +39,7 @@ export default function ComprasPage() {
         fetchGastos();
         loadProyectos();
         fetch('/api/usuarios').then(res => res.json()).then(data => setUsuarios(Array.isArray(data) ? data : []));
+        fetch('/api/proveedores').then(res => res.json()).then(data => setProveedores(Array.isArray(data) ? data : []));
     }, [fetchGastos, loadProyectos]);
 
     // Apply text search and category filter
@@ -66,25 +71,56 @@ export default function ComprasPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        await addGasto({
-            ...formData,
-            monto: Number(formData.monto),
-            proyectoId: formData.proyectoId || undefined,
-            usuarioId: formData.categoria === 'NOMINA' ? (formData.usuarioId || undefined) : undefined,
-            fecha: new Date(formData.fecha).toISOString()
-        });
-        setShowModal(false);
-        setFormData({ 
-            concepto: "", 
-            monto: "", 
-            moneda: "COP", 
-            categoria: "GENERAL", 
-            fecha: new Date().toISOString().split('T')[0],
-            proyectoId: "",
-            usuarioId: "",
-            recurrente: false, 
-            estado: "PAGADO" 
-        });
+        setIsSubmitting(true);
+        try {
+            let finalProveedorId = formData.proveedorId;
+
+            // Create new provider if selected
+            if (formData.categoria !== 'NOMINA' && finalProveedorId === "CREAR_NUEVO" && nuevoProveedorNombre.trim() !== "") {
+                const provRes = await fetch('/api/proveedores', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre: nuevoProveedorNombre })
+                });
+                if (provRes.ok) {
+                    const newProv = await provRes.json();
+                    finalProveedorId = newProv.id;
+                    // Actualizamos la lista local por si se necesita
+                    setProveedores([...proveedores, newProv]);
+                } else {
+                    throw new Error("No se pudo crear el proveedor");
+                }
+            }
+
+            await addGasto({
+                ...formData,
+                monto: Number(formData.monto),
+                proyectoId: formData.proyectoId || undefined,
+                proveedorId: formData.categoria !== 'NOMINA' ? (finalProveedorId && finalProveedorId !== "CREAR_NUEVO" ? finalProveedorId : undefined) : undefined,
+                usuarioId: formData.categoria === 'NOMINA' ? (formData.usuarioId || undefined) : undefined,
+                fecha: new Date(formData.fecha).toISOString()
+            });
+
+            setShowModal(false);
+            setFormData({ 
+                concepto: "", 
+                monto: "", 
+                moneda: "COP", 
+                categoria: "GENERAL", 
+                fecha: new Date().toISOString().split('T')[0],
+                proyectoId: "",
+                proveedorId: "",
+                usuarioId: "",
+                recurrente: false, 
+                estado: "PAGADO" 
+            });
+            setNuevoProveedorNombre("");
+        } catch (error) {
+            console.error(error);
+            alert("Ocurrió un error al registrar el gasto");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -242,6 +278,10 @@ export default function ComprasPage() {
                                                     <div className="flex items-center gap-2 text-purple-400">
                                                         <span className="truncate max-w-[150px] inline-block">{g.usuario.nombre}</span>
                                                     </div>
+                                                ) : g.proveedor ? (
+                                                    <div className="flex items-center gap-2 text-emerald-500">
+                                                        <span className="truncate max-w-[150px] inline-block font-bold">{g.proveedor.nombre}</span>
+                                                    </div>
                                                 ) : g.proyecto?.titulo || g.proyectoId ? (
                                                     <div className="flex items-center gap-2 text-mie-primary">
                                                         <Building2 size={14} />
@@ -363,6 +403,41 @@ export default function ComprasPage() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Fila 4: Proveedor (Sólo si NO es nómina) */}
+                        {formData.categoria !== "NOMINA" && (
+                            <div className="bg-surface-dim p-4 rounded-xl border border-border-glass space-y-3">
+                                <div>
+                                    <label className="text-xs font-bold text-text-secondary mb-1.5 block uppercase tracking-wider">Proveedor</label>
+                                    <select 
+                                        value={formData.proveedorId} 
+                                        onChange={e => setFormData({...formData, proveedorId: e.target.value})} 
+                                        className="w-full p-2.5 bg-background rounded-xl ring-1 ring-border text-sm focus:ring-2 focus:ring-mie-primary outline-none transition-all text-text-primary cursor-pointer"
+                                    >
+                                        <option value="">-- Sin Proveedor (Gasto Menor) --</option>
+                                        {proveedores.map(p => (
+                                            <option key={p.id} value={p.id}>{p.nombre}</option>
+                                        ))}
+                                        <option value="CREAR_NUEVO" className="font-bold text-mie-primary">➕ Crear Nuevo Proveedor...</option>
+                                    </select>
+                                </div>
+                                
+                                {formData.proveedorId === "CREAR_NUEVO" && (
+                                    <div className="animate-fade-in pl-4 border-l-2 border-mie-primary mt-3 space-y-2">
+                                        <label className="text-xs font-bold text-mie-primary block uppercase tracking-wider">Nombre del Nuevo Proveedor</label>
+                                        <input 
+                                            required 
+                                            type="text" 
+                                            value={nuevoProveedorNombre} 
+                                            onChange={e => setNuevoProveedorNombre(e.target.value)} 
+                                            className="w-full p-2.5 bg-background rounded-xl ring-1 ring-border text-sm focus:ring-2 focus:ring-mie-primary outline-none transition-all text-text-primary" 
+                                            placeholder="Ej. Microsoft, AWS, Papelería El Sol..." 
+                                        />
+                                        <p className="text-[10px] text-muted-foreground">Podrás añadir el NIT y contacto más adelante en el módulo de Proveedores.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-3 p-3 bg-background rounded-xl border border-border">
@@ -388,9 +463,10 @@ export default function ComprasPage() {
                         </button>
                         <button 
                             type="submit" 
-                            className="flex-1 py-3 bg-gradient-to-r from-primary to-secondary text-on-primary rounded-xl font-bold text-sm hover:opacity-90 shadow-[0_0_15px_rgba(138,235,255,0.3)] transition-all active:scale-[0.98]"
+                            disabled={isSubmitting}
+                            className="flex-1 py-3 bg-gradient-to-r from-primary to-secondary text-on-primary rounded-xl font-bold text-sm hover:opacity-90 shadow-[0_0_15px_rgba(138,235,255,0.3)] transition-all active:scale-[0.98] disabled:opacity-50"
                         >
-                            Registrar Gasto
+                            {isSubmitting ? "Registrando..." : "Registrar Gasto"}
                         </button>
                     </div>
                 </form>
