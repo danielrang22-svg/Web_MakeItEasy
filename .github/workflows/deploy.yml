@@ -32,21 +32,66 @@ jobs:
           TARGET: "/var/www/html/makeiteasy"
 
           # Archivos que NO se envían al VPS
-          EXCLUDE: "/.git/, /.github/, /.agents/, /.claude/, /.neovate/, /.windsurf/, /stitch/, /skills/, /skills-lock.json, /SRS_MakeItEasy_Website.md, /.gitignore, /README.md"
+          EXCLUDE: "/.git/, /.github/, /.agents/, /.claude/, /.neovate/, /.windsurf/, /stitch/, /skills/, /skills-lock.json, /SRS_MakeItEasy_Website.md, /.gitignore, /README.md, **/.env, **/.env.production, /make-it-easy-crm/.env"
 
           # Ejecutar comandos en el VPS después de transferir los archivos
           SCRIPT_AFTER: |
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             cd /var/www/html/makeiteasy/make-it-easy-crm
-            npm install
-            npm run build
+
+            # Start diag
+            echo "=== SYSTEM DIAGNOSTICS ===" > ../diag.txt
+            echo "Date: $(date)" >> ../diag.txt
+            echo "Current Directory: $(pwd)" >> ../diag.txt
+            echo "Current User: $(whoami)" >> ../diag.txt
+            echo "Node Version: $(node -v)" >> ../diag.txt
+            
+            # Check if .env exists
+            if [ -f .env ]; then
+              echo ".env file exists" >> ../diag.txt
+              echo "--- .env contents (masked) ---" >> ../diag.txt
+              cat .env | sed 's/=\(.*\)/=********/' >> ../diag.txt
+            else
+              echo ".env file DOES NOT exist!" >> ../diag.txt
+              # Try to find if there is a backup or previous .env in the parent folders
+              echo "Searching for .env backups..." >> ../diag.txt
+              find /var/www -name ".env*" >> ../diag.txt 2>&1
+            fi
+            
+            # Check Nginx config
+            echo "=== NGINX CONFIGS ===" >> ../diag.txt
+            ls -la /etc/nginx/sites-enabled/ >> ../diag.txt 2>&1
+            cat /etc/nginx/sites-enabled/* >> ../diag.txt 2>&1
+            
+            # Check listening ports
+            echo "=== LISTENING PORTS ===" >> ../diag.txt
+            netstat -tulpn || ss -tulpn || lsof -i -P -n | grep LISTEN >> ../diag.txt 2>&1
+            
+            # Build and start
+            npm install >> ../diag.txt 2>&1
+            npx prisma generate >> ../diag.txt 2>&1
+            npm run build >> ../diag.txt 2>&1
+            
             pm2 delete mie-crm || true
             fuser -k 3002/tcp || true
             fuser -k 3001/tcp || true
             kill -9 $(lsof -t -i:3002) || true
             kill -9 $(lsof -t -i:3001) || true
-            pm2 start ecosystem.config.js --env production
-            pm2 logs mie-crm --lines 200 --no-colors > public/pm2-logs.txt
+            
+            pm2 start ecosystem.config.js --env production >> ../diag.txt 2>&1
+            sleep 3
+            
+            echo "=== PM2 STATUS ===" >> ../diag.txt
+            pm2 status >> ../diag.txt 2>&1
+            
+            echo "=== PM2 LOGS ===" >> ../diag.txt
+            pm2 logs mie-crm --lines 100 --no-colors >> ../diag.txt 2>&1
+            
+            # Copy diag.txt to multiple locations so we can fetch it
+            cp ../diag.txt /var/www/html/diag.txt || true
+            cp ../diag.txt /var/www/html/makeiteasy/diag.txt || true
+            cp ../diag.txt /var/www/html/makeiteasy/make-it-easy-crm/public/diag.txt || true
+
 
 
