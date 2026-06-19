@@ -27,7 +27,6 @@ jobs:
       # ── Paso 1: copiar archivos al VPS por rsync ──────────────────────────
       - name: Copy files to VPS via rsync
         uses: easingthemes/ssh-deploy@main
-        continue-on-error: true          # no bloqueamos si SSH está cerrado
         env:
           SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
           REMOTE_HOST:     ${{ secrets.VPS_HOST }}
@@ -61,7 +60,7 @@ jobs:
             -H "x-deploy-signature: $SIGNATURE" \
             -d "$BODY" \
             "$DEPLOY_URL" \
-            --max-time 30 --connect-timeout 10)
+            --max-time 120 --connect-timeout 20)
 
           echo "HTTP $HTTP_STATUS  →  $(cat /tmp/resp.txt)"
 
