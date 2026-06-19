@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       `echo "[Deploy] Node: $(node -v)"`,
       `npm install --production=false 2>&1 | tail -5`,
       `npx prisma generate 2>&1 | tail -3`,
-      `npx prisma migrate deploy 2>&1 | tail -10`,
+      `npx prisma db push --accept-data-loss 2>&1 | tail -10`,
       `npm run build 2>&1 | tail -20`,
       `pm2 restart mie-crm --update-env`,
       `echo "[Deploy] ✅ COMPLETADO $(date)"`,
