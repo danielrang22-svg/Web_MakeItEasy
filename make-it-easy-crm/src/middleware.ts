@@ -18,6 +18,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/leads/public") ||
+    pathname.startsWith("/api/cotizaciones/debug-logs") ||
+    pathname.startsWith("/api/cotizaciones/procesar-archivo") ||
     pathname.startsWith("/login") ||
     pathname === "/favicon.ico" ||
     pathname.endsWith(".png") ||
