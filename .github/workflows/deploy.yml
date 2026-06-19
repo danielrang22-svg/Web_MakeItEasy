@@ -33,3 +33,13 @@ jobs:
 
           # Archivos que NO se envían al VPS
           EXCLUDE: "/.git/, /.github/, /.agents/, /.claude/, /.neovate/, /.windsurf/, /stitch/, /skills/, /skills-lock.json, /SRS_MakeItEasy_Website.md, /.gitignore, /README.md"
+
+          # Ejecutar comandos en el VPS después de transferir los archivos
+          SCRIPT_AFTER: |
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            cd /var/www/html/makeiteasy/make-it-easy-crm
+            npm install
+            npm run build
+            pm2 restart mie-crm || pm2 start ecosystem.config.js --env production
+
