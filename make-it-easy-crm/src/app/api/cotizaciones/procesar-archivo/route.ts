@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       const mimeType = file.type || "";
       const name = file.name.toLowerCase();
       
-      const isAudio = mimeType.startsWith("audio/") || mimeType === "video/mp4" || !!name.match(/\.(m4a|mp3|wav|ogg|opus|oga|weba)$/);
+      const isAudio = mimeType.startsWith("audio/") || mimeType === "video/mp4" || !!name.match(/\.(m4a|mp3|wav|ogg|opus|oga|weba|caf)$/);
       const isPdf = mimeType === "application/pdf" || name.endsWith(".pdf");
       const isText = mimeType.startsWith("text/") || name.endsWith(".txt") || name.endsWith(".md");
       const isWord = name.endsWith(".docx");
@@ -66,9 +66,11 @@ export async function POST(request: NextRequest) {
       if (isAudio) {
         try {
           const buffer = Buffer.from(await file.arrayBuffer());
-          // Convert to a compatible name for Whisper (.opus and .oga to .ogg)
+          // Convert to a compatible name for Whisper (.opus/.oga to .ogg, .caf to .wav)
           const extension = name.includes('.') ? name.split('.').pop() : 'ogg';
-          const safeExtension = ['opus', 'oga', 'weba'].includes(extension as string) ? 'ogg' : (extension || 'ogg');
+          const safeExtension = ['opus', 'oga', 'weba', 'caf'].includes(extension as string) 
+            ? (extension === 'caf' ? 'wav' : 'ogg') 
+            : (extension || 'ogg');
           const safeName = `audio.${safeExtension}`;
 
           const audioFile = await toFile(buffer, safeName, { type: file.type || "audio/ogg" });
