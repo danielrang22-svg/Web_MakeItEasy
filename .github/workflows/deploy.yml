@@ -42,8 +42,10 @@ jobs:
             npm install
             npm run build
             pm2 delete mie-crm || true
-            npx kill-port 3002 || true
-            npx kill-port 3001 || true
+            fuser -k 3002/tcp || true
+            fuser -k 3001/tcp || true
+            kill -9 $(lsof -t -i:3002) || true
+            kill -9 $(lsof -t -i:3001) || true
             pm2 start ecosystem.config.js --env production
             pm2 logs mie-crm --lines 200 --no-colors > public/pm2-logs.txt
 
