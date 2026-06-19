@@ -5,19 +5,29 @@ import crypto from "crypto";
 
 const execAsync = promisify(exec);
 
-// Secret para verificar que la solicitud viene de GitHub Actions
 const DEPLOY_SECRET = process.env.DEPLOY_WEBHOOK_SECRET || "";
+const APP_DIR =
+  process.env.APP_DIR ||
+  "/var/www/html/makeiteasy/make-it-easy-crm";
 
 function verifySignature(body: string, signature: string): boolean {
-  if (!DEPLOY_SECRET) return false;
-  const expected = `sha256=${crypto
-    .createHmac("sha256", DEPLOY_SECRET)
-    .update(body)
-    .digest("hex")}`;
-  return crypto.timingSafeEqual(
-    Buffer.from(expected),
-    Buffer.from(signature)
-  );
+  if (!DEPLOY_SECRET) {
+    console.error("[Deploy] DEPLOY_WEBHOOK_SECRET no está configurado en .env");
+    return false;
+  }
+  try {
+    const expected = `sha256=${crypto
+      .createHmac("sha256", DEPLOY_SECRET)
+      .update(body)
+      .digest("hex")}`;
+    if (expected.length !== signature.length) return false;
+    return crypto.timingSafeEqual(
+      Buffer.from(expected),
+      Buffer.from(signature)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -25,38 +35,38 @@ export async function POST(request: NextRequest) {
     const body = await request.text();
     const signature = request.headers.get("x-deploy-signature") || "";
 
-    // Verificar firma de seguridad
     if (!verifySignature(body, signature)) {
       console.error("[Deploy] Firma inválida — solicitud rechazada");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("[Deploy] ✅ Solicitud de deploy autorizada — iniciando...");
+    console.log("[Deploy] ✅ Solicitud autorizada — iniciando deploy...");
 
-    const appDir = process.env.APP_DIR || "/var/www/html/makeiteasy/make-it-easy-crm";
     const nvmInit = `export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`;
 
-    // Ejecutar deploy en background para no bloquear la respuesta HTTP
-    const deployScript = `
-      ${nvmInit}
-      cd ${appDir}
-      git pull origin main 2>&1
-      npm install --production=false 2>&1
-      npx prisma generate 2>&1
-      npm run build 2>&1
-      pm2 restart mie-crm 2>&1
-      echo "=== DEPLOY COMPLETADO ==="
-    `.trim();
+    // Script de deploy — sin git pull (el código ya está en disco por rsync)
+    // Solo rebuilda y reinicia
+    const deployScript = [
+      nvmInit,
+      `cd "${APP_DIR}"`,
+      `echo "[Deploy] Directorio: $(pwd)"`,
+      `echo "[Deploy] Node: $(node -v)"`,
+      `npm install --production=false 2>&1 | tail -5`,
+      `npx prisma generate 2>&1 | tail -3`,
+      `npm run build 2>&1 | tail -20`,
+      `pm2 restart mie-crm --update-env`,
+      `echo "[Deploy] ✅ COMPLETADO $(date)"`,
+    ].join(" && ");
 
     // Responder inmediatamente y ejecutar en background
-    execAsync(`bash -c '${deployScript.replace(/'/g, "'\\''")}'`)
+    execAsync(`bash -c ${JSON.stringify(deployScript)}`)
       .then(({ stdout, stderr }) => {
-        console.log("[Deploy] ✅ Deploy completado:");
-        console.log(stdout);
-        if (stderr) console.error("[Deploy] stderr:", stderr);
+        console.log("[Deploy] ✅ Resultado:");
+        console.log(stdout?.slice(-2000));
+        if (stderr) console.error("[Deploy] stderr:", stderr?.slice(-500));
       })
       .catch((err) => {
-        console.error("[Deploy] ❌ Error en deploy:", err.message);
+        console.error("[Deploy] ❌ Error:", err.message?.slice(-500));
       });
 
     return NextResponse.json({
@@ -70,10 +80,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET para verificar que el endpoint está activo
+// GET — health check del endpoint
 export async function GET() {
   return NextResponse.json({
-    status: "Deploy webhook activo",
+    status: "ok",
+    endpoint: "deploy webhook activo",
     timestamp: new Date().toISOString(),
+    hasSecret: !!process.env.DEPLOY_WEBHOOK_SECRET,
+    appDir: APP_DIR,
   });
 }

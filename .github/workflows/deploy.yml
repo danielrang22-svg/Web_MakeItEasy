@@ -14,71 +14,72 @@ jobs:
 
       - name: Validate secrets
         run: |
-          if [ -z "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" ]; then
-            echo "❌ ERROR: Falta el secret DEPLOY_WEBHOOK_SECRET en GitHub"
+          MISSING=""
+          [ -z "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" ] && MISSING="$MISSING DEPLOY_WEBHOOK_SECRET"
+          [ -z "${{ secrets.VPS_APP_URL }}" ]           && MISSING="$MISSING VPS_APP_URL"
+          if [ -n "$MISSING" ]; then
+            echo "❌ Faltan secretos en GitHub:$MISSING"
             echo "   Ve a: Repo → Settings → Secrets → Actions → New repository secret"
-            echo "   Nombre: DEPLOY_WEBHOOK_SECRET"
-            echo "   Valor:  mie-deploy-secret-2026"
             exit 1
           fi
-          if [ -z "${{ secrets.VPS_APP_URL }}" ]; then
-            echo "❌ ERROR: Falta el secret VPS_APP_URL en GitHub"
-            echo "   Ve a: Repo → Settings → Secrets → Actions → New repository secret"
-            echo "   Nombre: VPS_APP_URL"
-            echo "   Valor:  https://crm.makeiteasycol.com"
-            exit 1
-          fi
-          echo "✅ Secretos configurados correctamente"
+          echo "✅ Secretos OK"
 
-      - name: Notify VPS to deploy via webhook
+      # ── Paso 1: copiar archivos al VPS por rsync ──────────────────────────
+      - name: Copy files to VPS via rsync
+        uses: easingthemes/ssh-deploy@main
+        continue-on-error: true          # no bloqueamos si SSH está cerrado
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          REMOTE_HOST:     ${{ secrets.VPS_HOST }}
+          REMOTE_USER:     ${{ secrets.VPS_USER }}
+          REMOTE_PORT:     ${{ secrets.VPS_PORT || '22' }}
+          ARGS: "-rlgoDzvc --delete"
+          SOURCE: "/"
+          TARGET: "/var/www/html/makeiteasy"
+          EXCLUDE: >-
+            /.git/, /.github/, /.agents/, /.claude/, /.neovate/, /.windsurf/,
+            /stitch/, /skills/, /skills-lock.json, /SRS_MakeItEasy_Website.md,
+            /.gitignore, /README.md,
+            **/.env, **/.env.production, /make-it-easy-crm/.env
+
+      # ── Paso 2: notificar al VPS para que haga build + restart ────────────
+      - name: Trigger build & restart via webhook
         run: |
-          echo "🚀 Notificando al VPS para que haga auto-deploy..."
+          echo "🔔 Notificando al VPS para build + restart..."
 
           DEPLOY_URL="${{ secrets.VPS_APP_URL }}/api/deploy"
           BODY='{"ref":"main","event":"push"}'
           SECRET="${{ secrets.DEPLOY_WEBHOOK_SECRET }}"
           SIGNATURE=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print "sha256="$2}')
 
-          echo "📡 Llamando a: $DEPLOY_URL"
+          echo "📡 POST $DEPLOY_URL"
 
-          HTTP_STATUS=$(curl -s -o /tmp/deploy_response.txt -w "%{http_code}" \
+          HTTP_STATUS=$(curl -s -o /tmp/resp.txt -w "%{http_code}" \
             -X POST \
             -H "Content-Type: application/json" \
             -H "x-deploy-signature: $SIGNATURE" \
             -d "$BODY" \
             "$DEPLOY_URL" \
-            --max-time 30 \
-            --connect-timeout 10)
+            --max-time 30 --connect-timeout 10)
 
-          echo "HTTP Status: $HTTP_STATUS"
-          echo "Response:"
-          cat /tmp/deploy_response.txt
+          echo "HTTP $HTTP_STATUS  →  $(cat /tmp/resp.txt)"
 
           if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 201 ]; then
-            echo "✅ Deploy iniciado exitosamente en el VPS"
+            echo "✅ Deploy iniciado en el VPS"
           else
-            echo "❌ Error al notificar al VPS (HTTP $HTTP_STATUS)"
-            echo "   Verifica que el CRM esté corriendo: ${{ secrets.VPS_APP_URL }}/login"
+            echo "❌ Webhook retornó HTTP $HTTP_STATUS"
             exit 1
           fi
 
-      - name: Wait for deploy to complete
+      # ── Paso 3: esperar y verificar ───────────────────────────────────────
+      - name: Wait for build to complete
         run: |
-          echo "⏳ Esperando 90 segundos para que el VPS termine el build..."
-          sleep 90
+          echo "⏳ Esperando 100s que el VPS compile..."
+          sleep 100
 
       - name: Verify deployment
         run: |
-          echo "🔍 Verificando que el CRM responde..."
-
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.VPS_APP_URL }}/login" \
-            --max-time 30)
-
-          echo "HTTP Status: $HTTP_STATUS"
-
-          if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "✅ CRM respondiendo correctamente en producción"
-          else
-            echo "⚠️ CRM retornó HTTP $HTTP_STATUS — puede estar iniciando aún"
-          fi
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.VPS_APP_URL }}/login" --max-time 20)
+          echo "CRM /login → HTTP $STATUS"
+          [ "$STATUS" -eq 200 ] && echo "✅ CRM en producción OK" || echo "⚠️ HTTP $STATUS (puede estar iniciando)"
