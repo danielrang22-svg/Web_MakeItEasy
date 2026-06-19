@@ -143,6 +143,11 @@ model Proyecto {
   herramientasUsadas   String?  // Comma separated list of tools (n8n, Make, Stripe, etc.)
   githubRepo           String?  // e.g. "owner/repo"
   
+  // Financial tracking
+  valorTotal           Float    @default(0)
+  moneda               String   @default("COP") // "COP", "USD", "EUR"
+
+  
   fechaCreacion        DateTime @default(now())
   fechaActualizacion   DateTime @updatedAt
 
@@ -151,6 +156,7 @@ model Proyecto {
   milestones           Milestone[]
   bitacora             BitacoraProyecto[]
   gastos               Gasto[]
+  ingresos             Ingreso[]
   lead                 Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
   cotizacion           Cotizacion?        @relation(fields: [cotizacionId], references: [id], onDelete: SetNull)
 
@@ -353,4 +359,25 @@ model Gasto {
   @@index([proyectoId])
   @@index([proveedorId])
   @@map("gastos")
+}
+
+model Ingreso {
+  id                 String   @id @default(uuid())
+  concepto           String   // Ej: "Abono 50% Inicio", "Pago Mensualidad"
+  monto              Float
+  moneda             String   @default("COP") // "COP", "USD", "EUR"
+  trm                Float    @default(1.0)   // Tasa de cambio a COP en el momento del pago
+  fecha              DateTime @default(now())
+  metodoPago         String?  // Ej: "Transferencia", "Stripe", "Efectivo"
+  estado             String   @default("COMPLETADO") // "PENDIENTE", "COMPLETADO"
+  notas              String?
+
+  proyectoId         String?  
+  proyecto           Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  @@index([proyectoId])
+  @@map("ingresos")
 }

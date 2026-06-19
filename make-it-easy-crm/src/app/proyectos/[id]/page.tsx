@@ -24,6 +24,7 @@ import MilestonesView from "@/components/proyectos/MilestonesView";
 import TaskListView from "@/components/proyectos/TaskListView";
 import BitacoraPanel from "@/components/proyectos/BitacoraPanel";
 import GastosPanel from "@/components/proyectos/GastosPanel";
+import IngresosPanel from "@/components/proyectos/IngresosPanel";
 import { useGastosStore } from "@/lib/state/gastosStore";
 
 const ESTADO_PROYECTO_STYLES: Record<EstadoProyecto, { bg: string; text: string; label: string }> = {
@@ -49,7 +50,7 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
     const [isSaving, setIsSaving] = useState(false);
 
     // View tabs
-    const [activeTab, setActiveTab] = useState<"tasks" | "flows" | "github" | "bitacora" | "costos">("tasks");
+    const [activeTab, setActiveTab] = useState<"tasks" | "flows" | "github" | "bitacora" | "finanzas">("tasks");
     const [taskViewMode, setTaskViewMode] = useState<"board" | "list">("board");
 
     // Gastos store
@@ -364,10 +365,10 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                     <BookOpen size={16}/> Bitácora
                 </button>
                 <button 
-                    onClick={() => setActiveTab("costos")}
-                    className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "costos" ? "border-mie-primary text-mie-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                    onClick={() => setActiveTab("finanzas")}
+                    className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "finanzas" ? "border-mie-primary text-mie-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
                 >
-                    <DollarSign size={16}/> Costos
+                    <DollarSign size={16}/> Finanzas
                 </button>
             </div>
 
@@ -519,9 +520,14 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                         </div>
                     )}
 
-                    {activeTab === "costos" && (
-                        <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm min-h-[500px]">
-                            <GastosPanel proyectoId={proyecto.id} />
+                    {activeTab === "finanzas" && (
+                        <div className="space-y-6">
+                            <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm">
+                                <IngresosPanel proyectoId={proyecto.id} monedaBase={cotizacion?.moneda || "COP"} />
+                            </div>
+                            <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm">
+                                <GastosPanel proyectoId={proyecto.id} />
+                            </div>
                         </div>
                     )}
 

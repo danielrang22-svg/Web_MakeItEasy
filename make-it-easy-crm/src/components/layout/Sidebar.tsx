@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import {
     Home, LayoutDashboard, BarChart3, Users, Building2,
     Briefcase, FileText, Package, FolderKanban, Factory,
-    Settings, HelpCircle, Sparkles, Plus, ShoppingCart
+    Settings, HelpCircle, Sparkles, Plus, ShoppingCart, DollarSign
 } from "lucide-react";
 
 // Items accesibles por todos los roles
@@ -23,6 +23,7 @@ const ALL_MENU_ITEMS = [
     { href: "/proyectos",    icon: FolderKanban,    label: "Proyectos",     roles: ["admin", "ventas"] },
     { href: "/proveedores",  icon: Factory,         label: "Proveedores",   roles: ["admin"] },
     { href: "/vendedores",   icon: Users,           label: "Comerciales",   roles: ["admin"] },
+    { href: "/finanzas",     icon: DollarSign,      label: "Finanzas",      roles: ["admin", "ventas"] },
     { href: "/reportes",     icon: BarChart3,       label: "Reportes",      roles: ["admin", "ventas"] },
 ];
 
