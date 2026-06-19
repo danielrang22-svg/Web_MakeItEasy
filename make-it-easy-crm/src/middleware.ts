@@ -20,6 +20,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/leads/public") ||
     pathname.startsWith("/api/cotizaciones/debug-logs") ||
     pathname.startsWith("/api/cotizaciones/procesar-archivo") ||
+    pathname.startsWith("/api/deploy") ||
+    pathname.startsWith("/api/github/webhook") ||
     pathname.startsWith("/login") ||
     pathname === "/favicon.ico" ||
     pathname.endsWith(".png") ||
