@@ -40,7 +40,8 @@ jobs:
             /.git/, /.github/, /.agents/, /.claude/, /.neovate/, /.windsurf/,
             /stitch/, /skills/, /skills-lock.json, /SRS_MakeItEasy_Website.md,
             /.gitignore, /README.md,
-            **/.env, **/.env.production, /make-it-easy-crm/.env
+            **/.env, **/.env.production, /make-it-easy-crm/.env,
+            **/node_modules/, **/.next/
 
       # ── Paso 2: notificar al VPS para que haga build + restart ────────────
       - name: Trigger build & restart via webhook
