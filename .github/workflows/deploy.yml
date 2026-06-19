@@ -12,92 +12,49 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Deploy to Hostinger VPS
-        uses: easingthemes/ssh-deploy@main
-        env:
-          # Configura estas variables en:
-          # GitHub Repo → Settings → Secrets and variables → Actions → Repository secrets
-          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.VPS_HOST }}
-          REMOTE_USER: ${{ secrets.VPS_USER }}
-          REMOTE_PORT: ${{ secrets.VPS_PORT || '22' }}
+      - name: Notify VPS to deploy via webhook
+        run: |
+          echo "🚀 Notificando al VPS para que haga auto-deploy..."
 
-          # Rsync — transferencia rápida, elimina archivos viejos
-          ARGS: "-rlgoDzvc -i --delete"
+          BODY='{"ref":"main","event":"push"}'
+          SIGNATURE=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" | sed 's/.*= //' | awk '{print "sha256="$1}')
 
-          # Copia toda la carpeta al servidor
-          SOURCE: "/"
+          HTTP_STATUS=$(curl -s -o /tmp/deploy_response.txt -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-deploy-signature: $SIGNATURE" \
+            -d "$BODY" \
+            "${{ secrets.VPS_APP_URL }}/api/deploy" \
+            --max-time 30)
 
-          # Ruta en el VPS (ajusta según tu configuración de Nginx)
-          TARGET: "/var/www/html/makeiteasy"
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response:"
+          cat /tmp/deploy_response.txt
 
-          # Archivos que NO se envían al VPS
-          EXCLUDE: "/.git/, /.github/, /.agents/, /.claude/, /.neovate/, /.windsurf/, /stitch/, /skills/, /skills-lock.json, /SRS_MakeItEasy_Website.md, /.gitignore, /README.md, **/.env, **/.env.production, /make-it-easy-crm/.env"
+          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 201 ]; then
+            echo "✅ Deploy iniciado exitosamente en el VPS"
+          else
+            echo "❌ Error al notificar al VPS (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
 
-          # Ejecutar comandos en el VPS después de transferir los archivos
-          SCRIPT_AFTER: |
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            cd /var/www/html/makeiteasy/make-it-easy-crm
+      - name: Wait for deploy to complete
+        run: |
+          echo "⏳ Esperando 90 segundos para que el VPS termine el build..."
+          sleep 90
 
-            # Start diag
-            echo "=== SYSTEM DIAGNOSTICS ===" > ../diag.txt
-            echo "Date: $(date)" >> ../diag.txt
-            echo "Current Directory: $(pwd)" >> ../diag.txt
-            echo "Current User: $(whoami)" >> ../diag.txt
-            echo "Node Version: $(node -v)" >> ../diag.txt
-            
-            # Check if .env exists
-            if [ -f .env ]; then
-              echo ".env file exists" >> ../diag.txt
-              echo "--- .env contents (masked) ---" >> ../diag.txt
-              cat .env | sed 's/=\(.*\)/=********/' >> ../diag.txt
-            else
-              echo ".env file DOES NOT exist!" >> ../diag.txt
-              # Try to find if there is a backup or previous .env in the parent folders
-              echo "Searching for .env backups..." >> ../diag.txt
-              find /var/www -name ".env*" >> ../diag.txt 2>&1
-            fi
-            
-            # Check Nginx config
-            echo "=== NGINX CONFIGS ===" >> ../diag.txt
-            ls -la /etc/nginx/sites-enabled/ >> ../diag.txt 2>&1
-            cat /etc/nginx/sites-enabled/* >> ../diag.txt 2>&1
-            
-            # Check listening ports
-            echo "=== LISTENING PORTS ===" >> ../diag.txt
-            netstat -tulpn || ss -tulpn || lsof -i -P -n | grep LISTEN >> ../diag.txt 2>&1
-            
-            # Build and start
-            npm install >> ../diag.txt 2>&1
-            npx prisma generate >> ../diag.txt 2>&1
-            npm run build >> ../diag.txt 2>&1
-            
-            pm2 delete mie-crm || true
-            fuser -k 3002/tcp || true
-            fuser -k 3001/tcp || true
-            kill -9 $(lsof -t -i:3002) || true
-            kill -9 $(lsof -t -i:3001) || true
-            
-            pm2 start ecosystem.config.js --env production >> ../diag.txt 2>&1
-            sleep 3
-            
-            echo "=== PM2 STATUS ===" >> ../diag.txt
-            pm2 status >> ../diag.txt 2>&1
-            
-            echo "=== PM2 LOGS ===" >> ../diag.txt
-            pm2 logs mie-crm --lines 100 --no-colors >> ../diag.txt 2>&1
-            
-            # Copy diag.txt to multiple locations so we can fetch it
-            cp ../diag.txt /var/www/html/diag.txt || true
-            cp ../diag.txt /var/www/html/makeiteasy/diag.txt || true
-            cp ../diag.txt /var/www/html/makeiteasy/make-it-easy-crm/public/diag.txt || true
+      - name: Verify deployment
+        run: |
+          echo "🔍 Verificando que el CRM responde..."
 
-            # Print diag to console
-            echo "--- DIAGNOSTIC RESULTS START ---"
-            cat ../diag.txt
-            echo "--- DIAGNOSTIC RESULTS END ---"
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.VPS_APP_URL }}/login" \
+            --max-time 30)
 
+          echo "HTTP Status: $HTTP_STATUS"
 
-
-
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ CRM respondiendo correctamente en producción"
+          else
+            echo "⚠️ CRM retornó HTTP $HTTP_STATUS — puede estar iniciando aún"
+          fi
