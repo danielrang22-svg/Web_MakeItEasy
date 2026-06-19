@@ -156,7 +156,7 @@ export interface Cotizacion {
 }
 
 export type CotizacionCreateData = Omit<Cotizacion, "id" | "version" | "fechaCreacion" | "fechaActualizacion">;
-export type CotizacionUpdateData = Partial<Omit<Cotizacion, "id" | "version" | "fechaCreacion">>;
+export type CotizacionUpdateData = Partial<Omit<Cotizacion, "id" | "fechaCreacion" | "fechaActualizacion">>;
 
 // ── Proyectos & Automatizaciones ──
 

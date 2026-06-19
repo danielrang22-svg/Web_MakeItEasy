@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { Plus, Trash2, DollarSign, Calendar, FileText, CheckCircle, Info, Server, HelpCircle, Layers, Sparkles, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
-import { Cotizacion, EstadoCotizacion, CotizacionCreateData } from "@/lib/types";
+import { Plus, Trash2, DollarSign, Calendar, FileText, CheckCircle, Info, Server, HelpCircle, Layers, Sparkles, Lightbulb, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Cotizacion, EstadoCotizacion, CotizacionCreateData, CotizacionUpdateData } from "@/lib/types";
 import { getNextCodigo } from "@/lib/cotizacionesCalc";
 import { formatCurrency } from "@/lib/constants";
 import { AiProposal } from "@/components/cotizaciones/AIBriefInput";
@@ -13,7 +13,7 @@ interface QuotationFormProps {
     allCotizaciones: Cotizacion[];
     empresas: string[];
     contactos: { nombre: string; empresa: string }[];
-    onSubmit: (data: CotizacionCreateData) => void;
+    onSubmit: (data: CotizacionCreateData | CotizacionUpdateData) => void;
     onCancel: () => void;
     title?: string;
     isInsideLeadForm?: boolean;
@@ -32,6 +32,11 @@ export default function QuotationForm({
 }: QuotationFormProps) {
     // Current Active Tab
     const [activeTab, setActiveTab] = useState<"info" | "challenge" | "architecture" | "phases" | "checklist">("info");
+
+    // AI Adjust States
+    const [showAiAdjust, setShowAiAdjust] = useState(false);
+    const [aiAdjustPrompt, setAiAdjustPrompt] = useState("");
+    const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
     // Example Toggles
     const [showExampleDesafio, setShowExampleDesafio] = useState(false);
@@ -181,10 +186,67 @@ export default function QuotationForm({
         setChecklist(prev => prev.map((item, i) => i === idx ? val : item));
     };
 
+    async function handleAiAdjust() {
+        if (!aiAdjustPrompt.trim()) return;
+        setIsGeneratingAi(true);
+        try {
+            const currentProposalState: AiProposal = {
+                tituloPropuesta,
+                desafioNegocio,
+                empresaNombre,
+                contactoNombre,
+                moneda,
+                estado,
+                prerrequisitos: prerrequisitos.filter(p => p.titulo.trim()),
+                arquitectura: arquitectura.filter(a => a.componente.trim()),
+                fases: fases.filter(f => f.nombre.trim()),
+                checklistInicio: checklist.filter(c => c.trim()),
+                feeMensual,
+                moduloOpcionalFee,
+                feeMensualIncluye,
+            };
+
+            const res = await fetch("/api/cotizaciones/generar-ai", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    brief: "",
+                    correcciones: aiAdjustPrompt,
+                    propuestaAnterior: currentProposalState,
+                    moneda
+                }),
+            });
+
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.error || "Error al contactar con la IA");
+
+            const aiRes = data.propuesta as AiProposal;
+
+            if (aiRes.tituloPropuesta) setTituloPropuesta(aiRes.tituloPropuesta);
+            if (aiRes.desafioNegocio) setDesafioNegocio(aiRes.desafioNegocio);
+            if (aiRes.prerrequisitos?.length) setPrerrequisitos(aiRes.prerrequisitos);
+            if (aiRes.arquitectura?.length) setArquitectura(aiRes.arquitectura);
+            if (aiRes.fases?.length) setFases(aiRes.fases);
+            if (aiRes.checklistInicio?.length) setChecklist(aiRes.checklistInicio);
+            if (aiRes.feeMensual !== undefined) setFeeMensual(aiRes.feeMensual);
+            if (aiRes.moduloOpcionalFee !== undefined) setModuloOpcionalFee(aiRes.moduloOpcionalFee);
+            if (aiRes.feeMensualIncluye) setFeeMensualIncluye(aiRes.feeMensualIncluye);
+
+            setAiAdjustPrompt("");
+            setShowAiAdjust(false);
+            setActiveTab("challenge");
+        } catch (err: any) {
+            console.error(err);
+            alert("Error al aplicar cambios con IA: " + err.message);
+        } finally {
+            setIsGeneratingAi(false);
+        }
+    }
+
     async function handleSubmit(e?: React.FormEvent) {
         e?.preventDefault();
 
-        const data: CotizacionCreateData = {
+        const data: CotizacionUpdateData | CotizacionCreateData = {
             codigo,
             fecha: new Date(fecha).toISOString(),
             leadId: initial?.leadId || "",
@@ -209,6 +271,7 @@ export default function QuotationForm({
             moduloOpcionalFee,
             feeMensual,
             feeMensualIncluye,
+            ...(initial ? { version: (initial.version || 1) + 1 } : {})
         };
         onSubmit(data);
     }
@@ -220,7 +283,50 @@ export default function QuotationForm({
         <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-2 custom-scrollbar">
             <div className="flex items-center justify-between mb-4">
                 {title && <h3 className="font-bold text-lg text-primary font-display">{title}</h3>}
+                {initial && (
+                    <button
+                        type="button"
+                        onClick={() => setShowAiAdjust(v => !v)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300 rounded-lg text-xs font-bold transition-colors hover:bg-violet-200 dark:hover:bg-violet-900/50"
+                    >
+                        <Sparkles size={14} />
+                        Ajustar con IA
+                    </button>
+                )}
             </div>
+
+            {initial && showAiAdjust && (
+                <div className="mb-4 p-4 bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800/30 rounded-xl space-y-3 animate-fade-in">
+                    <label className="text-xs font-bold uppercase text-violet-600 flex items-center gap-1.5">
+                        <Sparkles size={14} /> ¿Qué deseas modificar en la propuesta?
+                    </label>
+                    <textarea 
+                        value={aiAdjustPrompt}
+                        onChange={(e) => setAiAdjustPrompt(e.target.value)}
+                        placeholder="Ej: Quítale la fase 1, baja el fee mensual a la mitad y enfócalo a empresas de salud..."
+                        className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-violet-200 focus:ring-2 focus:ring-violet-500 outline-none resize-y"
+                        rows={3}
+                    />
+                    <div className="flex justify-end gap-2">
+                        <button 
+                            type="button" 
+                            onClick={() => setShowAiAdjust(false)}
+                            className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground font-medium"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={handleAiAdjust}
+                            disabled={!aiAdjustPrompt.trim() || isGeneratingAi}
+                            className="px-4 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {isGeneratingAi ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                            Aplicar Cambios con IA
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* AI prefilled banner */}
             {aiPrefilled && (

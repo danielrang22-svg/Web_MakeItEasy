@@ -11,7 +11,7 @@ import { useEmpresasStore } from "@/lib/state/empresasStore";
 import { useContactosStore } from "@/lib/state/contactosStore";
 import { useCotizacionesStore } from "@/lib/state/cotizacionesStore";
 import { useProyectosStore } from "@/lib/state/proyectosStore";
-import { LeadCreateData } from "@/lib/types";
+import { Etapa, LeadCreateData, CotizacionCreateData, CotizacionUpdateData } from "@/lib/types";
 import { usePathname } from "next/navigation";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -72,11 +72,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         }
     }, [lastUndoMessage, clearUndoMessage]);
 
-    async function handleCreate(data: LeadCreateData, pendingCot?: import("@/lib/types").CotizacionCreateData) {
+    async function handleCreate(data: LeadCreateData, pendingCot?: CotizacionCreateData | CotizacionUpdateData) {
         const newLead = await createLead(data);
         if (newLead && newLead.id && pendingCot) {
             await useCotizacionesStore.getState().createCotizacion({
-                ...pendingCot,
+                ...(pendingCot as CotizacionCreateData),
                 leadId: newLead.id
             });
         }

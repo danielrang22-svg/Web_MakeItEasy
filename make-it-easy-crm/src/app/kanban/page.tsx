@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLeadsStore, getFilteredLeads } from "@/lib/state/leadsStore";
 import { useCotizacionesStore } from "@/lib/state/cotizacionesStore";
-import { Lead, LeadCreateData, Etapa, CotizacionCreateData } from "@/lib/types";
+import { Lead, Etapa, LeadCreateData, CotizacionCreateData, CotizacionUpdateData } from "@/lib/types";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
 import LeadForm from "@/components/leads/LeadForm";
 import { Modal, Toast } from "@/components/ui/SharedUI";
@@ -29,11 +29,11 @@ export default function KanbanPage() {
 
     const { createCotizacion } = useCotizacionesStore();
 
-    async function handleUpdate(data: LeadCreateData, pendingCotizacion?: CotizacionCreateData) {
+    async function handleUpdate(data: LeadCreateData, pendingCotizacion?: CotizacionCreateData | CotizacionUpdateData) {
         if (!editingLead) return;
         await updateLead(editingLead.id, data);
         if (pendingCotizacion) {
-            createCotizacion({ ...pendingCotizacion, leadId: editingLead.id });
+            createCotizacion({ ...(pendingCotizacion as CotizacionCreateData), leadId: editingLead.id });
         }
         setEditingLead(null);
         setToast({ message: "Lead actualizado", type: "success" });
@@ -43,10 +43,10 @@ export default function KanbanPage() {
         setCreatingForStage(stageKey);
     }
 
-    async function handleCreate(data: LeadCreateData, pendingCotizacion?: CotizacionCreateData) {
+    async function handleCreate(data: LeadCreateData, pendingCotizacion?: CotizacionCreateData | CotizacionUpdateData) {
         const newLead = await createLead(data);
         if (pendingCotizacion && newLead) {
-            createCotizacion({ ...pendingCotizacion, leadId: newLead.id });
+            createCotizacion({ ...(pendingCotizacion as CotizacionCreateData), leadId: newLead.id });
         }
         setCreatingForStage(null);
         const stageName = PIPELINE_STAGES.find((s) => s.key === creatingForStage)?.shortLabel || "columna";
@@ -128,7 +128,7 @@ export default function KanbanPage() {
                 {editingLead && (
                     <LeadForm
                         initialData={editingLead}
-                        onSubmit={handleUpdate}
+                        onSubmit={(data, pendingCot) => handleUpdate(data, pendingCot)}
                         onCancel={() => setEditingLead(null)}
                     />
                 )}

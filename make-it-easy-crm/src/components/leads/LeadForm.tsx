@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Etapa, Lead, LeadCreateData, CotizacionCreateData } from "@/lib/types";
+import { Etapa, Lead, LeadCreateData, CotizacionCreateData, CotizacionUpdateData } from "@/lib/types";
 import { PIPELINE_STAGES, LEAD_ORIGINS, formatCurrency } from "@/lib/constants";
 import { useContactosStore } from "@/lib/state/contactosStore";
 import { useEmpresasStore } from "@/lib/state/empresasStore";
@@ -27,7 +27,7 @@ import { SearchableSelect } from "../ui/SearchableSelect";
 
 interface LeadFormProps {
     initialData?: Lead;
-    onSubmit: (data: LeadCreateData, pendingCotizacion?: CotizacionCreateData) => void;
+    onSubmit: (data: LeadCreateData, pendingCotizacion?: CotizacionCreateData | CotizacionUpdateData) => void;
     onCancel: () => void;
     isSubmitting?: boolean;
 }
@@ -69,7 +69,7 @@ export default function LeadForm({
     const [showCotModal, setShowCotModal] = useState(false);
     const [showAiBrief, setShowAiBrief] = useState(false);
     const [aiPrefilledData, setAiPrefilledData] = useState<AiProposal | null>(null);
-    const [pendingCot, setPendingCot] = useState<CotizacionCreateData | null>(null);
+    const [pendingCot, setPendingCot] = useState<CotizacionCreateData | CotizacionUpdateData | null>(null);
 
     // Build contact items for dropdown
     const contactItems = contactos.map((c) => ({
@@ -193,10 +193,10 @@ export default function LeadForm({
         setShowCotModal(true);
     };
 
-    const handleCotSubmit = (cotData: CotizacionCreateData) => {
+    const handleCotSubmit = (cotData: CotizacionCreateData | CotizacionUpdateData) => {
         setPendingCot(cotData);
         // Set the estimated value of the lead to the total core project implementation cost
-        handleChange("valorEstimado", cotData.totalProyectoCore);
+        handleChange("valorEstimado", cotData.totalProyectoCore || 0);
         setShowCotModal(false);
         setAiPrefilledData(null);
     };

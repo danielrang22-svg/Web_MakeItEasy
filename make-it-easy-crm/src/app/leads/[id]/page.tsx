@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLeadsStore } from "@/lib/state/leadsStore";
-import { Lead, LeadCreateData } from "@/lib/types";
+import { Lead, Etapa, Interaccion, LeadCreateData, LeadUpdateData, CotizacionCreateData, CotizacionUpdateData } from "@/lib/types";
 import { getStageConfig, formatCurrency, formatDate } from "@/lib/constants";
 import { Badge } from "@/components/ui/SharedUI";
 import LeadForm from "@/components/leads/LeadForm";
@@ -57,12 +57,12 @@ export default function LeadDetailPage() {
 
     const stage = getStageConfig(lead.etapa);
 
-    async function handleUpdate(data: LeadCreateData, pendingCot?: import("@/lib/types").CotizacionCreateData) {
+    async function handleUpdate(data: LeadUpdateData, pendingCot?: CotizacionCreateData | CotizacionUpdateData) {
         setIsSubmitting(true);
         await updateLead(lead!.id, data);
         if (pendingCot) {
             await useCotizacionesStore.getState().createCotizacion({
-                ...pendingCot,
+                ...(pendingCot as CotizacionCreateData),
                 leadId: lead!.id
             });
         }

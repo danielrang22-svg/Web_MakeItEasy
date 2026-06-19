@@ -6,7 +6,7 @@ import { useLeadsStore } from "@/lib/state/leadsStore";
 import { useEmpresasStore } from "@/lib/state/empresasStore";
 import { useContactosStore } from "@/lib/state/contactosStore";
 import { exportCotizacionClientePDF } from "@/lib/utils/exportPDF";
-import { Cotizacion, CotizacionCreateData, EstadoCotizacion } from "@/lib/types";
+import { Cotizacion, Etapa, EstadoCotizacion, CotizacionCreateData, CotizacionUpdateData } from "@/lib/types";
 import { formatCurrency } from "@/lib/constants";
 import { Modal, Toast, ConfirmDialog } from "@/components/ui/SharedUI";
 import { useRouter } from "next/navigation";
@@ -499,10 +499,10 @@ export default function CotizacionesPage() {
                         onSubmit={async (data) => {
                             const dataWithLead = { ...data, leadId: linkedLeadId || data.leadId || "" };
                             if (editingCot) {
-                                await updateCotizacion(editingCot.id, dataWithLead);
+                                await updateCotizacion(editingCot.id, dataWithLead as CotizacionUpdateData);
                                 setToast({ message: "Propuesta actualizada", type: "success" });
                             } else {
-                                await createCotizacion(dataWithLead);
+                                await createCotizacion(dataWithLead as CotizacionCreateData);
                                 setToast({ message: "Propuesta creada", type: "success" });
                             }
                             setShowForm(false);
