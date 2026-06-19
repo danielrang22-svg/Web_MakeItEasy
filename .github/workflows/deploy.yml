@@ -93,5 +93,11 @@ jobs:
             cp ../diag.txt /var/www/html/makeiteasy/diag.txt || true
             cp ../diag.txt /var/www/html/makeiteasy/make-it-easy-crm/public/diag.txt || true
 
+            # Print diag to console
+            echo "--- DIAGNOSTIC RESULTS START ---"
+            cat ../diag.txt
+            echo "--- DIAGNOSTIC RESULTS END ---"
+
+
 
 
