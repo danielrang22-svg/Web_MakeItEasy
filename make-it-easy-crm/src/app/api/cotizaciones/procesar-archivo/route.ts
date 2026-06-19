@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       const mimeType = file.type || "";
       const name = file.name.toLowerCase();
       
-      const isAudio = mimeType.startsWith("audio/") || mimeType === "video/mp4" || !!name.match(/\.(m4a|mp3|wav|ogg|opus|oga|weba|caf)$/);
+      const isAudio = mimeType.startsWith("audio/") || mimeType === "video/mp4" || !!name.match(/\.(m4a|mp3|wav|ogg|opus|oga|weba|caf|mp4)$/);
       const isPdf = mimeType === "application/pdf" || name.endsWith(".pdf");
       const isText = mimeType.startsWith("text/") || name.endsWith(".txt") || name.endsWith(".md");
       const isWord = name.endsWith(".docx");
@@ -67,10 +67,29 @@ export async function POST(request: NextRequest) {
         try {
           const buffer = Buffer.from(await file.arrayBuffer());
           // Convert to a compatible name for Whisper (.opus/.oga to .ogg, .caf to .wav)
-          const extension = name.includes('.') ? name.split('.').pop() : 'ogg';
+          let extension = "";
+          if (name.includes('.')) {
+            extension = name.split('.').pop() || "";
+          }
+          if (!extension) {
+            if (mimeType.includes("mp4") || mimeType.includes("m4a") || mimeType.includes("x-m4a")) {
+              extension = "m4a";
+            } else if (mimeType.includes("mpeg") || mimeType.includes("mp3")) {
+              extension = "mp3";
+            } else if (mimeType.includes("wav")) {
+              extension = "wav";
+            } else if (mimeType.includes("ogg") || mimeType.includes("opus")) {
+              extension = "ogg";
+            } else if (mimeType.includes("caf")) {
+              extension = "caf";
+            } else {
+              extension = "m4a"; // Fallback default for mobile voice notes
+            }
+          }
+          
           const safeExtension = ['opus', 'oga', 'weba', 'caf'].includes(extension as string) 
             ? (extension === 'caf' ? 'wav' : 'ogg') 
-            : (extension || 'ogg');
+            : (extension || 'm4a');
           const safeName = `audio.${safeExtension}`;
 
           const audioFile = await toFile(buffer, safeName, { type: file.type || "audio/ogg" });
