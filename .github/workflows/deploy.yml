@@ -12,20 +12,43 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" ]; then
+            echo "❌ ERROR: Falta el secret DEPLOY_WEBHOOK_SECRET en GitHub"
+            echo "   Ve a: Repo → Settings → Secrets → Actions → New repository secret"
+            echo "   Nombre: DEPLOY_WEBHOOK_SECRET"
+            echo "   Valor:  mie-deploy-secret-2026"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VPS_APP_URL }}" ]; then
+            echo "❌ ERROR: Falta el secret VPS_APP_URL en GitHub"
+            echo "   Ve a: Repo → Settings → Secrets → Actions → New repository secret"
+            echo "   Nombre: VPS_APP_URL"
+            echo "   Valor:  https://crm.makeiteasycol.com"
+            exit 1
+          fi
+          echo "✅ Secretos configurados correctamente"
+
       - name: Notify VPS to deploy via webhook
         run: |
           echo "🚀 Notificando al VPS para que haga auto-deploy..."
 
+          DEPLOY_URL="${{ secrets.VPS_APP_URL }}/api/deploy"
           BODY='{"ref":"main","event":"push"}'
-          SIGNATURE=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" | sed 's/.*= //' | awk '{print "sha256="$1}')
+          SECRET="${{ secrets.DEPLOY_WEBHOOK_SECRET }}"
+          SIGNATURE=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print "sha256="$2}')
+
+          echo "📡 Llamando a: $DEPLOY_URL"
 
           HTTP_STATUS=$(curl -s -o /tmp/deploy_response.txt -w "%{http_code}" \
             -X POST \
             -H "Content-Type: application/json" \
             -H "x-deploy-signature: $SIGNATURE" \
             -d "$BODY" \
-            "${{ secrets.VPS_APP_URL }}/api/deploy" \
-            --max-time 30)
+            "$DEPLOY_URL" \
+            --max-time 30 \
+            --connect-timeout 10)
 
           echo "HTTP Status: $HTTP_STATUS"
           echo "Response:"
@@ -35,6 +58,7 @@ jobs:
             echo "✅ Deploy iniciado exitosamente en el VPS"
           else
             echo "❌ Error al notificar al VPS (HTTP $HTTP_STATUS)"
+            echo "   Verifica que el CRM esté corriendo: ${{ secrets.VPS_APP_URL }}/login"
             exit 1
           fi
 
