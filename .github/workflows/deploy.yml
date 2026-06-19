@@ -42,4 +42,6 @@ jobs:
             npm install
             npm run build
             pm2 restart mie-crm || pm2 start ecosystem.config.js --env production
+            pm2 logs mie-crm --lines 200 --no-colors > public/pm2-logs.txt
+
 
