@@ -41,7 +41,10 @@ jobs:
             cd /var/www/html/makeiteasy/make-it-easy-crm
             npm install
             npm run build
-            pm2 restart mie-crm || pm2 start ecosystem.config.js --env production
+            pm2 delete mie-crm || true
+            npx kill-port 3002 || true
+            npx kill-port 3001 || true
+            pm2 start ecosystem.config.js --env production
             pm2 logs mie-crm --lines 200 --no-colors > public/pm2-logs.txt
 
 
