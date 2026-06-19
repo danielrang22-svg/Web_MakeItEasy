@@ -58,61 +58,7 @@ export default function EmpresasPage() {
         setToast({ message: "Empresa eliminada", type: "info" });
     }
 
-    const FormContent = ({ initial }: { initial?: Empresa }) => (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Nombre *</label>
-                    <input name="nombre" required defaultValue={initial?.nombre} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div className="col-span-2">
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Número de Documento (NIT / CC) *</label>
-                    <input name="nit" required defaultValue={initial?.nit} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Ciudad</label>
-                    <input name="ciudad" defaultValue={initial?.ciudad} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Sector</label>
-                    <input name="sector" defaultValue={initial?.sector} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Tamaño</label>
-                    <select name="tamano" defaultValue={initial?.tamano || ""} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none">
-                        <option value="">Sin definir</option>
-                        <option value="pequeña">Pequeña</option>
-                        <option value="mediana">Mediana</option>
-                        <option value="grande">Grande</option>
-                    </select>
-                </div>
-                <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Teléfono</label>
-                    <input name="telefono" defaultValue={initial?.telefono} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div className="col-span-2">
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Email</label>
-                    <input name="email" type="email" defaultValue={initial?.email} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div className="col-span-2">
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Dirección</label>
-                    <input name="direccion" defaultValue={initial?.direccion} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div className="col-span-2">
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Notas</label>
-                    <textarea name="notas" rows={2} defaultValue={initial?.notas} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none resize-none" />
-                </div>
-            </div>
-            <div className="flex gap-3 pt-2">
-                <button type="submit" className="flex-1 mie-gradient text-white font-bold py-4 rounded-2xl shadow-lg">
-                    {initial ? "Guardar Cambios" : "Crear Empresa"}
-                </button>
-                <button type="button" onClick={() => { setShowCreateModal(false); setEditingEmpresa(null); }} className="px-6 py-4 rounded-2xl ring-1 ring-border font-medium">
-                    Cancelar
-                </button>
-            </div>
-        </form>
-    );
+
 
     return (
         <div className="px-5 pb-32">
@@ -221,12 +167,21 @@ export default function EmpresasPage() {
 
             {/* Create Modal */}
             <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Nueva Empresa">
-                <FormContent />
+                <FormContent
+                    onSubmit={handleSubmit}
+                    onCancel={() => setShowCreateModal(false)}
+                />
             </Modal>
 
             {/* Edit Modal */}
             <Modal isOpen={!!editingEmpresa} onClose={() => setEditingEmpresa(null)} title="Editar Empresa">
-                {editingEmpresa && <FormContent initial={editingEmpresa} />}
+                {editingEmpresa && (
+                    <FormContent
+                        initial={editingEmpresa}
+                        onSubmit={handleSubmit}
+                        onCancel={() => setEditingEmpresa(null)}
+                    />
+                )}
             </Modal>
 
             {/* Delete Confirm */}
@@ -242,3 +197,65 @@ export default function EmpresasPage() {
         </div>
     );
 }
+
+interface FormContentProps {
+    initial?: Empresa;
+    onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+    onCancel: () => void;
+}
+
+const FormContent = ({ initial, onSubmit, onCancel }: FormContentProps) => (
+    <form onSubmit={onSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground">Nombre *</label>
+                <input name="nombre" required defaultValue={initial?.nombre} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div className="col-span-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground">Número de Documento (NIT / CC) *</label>
+                <input name="nit" required defaultValue={initial?.nit} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div>
+                <label className="text-xs font-bold uppercase text-muted-foreground">Ciudad</label>
+                <input name="ciudad" defaultValue={initial?.ciudad} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div>
+                <label className="text-xs font-bold uppercase text-muted-foreground">Sector</label>
+                <input name="sector" defaultValue={initial?.sector} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div>
+                <label className="text-xs font-bold uppercase text-muted-foreground">Tamaño</label>
+                <select name="tamano" defaultValue={initial?.tamano || ""} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none">
+                    <option value="">Sin definir</option>
+                    <option value="pequeña">Pequeña</option>
+                    <option value="mediana">Mediana</option>
+                    <option value="grande">Grande</option>
+                </select>
+            </div>
+            <div>
+                <label className="text-xs font-bold uppercase text-muted-foreground">Teléfono</label>
+                <input name="telefono" defaultValue={initial?.telefono} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div className="col-span-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground">Email</label>
+                <input name="email" type="email" defaultValue={initial?.email} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div className="col-span-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground">Dirección</label>
+                <input name="direccion" defaultValue={initial?.direccion} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div className="col-span-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground">Notas</label>
+                <textarea name="notas" rows={2} defaultValue={initial?.notas} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none resize-none" />
+            </div>
+        </div>
+        <div className="flex gap-3 pt-2">
+            <button type="submit" className="flex-1 mie-gradient text-white font-bold py-4 rounded-2xl shadow-lg">
+                {initial ? "Guardar Cambios" : "Crear Empresa"}
+            </button>
+            <button type="button" onClick={onCancel} className="px-6 py-4 rounded-2xl ring-1 ring-border font-medium">
+                Cancelar
+            </button>
+        </div>
+    </form>
+);

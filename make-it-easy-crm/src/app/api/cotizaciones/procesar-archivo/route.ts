@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 
 const prisma = new PrismaClient();
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       const mimeType = file.type || "";
       const name = file.name.toLowerCase();
       
-      const isAudio = mimeType.startsWith("audio/") || mimeType === "video/mp4" || !!name.match(/\.(m4a|mp3|wav|ogg)$/);
+      const isAudio = mimeType.startsWith("audio/") || mimeType === "video/mp4" || !!name.match(/\.(m4a|mp3|wav|ogg|opus|oga|weba)$/);
       const isPdf = mimeType === "application/pdf" || name.endsWith(".pdf");
       const isText = mimeType.startsWith("text/") || name.endsWith(".txt") || name.endsWith(".md");
       const isWord = name.endsWith(".docx");
@@ -64,12 +64,24 @@ export async function POST(request: NextRequest) {
       rawText += `\n\n--- Archivo: ${file.name} ---\n`;
 
       if (isAudio) {
-        const transcription = await openai.audio.transcriptions.create({
-          file: file,
-          model: "whisper-1",
-          language: "es",
-        });
-        rawText += transcription.text;
+        try {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          // Convert to a compatible name for Whisper (.opus and .oga to .ogg)
+          const extension = name.includes('.') ? name.split('.').pop() : 'ogg';
+          const safeExtension = ['opus', 'oga', 'weba'].includes(extension as string) ? 'ogg' : (extension || 'ogg');
+          const safeName = `audio.${safeExtension}`;
+
+          const audioFile = await toFile(buffer, safeName, { type: file.type || "audio/ogg" });
+          const transcription = await openai.audio.transcriptions.create({
+            file: audioFile,
+            model: "whisper-1",
+            language: "es",
+          });
+          rawText += transcription.text;
+        } catch (e) {
+          console.error("Error transcribiendo audio:", e);
+          rawText += "\n[Error al transcribir archivo de audio]\n";
+        }
       } else if (isPdf) {
         const pdfParse = require("pdf-parse");
         const buffer = Buffer.from(await file.arrayBuffer());

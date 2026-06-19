@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useContactosStore, getFilteredContactos } from "@/lib/state/contactosStore";
 import { useLeadsStore, getLeadsSummaryByContact } from "@/lib/state/leadsStore";
-import { Contacto, ContactoCreateData, TipoInteraccion, Interaccion } from "@/lib/types";
+import { Contacto, ContactoCreateData, TipoInteraccion, Interaccion, Empresa } from "@/lib/types";
 import { useEmpresasStore } from "@/lib/state/empresasStore";
 import { formatCurrency } from "@/lib/constants";
 import { Modal, Toast, ConfirmDialog } from "@/components/ui/SharedUI";
@@ -92,64 +92,7 @@ export default function ContactosPage() {
         setToast({ message: "Contacto eliminado", type: "info" });
     }
 
-    const FormContent = ({ initial }: { initial?: Contacto }) => (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Nombre *</label>
-                    <input name="nombre" required defaultValue={initial?.nombre} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Cargo</label>
-                    <input name="cargo" defaultValue={initial?.cargo} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Empresa</label>
-                    <select name="empresaId" defaultValue={initial?.empresaId || ""} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none">
-                        <option value="">Sin empresa</option>
-                        {empresas.map((em) => (
-                            <option key={em.id} value={em.id}>{em.nombre}</option>
-                        ))}
-                    </select>
-                    {!initial?.empresaId && (
-                        <input name="empresaNombre" defaultValue={initial?.empresaNombre} placeholder="O escribir nombre" className="w-full mt-2 px-4 py-2 bg-muted rounded-xl ring-1 ring-border text-sm outline-none" />
-                    )}
-                </div>
-                <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Teléfono *</label>
-                    <input name="telefono" required defaultValue={initial?.telefono} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Teléfono 2</label>
-                    <input name="telefono2" defaultValue={initial?.telefono2} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Email *</label>
-                    <input name="email" type="email" required defaultValue={initial?.email} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div>
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Email 2</label>
-                    <input name="email2" type="email" defaultValue={initial?.email2} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div className="col-span-2">
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Tags (separar con comas)</label>
-                    <input name="tags" defaultValue={initial?.tags?.join(", ")} placeholder="VIP, Dotación, EPP..." className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
-                </div>
-                <div className="col-span-2">
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Notas</label>
-                    <textarea name="notas" rows={2} defaultValue={initial?.notas} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none resize-none" />
-                </div>
-            </div>
-            <div className="flex gap-3 pt-2">
-                <button type="submit" className="flex-1 mie-gradient text-white font-bold py-4 rounded-2xl shadow-lg">
-                    {initial ? "Guardar Cambios" : "Crear Contacto"}
-                </button>
-                <button type="button" onClick={() => { setShowCreateModal(false); setEditingContacto(null); }} className="px-6 py-4 rounded-2xl ring-1 ring-border font-medium">
-                    Cancelar
-                </button>
-            </div>
-        </form>
-    );
+
 
     return (
         <div className="px-5 pb-32">
@@ -338,12 +281,23 @@ export default function ContactosPage() {
 
             {/* Create Modal */}
             <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Nuevo Contacto">
-                <FormContent />
+                <FormContent
+                    onSubmit={handleSubmit}
+                    empresas={empresas}
+                    onCancel={() => setShowCreateModal(false)}
+                />
             </Modal>
 
             {/* Edit Modal */}
             <Modal isOpen={!!editingContacto} onClose={() => setEditingContacto(null)} title="Editar Contacto">
-                {editingContacto && <FormContent initial={editingContacto} />}
+                {editingContacto && (
+                    <FormContent
+                        initial={editingContacto}
+                        onSubmit={handleSubmit}
+                        empresas={empresas}
+                        onCancel={() => setEditingContacto(null)}
+                    />
+                )}
             </Modal>
 
             {/* Delete Confirm */}
@@ -359,3 +313,69 @@ export default function ContactosPage() {
         </div>
     );
 }
+
+interface FormContentProps {
+    initial?: Contacto;
+    onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+    empresas: Empresa[];
+    onCancel: () => void;
+}
+
+const FormContent = ({ initial, onSubmit, empresas, onCancel }: FormContentProps) => (
+    <form onSubmit={onSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground">Nombre *</label>
+                <input name="nombre" required defaultValue={initial?.nombre} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div>
+                <label className="text-xs font-bold uppercase text-muted-foreground">Cargo</label>
+                <input name="cargo" defaultValue={initial?.cargo} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div>
+                <label className="text-xs font-bold uppercase text-muted-foreground">Empresa</label>
+                <select name="empresaId" defaultValue={initial?.empresaId || ""} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none">
+                    <option value="">Sin empresa</option>
+                    {empresas.map((em) => (
+                        <option key={em.id} value={em.id}>{em.nombre}</option>
+                    ))}
+                </select>
+                {!initial?.empresaId && (
+                    <input name="empresaNombre" defaultValue={initial?.empresaNombre} placeholder="O escribir nombre" className="w-full mt-2 px-4 py-2 bg-muted rounded-xl ring-1 ring-border text-sm outline-none" />
+                )}
+            </div>
+            <div>
+                <label className="text-xs font-bold uppercase text-muted-foreground">Teléfono *</label>
+                <input name="telefono" required defaultValue={initial?.telefono} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div>
+                <label className="text-xs font-bold uppercase text-muted-foreground">Teléfono 2</label>
+                <input name="telefono2" defaultValue={initial?.telefono2} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div>
+                <label className="text-xs font-bold uppercase text-muted-foreground">Email *</label>
+                <input name="email" type="email" required defaultValue={initial?.email} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div>
+                <label className="text-xs font-bold uppercase text-muted-foreground">Email 2</label>
+                <input name="email2" type="email" defaultValue={initial?.email2} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div className="col-span-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground">Tags (separar con comas)</label>
+                <input name="tags" defaultValue={initial?.tags?.join(", ")} placeholder="VIP, Dotación, EPP..." className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none" />
+            </div>
+            <div className="col-span-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground">Notas</label>
+                <textarea name="notas" rows={2} defaultValue={initial?.notas} className="w-full mt-1 px-4 py-3 bg-muted rounded-2xl ring-1 ring-border focus:ring-2 focus:ring-mie-primary outline-none resize-none" />
+            </div>
+        </div>
+        <div className="flex gap-3 pt-2">
+            <button type="submit" className="flex-1 mie-gradient text-white font-bold py-4 rounded-2xl shadow-lg">
+                {initial ? "Guardar Cambios" : "Crear Contacto"}
+            </button>
+            <button type="button" onClick={onCancel} className="px-6 py-4 rounded-2xl ring-1 ring-border font-medium">
+                Cancelar
+            </button>
+        </div>
+    </form>
+);

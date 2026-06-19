@@ -280,7 +280,7 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
                   ref={fileInputRef} 
                   onChange={handleFileSelect} 
                   className="hidden" 
-                  accept="audio/*,.pdf,.txt,.docx"
+                  accept="audio/*,.pdf,.txt,.docx,.opus,.oga,.m4a,.weba"
                   multiple
                 />
                 <button
