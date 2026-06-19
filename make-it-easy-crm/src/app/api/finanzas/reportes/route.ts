@@ -20,15 +20,16 @@ export async function GET(request: Request) {
     });
 
     // Agruparemos por "YYYY-MM"
-    const resumen: Record<string, { totalIngresos: number, totalGastos: number, rentabilidad: number }> = {};
+    const resumen: Record<string, { totalIngresos: number, totalGastos: number, totalNomina: number, rentabilidad: number }> = {};
 
     let totalGlobalIngresos = 0;
     let totalGlobalGastos = 0;
+    let totalGlobalNomina = 0;
 
     // Procesar ingresos
     ingresos.forEach(ingreso => {
       const month = ingreso.fecha.toISOString().substring(0, 7); // "YYYY-MM"
-      if (!resumen[month]) resumen[month] = { totalIngresos: 0, totalGastos: 0, rentabilidad: 0 };
+      if (!resumen[month]) resumen[month] = { totalIngresos: 0, totalGastos: 0, totalNomina: 0, rentabilidad: 0 };
 
       // Convertir a COP usando la TRM histórica guardada en el ingreso
       // Si el targetCurrency es USD, luego convertiremos el consolidado
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
     // Procesar gastos (asumimos que los gastos locales están en COP, si hay USD usamos un factor)
     gastos.forEach(gasto => {
       const month = gasto.fecha.toISOString().substring(0, 7); // "YYYY-MM"
-      if (!resumen[month]) resumen[month] = { totalIngresos: 0, totalGastos: 0, rentabilidad: 0 };
+      if (!resumen[month]) resumen[month] = { totalIngresos: 0, totalGastos: 0, totalNomina: 0, rentabilidad: 0 };
 
       let valorEnCop = gasto.moneda === "COP" ? gasto.monto : gasto.monto * 4000; // Asumiendo TRM 4000 para gastos históricos en USD
       
@@ -57,6 +58,11 @@ export async function GET(request: Request) {
 
       resumen[month].totalGastos += valorAportado;
       totalGlobalGastos += valorAportado;
+
+      if (gasto.categoria === "NOMINA") {
+        resumen[month].totalNomina += valorAportado;
+        totalGlobalNomina += valorAportado;
+      }
     });
 
     // Calcular rentabilidad por mes
@@ -68,6 +74,7 @@ export async function GET(request: Request) {
       targetCurrency,
       totalGlobalIngresos,
       totalGlobalGastos,
+      totalGlobalNomina,
       rentabilidadGlobal: totalGlobalIngresos - totalGlobalGastos,
       mensual: resumen
     };

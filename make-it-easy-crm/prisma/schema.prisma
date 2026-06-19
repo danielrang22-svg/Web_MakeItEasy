@@ -272,6 +272,8 @@ model Usuario {
   fechaCreacion      DateTime @default(now())
   fechaActualizacion DateTime @updatedAt
 
+  gastos             Gasto[]
+
   @@map("usuarios")
 }
 
@@ -349,15 +351,18 @@ model Gasto {
 
   proyectoId         String?  
   proveedorId        String?  
+  usuarioId          String?  
 
   fechaCreacion      DateTime @default(now())
   fechaActualizacion DateTime @updatedAt
 
   proyecto           Proyecto?  @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
   proveedor          Proveedor? @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
+  usuario            Usuario?   @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
 
   @@index([proyectoId])
   @@index([proveedorId])
+  @@index([usuarioId])
   @@map("gastos")
 }
 

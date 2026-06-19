@@ -12,8 +12,10 @@ export interface Gasto {
     notas?: string | null;
     proyectoId?: string | null;
     proveedorId?: string | null;
+    usuarioId?: string | null;
     proyecto?: { titulo: string, clienteNombre: string } | null;
     proveedor?: { nombre: string } | null;
+    usuario?: { nombre: string } | null;
 }
 
 interface GastosState {

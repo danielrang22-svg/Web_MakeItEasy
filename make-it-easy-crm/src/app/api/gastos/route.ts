@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
             orderBy: { fecha: "desc" },
             include: { 
                 proyecto: { select: { titulo: true, clienteNombre: true } }, 
-                proveedor: { select: { nombre: true } } 
+                proveedor: { select: { nombre: true } },
+                usuario: { select: { nombre: true } }
             }
         });
         return NextResponse.json(gastos);
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
                 notas: body.notas || null,
                 proyectoId: body.proyectoId || null,
                 proveedorId: body.proveedorId || null,
+                usuarioId: body.usuarioId || null,
             }
         });
 

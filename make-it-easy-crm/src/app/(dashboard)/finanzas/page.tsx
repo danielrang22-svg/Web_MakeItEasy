@@ -9,8 +9,9 @@ interface ReporteData {
   targetCurrency: string;
   totalGlobalIngresos: number;
   totalGlobalGastos: number;
+  totalGlobalNomina: number;
   rentabilidadGlobal: number;
-  mensual: Record<string, { totalIngresos: number; totalGastos: number; rentabilidad: number }>;
+  mensual: Record<string, { totalIngresos: number; totalGastos: number; totalNomina: number; rentabilidad: number }>;
 }
 
 export default function FinanzasPage() {
@@ -103,6 +104,12 @@ export default function FinanzasPage() {
               <h2 className="text-3xl font-black text-foreground">
                 {formatCurrency(data.totalGlobalGastos, data.targetCurrency)}
               </h2>
+              {data.totalGlobalNomina > 0 && (
+                <div className="mt-2 text-sm font-bold text-muted-foreground flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                  Incluye {formatCurrency(data.totalGlobalNomina, data.targetCurrency)} de Nómina
+                </div>
+              )}
             </div>
 
             <div className="bg-card ring-1 ring-border rounded-3xl p-6 shadow-sm relative overflow-hidden">
@@ -127,7 +134,8 @@ export default function FinanzasPage() {
                   <tr className="border-b border-border/50 text-muted-foreground">
                     <th className="pb-3 font-semibold">Mes (Año-Mes)</th>
                     <th className="pb-3 font-semibold text-right">Ingresos</th>
-                    <th className="pb-3 font-semibold text-right">Gastos</th>
+                    <th className="pb-3 font-semibold text-right">Gastos Totales</th>
+                    <th className="pb-3 font-semibold text-right text-muted-foreground">(de los cuales Nómina)</th>
                     <th className="pb-3 font-semibold text-right">Rentabilidad</th>
                   </tr>
                 </thead>
@@ -147,6 +155,9 @@ export default function FinanzasPage() {
                           </td>
                           <td className="py-4 text-right text-rose-500 font-semibold">
                             {formatCurrency(stats.totalGastos, data.targetCurrency)}
+                          </td>
+                          <td className="py-4 text-right text-muted-foreground text-xs font-semibold">
+                            {stats.totalNomina > 0 ? formatCurrency(stats.totalNomina, data.targetCurrency) : "-"}
                           </td>
                           <td className={`py-4 text-right font-black ${stats.rentabilidad >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                             {formatCurrency(stats.rentabilidad, data.targetCurrency)}

@@ -16,6 +16,7 @@ export default function ComprasPage() {
     const [filterCategory, setFilterCategory] = useState("TODAS");
     const [filterDate, setFilterDate] = useState("TODOS");
     const [showModal, setShowModal] = useState(false);
+    const [usuarios, setUsuarios] = useState<any[]>([]);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -25,6 +26,7 @@ export default function ComprasPage() {
         categoria: "GENERAL",
         fecha: new Date().toISOString().split('T')[0], // YYYY-MM-DD format for date input
         proyectoId: "",
+        usuarioId: "",
         recurrente: false,
         estado: "PAGADO"
     });
@@ -32,6 +34,7 @@ export default function ComprasPage() {
     useEffect(() => {
         fetchGastos();
         loadProyectos();
+        fetch('/api/usuarios').then(res => res.json()).then(data => setUsuarios(Array.isArray(data) ? data : []));
     }, [fetchGastos, loadProyectos]);
 
     // Apply text search and category filter
@@ -67,6 +70,7 @@ export default function ComprasPage() {
             ...formData,
             monto: Number(formData.monto),
             proyectoId: formData.proyectoId || undefined,
+            usuarioId: formData.categoria === 'NOMINA' ? (formData.usuarioId || undefined) : undefined,
             fecha: new Date(formData.fecha).toISOString()
         });
         setShowModal(false);
@@ -77,6 +81,7 @@ export default function ComprasPage() {
             categoria: "GENERAL", 
             fecha: new Date().toISOString().split('T')[0],
             proyectoId: "",
+            usuarioId: "",
             recurrente: false, 
             estado: "PAGADO" 
         });
@@ -167,6 +172,7 @@ export default function ComprasPage() {
                         >
                             <option value="TODAS">Categorías</option>
                             <option value="GENERAL">General</option>
+                            <option value="NOMINA">Nómina</option>
                             <option value="SUSCRIPCION">Suscripción</option>
                             <option value="SOFTWARE">Software / Infra</option>
                             <option value="TERCEROS">Pago a Terceros</option>
@@ -211,7 +217,7 @@ export default function ComprasPage() {
                                         <th className="p-4 font-bold">Fecha</th>
                                         <th className="p-4 font-bold">Concepto</th>
                                         <th className="p-4 font-bold">Categoría</th>
-                                        <th className="p-4 font-bold">Proyecto Asociado</th>
+                                        <th className="p-4 font-bold">Proyecto / Trabajador</th>
                                         <th className="p-4 font-bold text-right">Monto</th>
                                         <th className="p-4 font-bold text-center">Estado</th>
                                     </tr>
@@ -232,7 +238,11 @@ export default function ComprasPage() {
                                                 </span>
                                             </td>
                                             <td className="p-4 text-sm font-medium">
-                                                {g.proyecto?.titulo || g.proyectoId ? (
+                                                {g.categoria === "NOMINA" && g.usuario ? (
+                                                    <div className="flex items-center gap-2 text-purple-400">
+                                                        <span className="truncate max-w-[150px] inline-block">{g.usuario.nombre}</span>
+                                                    </div>
+                                                ) : g.proyecto?.titulo || g.proyectoId ? (
                                                     <div className="flex items-center gap-2 text-mie-primary">
                                                         <Building2 size={14} />
                                                         <span className="truncate max-w-[150px] inline-block">{g.proyecto?.titulo || "Proyecto Vinculado"}</span>
@@ -315,25 +325,43 @@ export default function ComprasPage() {
                                     className="w-full p-2.5 bg-background rounded-xl ring-1 ring-border text-sm focus:ring-2 focus:ring-mie-primary outline-none transition-all text-text-primary cursor-pointer"
                                 >
                                     <option value="GENERAL">General</option>
+                                    <option value="NOMINA">Nómina</option>
                                     <option value="SUSCRIPCION">Suscripción</option>
                                     <option value="SOFTWARE">Software / Infraestructura</option>
                                     <option value="TERCEROS">Pago a Terceros</option>
                                     <option value="OPERATIVO">Operativo</option>
                                 </select>
                             </div>
-                            <div>
-                                <label className="text-xs font-bold text-text-secondary mb-1.5 block uppercase tracking-wider">Vincular Proyecto</label>
-                                <select 
-                                    value={formData.proyectoId} 
-                                    onChange={e => setFormData({...formData, proyectoId: e.target.value})} 
-                                    className="w-full p-2.5 bg-background rounded-xl ring-1 ring-border text-sm focus:ring-2 focus:ring-mie-primary outline-none transition-all text-text-primary cursor-pointer"
-                                >
-                                    <option value="">-- Ninguno (Gasto Interno) --</option>
-                                    {proyectos.map(p => (
-                                        <option key={p.id} value={p.id}>{p.titulo}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            {formData.categoria === "NOMINA" ? (
+                                <div>
+                                    <label className="text-xs font-bold text-text-secondary mb-1.5 block uppercase tracking-wider">Trabajador (Nómina)</label>
+                                    <select 
+                                        required
+                                        value={formData.usuarioId} 
+                                        onChange={e => setFormData({...formData, usuarioId: e.target.value})} 
+                                        className="w-full p-2.5 bg-background rounded-xl ring-1 ring-border text-sm focus:ring-2 focus:ring-mie-primary outline-none transition-all text-text-primary cursor-pointer"
+                                    >
+                                        <option value="">-- Seleccionar Trabajador --</option>
+                                        {usuarios.map(u => (
+                                            <option key={u.id} value={u.id}>{u.nombre} - {u.email}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="text-xs font-bold text-text-secondary mb-1.5 block uppercase tracking-wider">Vincular Proyecto</label>
+                                    <select 
+                                        value={formData.proyectoId} 
+                                        onChange={e => setFormData({...formData, proyectoId: e.target.value})} 
+                                        className="w-full p-2.5 bg-background rounded-xl ring-1 ring-border text-sm focus:ring-2 focus:ring-mie-primary outline-none transition-all text-text-primary cursor-pointer"
+                                    >
+                                        <option value="">-- Ninguno (Gasto Interno) --</option>
+                                        {proyectos.map(p => (
+                                            <option key={p.id} value={p.id}>{p.titulo}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         </div>
                     </div>
 
