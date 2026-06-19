@@ -8,6 +8,23 @@ export async function GET(request: NextRequest) {
   try {
     let output = "";
     
+    // 0. Check Database OpenAI API Key
+    try {
+      output += "=== VPS DATABASE OPENAI KEY ===\n";
+      const aiConn = await prisma.aiConnection.findFirst({
+        where: { proveedor: "openai" }
+      });
+      if (aiConn) {
+        output += `Connection found: ID ${aiConn.id}\n`;
+        output += `Proveedor: ${aiConn.proveedor}\n`;
+        output += `API Key (masked): ${aiConn.apiKey ? (aiConn.apiKey.substring(0, 10) + "...") : "MISSING"}\n`;
+      } else {
+        output += "No OpenAI connection found in database!\n";
+      }
+    } catch (e: any) {
+      output += `Database connection check failed: ${e.message}\n`;
+    }
+
     // 1. Check Git active commit
     try {
       output += "=== GIT ACTIVE COMMIT ===\n";
