@@ -22,10 +22,14 @@ model Lead {
   telefono           String
   email              String
   notas              String
-  etapa              String   // Mapped to Etapa enum
-  tallas             String
-  tipoMarcacion      String   // Mapped to TipoMarcacion enum
-  origenLead         String
+  etapa              String   // "NUEVO" | "CONTACTADO" | "PROPUESTA" | "ACEPTADO" | "EN_DESARROLLO" | "EN_REVISION" | "GANADO" | "PERDIDO" | "COMPLETADO"
+  origenLead         String   @default("Manual")
+  
+  // Custom Make It Easy fields
+  sector             String?
+  numEmpleados       String?
+  procesoAAutomatizar String?
+  planInteres        String?
 
   cotizaciones       Cotizacion[]
   proyectos          Proyecto[]
@@ -47,14 +51,6 @@ model Empresa {
   email                 String
   notas                 String
   
-  // Campos fiscales para integración con Siigo
-  tipoPersona           String   @default("Natural") // "Natural" | "Juridica"
-  tipoDocumento         String   @default("13")      // "13" (CC) | "31" (NIT)
-  digitoVerificacion    String   @default("")        // Dígito de verificación para NIT
-  responsabilidadFiscal String   @default("R-99-PN") // Ej: "O-47" o "R-99-PN"
-  codigoCiudadSiigo     String   @default("11001")   // Código Dane de ciudad (ej. 11001 para Bogotá)
-  siigoId               String?                      // ID del cliente en Siigo (null = no sincronizado)
-
   fechaCreacion         DateTime @default(now())
   fechaActualizacion    DateTime @updatedAt
 
@@ -107,20 +103,31 @@ model Cotizacion {
   leadId             String?
   empresaNombre      String
   contactoNombre     String
-  estado             String
-  incluyeIVA         Boolean  @default(false)
-  solicitarAnticipo  Boolean  @default(false)
-  valorAnticipo      Float?
-  observaciones      String
-  formaPago          String
-  tiempoEntrega      String
-  validez            String
+  estado             String   // "BORRADOR" | "ENVIADA" | "APROBADA" | "RECHAZADA"
+  
+  // Rich Proposal Fields (Text content matching DOCX template)
+  tituloPropuesta    String   @default("Propuesta Comercial: Ecosistema Digital Omnicanal")
+  desafioNegocio     String?  // Section 1
+  prerrequisitos     String?  // Section 2 (JSON String or text)
+  arquitecturaJson   String?  // Section 3 (JSON array of component/function)
+  fasesJson          String?  // Section 4 (JSON array of phases/pricing)
+  checklistInicio    String?  // Section 6 (JSON String or text)
+  
+  // Totals & Recurring Fees (Section 5)
+  totalProyectoCore  Float    @default(0)
+  moduloOpcionalFee  Float    @default(0)
+  feeMensual         Float    @default(0)
+  feeMensualIncluye  String?  // Text description of what is included in the monthly fee
+  moneda             String   @default("COP") // "COP" | "USD"
+  
+  observaciones      String?
+  validez            String   @default("30 días")
   fechaCreacion      DateTime @default(now())
   fechaActualizacion DateTime @updatedAt
 
-  lineas             LineaCotizacion[]
+  lead               Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
   proyectos          Proyecto[]
-  lead               Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  lineas             LineaCotizacion[]
 
   @@index([leadId])
   @@index([fechaCreacion])
@@ -149,25 +156,131 @@ model Proyecto {
   cotizacionId         String?
   titulo               String
   clienteNombre        String
-  estado               String
+  estado               String   // "DIAGNOSTICO" | "DISENO" | "IMPLEMENTACION" | "SOPORTE" | "EN_REVISION" | "ACEPTADO_CLIENTE" | "COMPLETADO"
   fechaInicio          DateTime @default(now())
   fechaEntregaEstimada DateTime?
   notas                String
-
-  // Integración Siigo Facturación
-  facturaSiigoId       String?
-  facturaSiigoUrl      String?
+  
+  herramientasUsadas   String?  // Comma separated list of tools (n8n, Make, Stripe, etc.)
+  githubRepo           String?  // e.g. "owner/repo"
+  
+  // Financial tracking
+  valorTotal           Float    @default(0)
+  moneda               String   @default("COP") // "COP", "USD", "EUR"
+  
   fechaCreacion        DateTime @default(now())
   fechaActualizacion   DateTime @updatedAt
 
-  ordenes              OrdenProduccion[]
+  ordenes              AutomationFlow[]
+  ordenesProduccion    OrdenProduccion[]
+  tareas               Tarea[]
+  milestones           Milestone[]
+  bitacora             BitacoraProyecto[]
+  gastos               Gasto[]
+  ingresos             Ingreso[]
+  facturas             Factura[]
   lead                 Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
   cotizacion           Cotizacion?        @relation(fields: [cotizacionId], references: [id], onDelete: SetNull)
-  facturas             Factura[]
 
   @@index([leadId])
   @@index([cotizacionId])
   @@map("proyectos")
+}
+
+model Tarea {
+  id            String    @id @default(uuid())
+  proyectoId    String
+  parentId      String?
+  milestoneId   String?
+  titulo        String
+  descripcion   String?
+  tipo          String    @default("development") // "product" | "development" | "bug"
+  estado        String    @default("PENDIENTE")   // "BACKLOG" | "PENDIENTE" | "EN_PROGRESO" | "REVISION" | "QA" | "COMPLETADO"
+  prioridad     Int       @default(0)             // 0=none 1=low 2=medium 3=high 4=urgent
+  asignadoEmail String?
+  estimado      Int?      // Story points
+  githubBranch  String?   // e.g. "feat/login"
+  githubPrNumber Int?     // associated PR number
+  fechaLimite   DateTime?
+  etiquetas     String?   // JSON array of strings
+  completadaEn  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  proyecto      Proyecto        @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  parent        Tarea?          @relation("TareaSubtareas", fields: [parentId], references: [id])
+  subtareas     Tarea[]         @relation("TareaSubtareas")
+  milestone     Milestone?      @relation(fields: [milestoneId], references: [id])
+  comentarios   ComentarioTarea[]
+
+  @@index([proyectoId])
+  @@index([parentId])
+  @@map("tareas")
+}
+
+model Milestone {
+  id            String    @id @default(uuid())
+  proyectoId    String
+  nombre        String
+  descripcion   String?
+  fechaObjetivo DateTime?
+  completado    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  proyecto      Proyecto  @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  tareas        Tarea[]
+
+  @@index([proyectoId])
+  @@map("milestones")
+}
+
+model ComentarioTarea {
+  id          String   @id @default(uuid())
+  tareaId     String
+  autorNombre String
+  autorEmail  String
+  cuerpo      String
+  githubCommentId String?
+  createdAt   DateTime @default(now())
+
+  tarea       Tarea    @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+
+  @@index([tareaId])
+  @@map("comentarios_tareas")
+}
+
+model BitacoraProyecto {
+  id            String   @id @default(uuid())
+  proyectoId    String
+  autorNombre   String
+  autorEmail    String
+  entrada       String
+  tipo          String   @default("NOTA") // "NOTA", "ACTUALIZACION", "DECISION"
+  createdAt     DateTime @default(now())
+
+  proyecto      Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+
+  @@index([proyectoId])
+  @@map("bitacora_proyectos")
+}
+
+model AutomationFlow {
+  id                 String   @id @default(uuid())
+  proyectoId         String
+  nombre             String
+  estado             String   // "ACTIVO" | "PAUSADO" | "ERROR"
+  tipo               String   // "WhatsApp AI Agent" | "CRM Sync" | "Invoicing Bot"
+  ejecuciones24h     Int      @default(0)
+  tasaExito          Float    @default(100.0)
+  tiempoPromedio     Float    @default(0.0)
+  notas              String
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  proyecto           Proyecto @relation(fields: [proyectoId], references: [id])
+
+  @@index([proyectoId])
+  @@map("automation_flows")
 }
 
 model OrdenProduccion {
@@ -211,12 +324,14 @@ model ItemOrdenProduccion {
 model Usuario {
   id                 String   @id @default(uuid())
   email              String   @unique
-  passwordHash       String
+  passwordHash       String?
   nombre             String
-  rol                String   @default("ventas") // "admin" o "ventas"
+  rol                String   @default("ventas") // "admin" | "ventas" | "comercial"
   activo             Boolean  @default(true)
   fechaCreacion      DateTime @default(now())
   fechaActualizacion DateTime @updatedAt
+
+  gastos             Gasto[]
 
   @@map("usuarios")
 }
@@ -232,6 +347,8 @@ model Proveedor {
   fechaCreacion      DateTime @default(now())
   fechaActualizacion DateTime @updatedAt
 
+  gastos             Gasto[]
+
   @@map("proveedores")
 }
 
@@ -242,18 +359,91 @@ model Producto {
   proveedor          String
   costoEstimado      Float
   precioSugerido     Float
-  // Campos para integración con Siigo
-  tipo               String   @default("producto")
-  categoriasiigo     String   @default("Productos")
-  unidadDian         String   @default("94")
-  descripcion        String   @default("")
-  impuesto           String   @default("IVA19")
-  siigoCode          String?
+  tipo               String   @default("servicio") // "producto" | "servicio"
+  descripcion        String   @default("")          // Descripción larga opcional
   activo             Boolean  @default(true)
   fechaCreacion      DateTime @default(now())
   fechaActualizacion DateTime @updatedAt
 
   @@map("productos")
+}
+
+model AiConnection {
+  id           String   @id @default(uuid())
+  nombre       String   // e.g. "OpenAI Principal", "DeepSeek API"
+  proveedor    String   // "openai" | "deepseek" | "anthropic" | "gemini"
+  modelo       String   // e.g. "gpt-4o-mini", "deepseek-chat"
+  apiKey       String   // Stored as-is
+  baseUrl      String?  // Optional custom base URL
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  agentes      Agent[]  // Relation with agents using this connection
+  @@map("ai_connections")
+}
+
+model Agent {
+  id           String   @id @default(uuid())
+  nombre       String   // e.g. "Agente de Ventas y Cotizaciones"
+  descripcion  String?  // Description of agent
+  systemPrompt String   // Behaviors, rules, and prompt instructions
+  activo       Boolean  @default(false) // Whether this agent is the active default
+  connectionId String   // Associated API key / connection
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  conexion     AiConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  
+  @@map("agents")
+}
+
+model Gasto {
+  id                 String   @id @default(uuid())
+  concepto           String   // Ej: "Suscripción n8n", "Pago Freelancer"
+  monto              Float
+  moneda             String   @default("COP")
+  fecha              DateTime @default(now())
+  categoria          String   @default("GENERAL") // Ej: "SUSCRIPCION", "TERCEROS", "SOFTWARE"
+  recurrente         Boolean  @default(false)     // Para saber si es un pago mensual/anual
+  estado             String   @default("PAGADO")  // "PENDIENTE" | "PAGADO"
+  notas              String?
+
+  proyectoId         String?  
+  proveedorId        String?  
+  usuarioId          String?  
+
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  proyecto           Proyecto?  @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  proveedor          Proveedor? @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
+  usuario            Usuario?   @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([proyectoId])
+  @@index([proveedorId])
+  @@index([usuarioId])
+  @@map("gastos")
+}
+
+model Ingreso {
+  id                 String   @id @default(uuid())
+  concepto           String   // Ej: "Abono 50% Inicio", "Pago Mensualidad"
+  monto              Float
+  moneda             String   @default("COP") // "COP", "USD", "EUR"
+  trm                Float    @default(1.0)   // Tasa de cambio a COP en el momento del pago
+  fecha              DateTime @default(now())
+  metodoPago         String?  // Ej: "Transferencia", "Stripe", "Efectivo"
+  estado             String   @default("COMPLETADO") // "PENDIENTE", "COMPLETADO"
+  notas              String?
+
+  proyectoId         String?  
+  proyecto           Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  @@index([proyectoId])
+  @@map("ingresos")
 }
 
 model Factura {

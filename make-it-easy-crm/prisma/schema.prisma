@@ -123,10 +123,27 @@ model Cotizacion {
 
   lead               Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
   proyectos          Proyecto[]
+  lineas             LineaCotizacion[]
 
   @@index([leadId])
   @@index([fechaCreacion])
   @@map("cotizaciones")
+}
+
+model LineaCotizacion {
+  id             String     @id @default(uuid())
+  cotizacionId   String
+  referencia     String
+  nombre         String
+  proveedor      String
+  costoUnd       Float
+  precioUnd      Float
+  cantidad       Int
+
+  cotizacion     Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+
+  @@index([cotizacionId])
+  @@map("lineas_cotizacion")
 }
 
 model Proyecto {
@@ -146,17 +163,18 @@ model Proyecto {
   // Financial tracking
   valorTotal           Float    @default(0)
   moneda               String   @default("COP") // "COP", "USD", "EUR"
-
   
   fechaCreacion        DateTime @default(now())
   fechaActualizacion   DateTime @updatedAt
 
   ordenes              AutomationFlow[]
+  ordenesProduccion    OrdenProduccion[]
   tareas               Tarea[]
   milestones           Milestone[]
   bitacora             BitacoraProyecto[]
   gastos               Gasto[]
   ingresos             Ingreso[]
+  facturas             Factura[]
   lead                 Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
   cotizacion           Cotizacion?        @relation(fields: [cotizacionId], references: [id], onDelete: SetNull)
 
@@ -242,7 +260,6 @@ model BitacoraProyecto {
   @@map("bitacora_proyectos")
 }
 
-
 model AutomationFlow {
   id                 String   @id @default(uuid())
   proyectoId         String
@@ -260,6 +277,44 @@ model AutomationFlow {
 
   @@index([proyectoId])
   @@map("automation_flows")
+}
+
+model OrdenProduccion {
+  id                   String   @id @default(uuid())
+  proyectoId           String
+  proveedor            String
+  estado               String
+  fechaEntregaEstimada DateTime?
+  costoTotalEstimado   Float
+  notas                String
+  fechaCreacion        DateTime @default(now())
+  fechaActualizacion   DateTime @updatedAt
+
+  items                ItemOrdenProduccion[]
+  proyecto             Proyecto              @relation(fields: [proyectoId], references: [id])
+
+  @@index([proyectoId])
+  @@map("ordenes_produccion")
+}
+
+model ItemOrdenProduccion {
+  id                   String   @id @default(uuid())
+  ordenId              String
+  lineaCotizacionId    String
+  referencia           String
+  nombre               String
+  cantidad             Int
+  costoUnd             Float
+  totalCosto           Float
+  notasInternas        String
+  fechaEntregaEstimada DateTime?
+  entregado            String // "SI" | "NO" | "PARCIALMENTE"
+  cantidadEntregada    Int    @default(0)
+
+  orden                OrdenProduccion @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+
+  @@index([ordenId])
+  @@map("items_orden_produccion")
 }
 
 model Usuario {
@@ -385,4 +440,58 @@ model Ingreso {
 
   @@index([proyectoId])
   @@map("ingresos")
+}
+
+model Factura {
+  id                 String   @id @default(uuid())
+  proyectoId         String
+  siigoId            String   @unique // ID retornado por Siigo
+  numero             String   // Ej: FV-1-75 o FV-2-120
+  tipo               String   // "FV-1" (No electrónica) o "FV-2" (Electrónica)
+  valorTotal         Float
+  saldoPendiente     Float    // Saldo restante por pagar
+  estado             String   // "EMITIDA" | "ANULADA" | "PAGADA" | "PAGO_PARCIAL"
+  url                String?
+  fechaEmision       DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  // Anulaciones
+  notaCreditoId      String?  // ID de la Nota de Crédito en Siigo si aplica
+  notaCreditoNumero  String?  // Número de la Nota de Crédito en Siigo
+
+  proyecto           Proyecto @relation(fields: [proyectoId], references: [id])
+  pagos              Pago[]
+
+  @@map("facturas")
+}
+
+model Pago {
+  id                 String   @id @default(uuid())
+  facturaId          String
+  siigoId            String?  @unique // ID del Recibo de Caja (Voucher) en Siigo si se originó o sincronizó
+  numeroRC           String?  // Número del Recibo de Caja en Siigo (ej. RC-1-65)
+  monto              Float
+  medioPagoId        String   // Ej: "13588" (Davivienda), "1675" (Efectivo)
+  fechaPago          DateTime @default(now())
+  origen             String   // "CRM" o "SIIGO"
+
+  factura            Factura  @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+
+  @@map("pagos")
+}
+
+model LogIntegracion {
+  id            String   @id @default(uuid())
+  servicio      String   // "SIIGO"
+  accion        String   // "EMITIR_FACTURA", "REGISTRAR_PAGO", "CREAR_CLIENTE", "ANULAR_FACTURA"
+  entidadId     String?  // ID local del recurso afectado
+  exitoso       Boolean
+  urlRequest    String
+  payloadSent   String?  // JSON string
+  responseBody  String?  // JSON string
+  statusCode    Int?
+  mensajeError  String?
+  fechaCreacion DateTime @default(now())
+
+  @@map("logs_integracion")
 }
