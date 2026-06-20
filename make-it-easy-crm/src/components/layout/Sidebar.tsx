@@ -18,13 +18,13 @@ const ALL_MENU_ITEMS = [
     { href: "/empresas",     icon: Building2,       label: "Empresas",      roles: ["admin", "ventas", "comercial"] },
     { href: "/compras",      icon: ShoppingCart,    label: "Compras",       roles: ["admin", "ventas", "comercial"] },
     // Sección técnica — oculta para rol 'comercial'
-    { href: "/cotizaciones", icon: FileText,        label: "Cotizaciones",  roles: ["admin", "ventas"] },
-    { href: "/productos",    icon: Package,         label: "Productos",     roles: ["admin", "ventas"] },
-    { href: "/proyectos",    icon: FolderKanban,    label: "Proyectos",     roles: ["admin", "ventas"] },
-    { href: "/proveedores",  icon: Factory,         label: "Proveedores",   roles: ["admin"] },
-    { href: "/vendedores",   icon: Users,           label: "Comerciales",   roles: ["admin"] },
-    { href: "/finanzas",     icon: DollarSign,      label: "Finanzas",      roles: ["admin", "ventas"] },
-    { href: "/reportes",     icon: BarChart3,       label: "Reportes",      roles: ["admin", "ventas"] },
+    { href: "/cotizaciones", icon: FileText,        label: "Cotizaciones",  roles: ["admin", "ventas", "comercial"] },
+    { href: "/productos",    icon: Package,         label: "Productos",     roles: ["admin", "ventas", "comercial"] },
+    { href: "/proyectos",    icon: FolderKanban,    label: "Proyectos",     roles: ["admin", "ventas", "comercial"] },
+    { href: "/proveedores",  icon: Factory,         label: "Proveedores",   roles: ["admin", "ventas", "comercial"] },
+    { href: "/vendedores",   icon: Users,           label: "Comerciales",   roles: ["admin", "ventas", "comercial"] },
+    { href: "/finanzas",     icon: DollarSign,      label: "Finanzas",      roles: ["admin", "ventas", "comercial"] },
+    { href: "/reportes",     icon: BarChart3,       label: "Reportes",      roles: ["admin", "ventas", "comercial"] },
 ];
 
 export default function Sidebar() {

@@ -183,6 +183,9 @@ export const useProyectosStore = create<ProyectosState>((set, get) => ({
       case EstadoProyecto.DISENO: return 50;
       case EstadoProyecto.IMPLEMENTACION: return 80;
       case EstadoProyecto.SOPORTE: return 100;
+      case EstadoProyecto.EN_REVISION: return 90;
+      case EstadoProyecto.ACEPTADO_CLIENTE: return 95;
+      case EstadoProyecto.COMPLETADO: return 100;
       default: return 0;
     }
   }

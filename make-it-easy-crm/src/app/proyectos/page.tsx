@@ -18,7 +18,11 @@ const ESTADO_PROYECTO_STYLES: Record<EstadoProyecto, { bg: string; text: string;
     [EstadoProyecto.DISENO]: { bg: "bg-purple-100 dark:bg-purple-900/30", text: "text-purple-600 dark:text-purple-400", icon: <Clock size={14} /> },
     [EstadoProyecto.IMPLEMENTACION]: { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-600 dark:text-amber-400", icon: <Layers size={14} /> },
     [EstadoProyecto.SOPORTE]: { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-600 dark:text-emerald-400", icon: <CheckCircle size={14} /> },
+    [EstadoProyecto.EN_REVISION]: { bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-600 dark:text-orange-400", icon: <Activity size={14} /> },
+    [EstadoProyecto.ACEPTADO_CLIENTE]: { bg: "bg-teal-100 dark:bg-teal-900/30", text: "text-teal-600 dark:text-teal-400", icon: <CheckCircle size={14} /> },
+    [EstadoProyecto.COMPLETADO]: { bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-600 dark:text-slate-400", icon: <Package size={14} /> },
 };
+
 
 export default function ProyectosPage() {
     const store = useProyectosStore();
@@ -59,9 +63,9 @@ export default function ProyectosPage() {
         }
         
         if (viewContext === "activos") {
-            list = list.filter(p => p.estado !== EstadoProyecto.SOPORTE);
+            list = list.filter(p => p.estado !== EstadoProyecto.SOPORTE && p.estado !== EstadoProyecto.COMPLETADO);
         } else {
-            list = list.filter(p => p.estado === EstadoProyecto.SOPORTE);
+            list = list.filter(p => p.estado === EstadoProyecto.SOPORTE || p.estado === EstadoProyecto.COMPLETADO);
         }
 
         if (filterEstado) list = list.filter(p => p.estado === filterEstado);
@@ -347,7 +351,10 @@ export default function ProyectosPage() {
 
             {viewMode === "kanban" && (
                 <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-                   {Object.values(EstadoProyecto).filter(e => viewContext === "activos" ? e !== EstadoProyecto.SOPORTE : e === EstadoProyecto.SOPORTE).map(estado => {
+                   {Object.values(EstadoProyecto).filter(e => {
+                       const terminales = [EstadoProyecto.SOPORTE, EstadoProyecto.COMPLETADO];
+                       return viewContext === "activos" ? !terminales.includes(e) : terminales.includes(e);
+                   }).map(estado => {
                        const cols = filtered.filter(p => p.estado === estado);
                        const estilo = ESTADO_PROYECTO_STYLES[estado];
                        return (

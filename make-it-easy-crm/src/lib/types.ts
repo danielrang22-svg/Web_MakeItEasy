@@ -8,6 +8,7 @@ export enum Etapa {
   EN_REVISION = "EN_REVISION",
   GANADO = "GANADO",
   PERDIDO = "PERDIDO",
+  COMPLETADO = "COMPLETADO",
 }
 
 // ── Lead Entity ──
@@ -165,6 +166,9 @@ export enum EstadoProyecto {
   DISENO = "DISENO",
   IMPLEMENTACION = "IMPLEMENTACION",
   SOPORTE = "SOPORTE",
+  EN_REVISION = "EN_REVISION",
+  ACEPTADO_CLIENTE = "ACEPTADO_CLIENTE",
+  COMPLETADO = "COMPLETADO",
 }
 
 export interface Proyecto {

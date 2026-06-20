@@ -75,6 +75,14 @@ export const PIPELINE_STAGES: StageConfig[] = [
         textColor: "text-red-600 dark:text-red-400",
         dotColor: "#ef4444",
     },
+    {
+        key: Etapa.COMPLETADO,
+        label: "Proyecto Completado",
+        shortLabel: "Completado",
+        color: "bg-slate-100 dark:bg-slate-800",
+        textColor: "text-slate-600 dark:text-slate-400",
+        dotColor: "#64748b",
+    },
 ];
 
 // ── Lead Origin Options ──

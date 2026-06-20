@@ -310,7 +310,17 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
               )}
             </div>
 
-            <div className="relative">
+            <div className="flex justify-between items-center mb-1.5 ml-1">
+              <span className="text-xs font-bold text-muted-foreground">Notas Adicionales / Contexto</span>
+              <button
+                type="button"
+                onClick={loadExample}
+                className="text-xs text-violet-500 hover:text-violet-600 font-semibold transition-colors"
+              >
+                Cargar ejemplo aleatorio
+              </button>
+            </div>
+            <div>
               <textarea
                 value={notasContexto}
                 onChange={e => setNotasContexto(e.target.value)}
@@ -318,13 +328,6 @@ export default function AIBriefInput({ leadData, onProposalGenerated, onSkip }: 
                 className="w-full px-3 py-3 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm resize-none text-foreground"
                 placeholder="Escribe aquí notas adicionales... Ej: 'El cliente me dijo por llamada que solo tiene 2 millones y usa Excel'"
               />
-              <button
-                type="button"
-                onClick={loadExample}
-                className="absolute bottom-3 right-3 text-xs text-violet-500 hover:text-violet-600 font-semibold"
-              >
-                Cargar ejemplo aleatorio
-              </button>
             </div>
           </div>
 

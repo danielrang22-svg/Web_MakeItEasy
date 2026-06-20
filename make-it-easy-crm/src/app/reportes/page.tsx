@@ -110,8 +110,8 @@ export default function ReportesPage() {
         : "0";
 
     // --- PRODUCCIÓN ---
-    const proyectosActivos = filteredProyectos.filter(p => p.estado !== EstadoProyecto.SOPORTE);
-    const proyectosCompletados = filteredProyectos.filter(p => p.estado === EstadoProyecto.SOPORTE);
+    const proyectosActivos = filteredProyectos.filter(p => p.estado !== EstadoProyecto.SOPORTE && p.estado !== EstadoProyecto.COMPLETADO);
+    const proyectosCompletados = filteredProyectos.filter(p => p.estado === EstadoProyecto.SOPORTE || p.estado === EstadoProyecto.COMPLETADO);
     
     const filteredOrdenes = ordenes.filter(o => filteredProyectos.find(p => p.id === o.proyectoId));
     const costoProduccion = filteredGastos.reduce((acc, g) => acc + g.monto, 0);

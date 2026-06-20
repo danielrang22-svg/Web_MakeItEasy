@@ -8,9 +8,9 @@ import { EstadoProyecto, Proyecto, AutomationFlow } from "@/lib/types";
 import { formatCurrency } from "@/lib/constants";
 import { Modal, Toast } from "@/components/ui/SharedUI";
 import {
-    ArrowLeft, Clock, CalendarDays, Eye, CheckCircle,
+    ArrowLeft, Clock, CalendarDays, Eye, CheckCircle, FileText,
     Archive, DollarSign, Ban, Activity, Cpu, Layers, Play, Pause, AlertCircle, Plus, Trash2, Edit2, Wrench,
-    LayoutList, Github, Sparkles, BookOpen, List, Kanban, TrendingUp
+    LayoutList, Github, Sparkles, BookOpen, List, Kanban, TrendingUp, Loader2, Award, ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
 
@@ -25,6 +25,7 @@ import TaskListView from "@/components/proyectos/TaskListView";
 import BitacoraPanel from "@/components/proyectos/BitacoraPanel";
 import GastosPanel from "@/components/proyectos/GastosPanel";
 import IngresosPanel from "@/components/proyectos/IngresosPanel";
+import InvoiceModal from "@/components/proyectos/InvoiceModal";
 import { useGastosStore } from "@/lib/state/gastosStore";
 
 const ESTADO_PROYECTO_STYLES: Record<EstadoProyecto, { bg: string; text: string; label: string }> = {
@@ -32,7 +33,11 @@ const ESTADO_PROYECTO_STYLES: Record<EstadoProyecto, { bg: string; text: string;
     [EstadoProyecto.DISENO]: { bg: "bg-purple-100 dark:bg-purple-900/30", text: "text-purple-600 dark:text-purple-400", label: "DISEÑO" },
     [EstadoProyecto.IMPLEMENTACION]: { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-600 dark:text-amber-400", label: "IMPLEMENTACIÓN" },
     [EstadoProyecto.SOPORTE]: { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-600 dark:text-emerald-400", label: "SOPORTE (Mantenimiento)" },
+    [EstadoProyecto.EN_REVISION]: { bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-600 dark:text-orange-400", label: "EN REVISIÓN" },
+    [EstadoProyecto.ACEPTADO_CLIENTE]: { bg: "bg-teal-100 dark:bg-teal-900/30", text: "text-teal-600 dark:text-teal-400", label: "ACEPTADO POR CLIENTE" },
+    [EstadoProyecto.COMPLETADO]: { bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-600 dark:text-slate-400", label: "COMPLETADO" },
 };
+
 
 export default function ProyectoDetallePage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -60,6 +65,8 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
     const [showCreateTask, setShowCreateTask] = useState(false);
     const [showAiTask, setShowAiTask] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Tarea | null>(null);
+    const [isSyncingPlan, setIsSyncingPlan] = useState(false);
+    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
     // Flow Modals
     const [showFlowModal, setShowFlowModal] = useState(false);
@@ -109,6 +116,12 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
     
     // Overall progress now considering tasks as well as basic stages
     const tasksProgress = tareas.length > 0 ? Math.round((tareas.filter(t => t.estado === "COMPLETADO").length / tareas.length) * 100) : getProjectProgress(proyecto.id);
+    
+    // Detect if all tasks are done and project is still in development (not yet in review/accepted/completed)
+    const activoEstados: EstadoProyecto[] = [EstadoProyecto.DIAGNOSTICO, EstadoProyecto.DISENO, EstadoProyecto.IMPLEMENTACION, EstadoProyecto.SOPORTE];
+    const todosCompletos = tareas.length > 0 && tareas.every(t => t.estado === "COMPLETADO");
+    const mostrarBannerRevision = todosCompletos && activoEstados.includes(proyecto.estado);
+    const puedeFacturar = proyecto.estado === EstadoProyecto.ACEPTADO_CLIENTE || proyecto.estado === EstadoProyecto.COMPLETADO;
     
     const handleStatusChange = async (newStatus: EstadoProyecto) => {
         setIsSaving(true);
@@ -224,6 +237,26 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
         }
     };
 
+    const handleSyncPlan = async () => {
+        if (!proyecto?.githubRepo) return;
+        setIsSyncingPlan(true);
+        try {
+            const res = await fetch(`/api/proyectos/${proyecto.id}/sync-plan`, { method: "POST" });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setToast({ message: `Sincronizado: ${data.phasesSynced} fases, ${data.tasksSynced} tareas, ${data.tasksDeleted} eliminadas`, type: "success" });
+                loadTareas(proyecto.id);
+                loadMilestones(proyecto.id);
+            } else {
+                throw new Error(data.error || "Error al sincronizar");
+            }
+        } catch (e: any) {
+            setToast({ message: e.message || "Error al sincronizar plan", type: "error" });
+        } finally {
+            setIsSyncingPlan(false);
+        }
+    };
+
     return (
         <div className="px-5 pb-32">
             <div className="mt-4 mb-6">
@@ -253,9 +286,80 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                                 <option key={opt} value={opt}>{ESTADO_PROYECTO_STYLES[opt]?.label || opt}</option>
                             ))}
                         </select>
+                        {puedeFacturar && (
+                            <button
+                                onClick={() => setShowInvoiceModal(true)}
+                                className="ml-2 flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-emerald-700 transition-colors shadow-sm"
+                            >
+                                <FileText size={14} />
+                                Generar Factura
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* === BANNER: Plan Completo — Mover a Revisión === */}
+            {mostrarBannerRevision && (
+                <div className="mb-5 flex items-center gap-4 p-4 rounded-2xl bg-orange-50 dark:bg-orange-900/20 ring-1 ring-orange-300 dark:ring-orange-700">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
+                        <Award size={20} className="text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="font-bold text-orange-800 dark:text-orange-300 text-sm">¡Todas las tareas completadas!</p>
+                        <p className="text-xs text-orange-600 dark:text-orange-400 mt-0.5">El plan de trabajo está al 100%. Mueve el proyecto a <strong>En Revisión</strong> para que el cliente revise y apruebe el entregable.</p>
+                    </div>
+                    <button
+                        onClick={() => handleStatusChange(EstadoProyecto.EN_REVISION)}
+                        disabled={isSaving}
+                        className="flex-shrink-0 flex items-center gap-1.5 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+                    >
+                        <Eye size={14} />
+                        Enviar a Revisión
+                    </button>
+                </div>
+            )}
+
+            {/* === BANNER: En Revisión — Esperando aceptación del cliente === */}
+            {proyecto.estado === EstadoProyecto.EN_REVISION && (
+                <div className="mb-5 flex items-center gap-4 p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-300 dark:ring-blue-700">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                        <Eye size={20} className="text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="font-bold text-blue-800 dark:text-blue-300 text-sm">Proyecto en Revisión del Cliente</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">Esperando que el cliente revise y apruebe los entregables. Cuando confirme su aceptación, marca el proyecto como <strong>Aceptado por Cliente</strong>.</p>
+                    </div>
+                    <button
+                        onClick={() => handleStatusChange(EstadoProyecto.ACEPTADO_CLIENTE)}
+                        disabled={isSaving}
+                        className="flex-shrink-0 flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+                    >
+                        <ShieldCheck size={14} />
+                        Marcar Aceptado
+                    </button>
+                </div>
+            )}
+
+            {/* === BANNER: Aceptado — Listo para facturar === */}
+            {proyecto.estado === EstadoProyecto.ACEPTADO_CLIENTE && (
+                <div className="mb-5 flex items-center gap-4 p-4 rounded-2xl bg-teal-50 dark:bg-teal-900/20 ring-1 ring-teal-300 dark:ring-teal-700">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
+                        <ShieldCheck size={20} className="text-teal-600" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="font-bold text-teal-800 dark:text-teal-300 text-sm">¡Cliente aprobó el proyecto!</p>
+                        <p className="text-xs text-teal-600 dark:text-teal-400 mt-0.5">Ya puedes generar la <strong>factura de cierre</strong> y cobrar el saldo pendiente. Una vez pagado, marca el proyecto como Completado.</p>
+                    </div>
+                    <button
+                        onClick={() => setShowInvoiceModal(true)}
+                        className="flex-shrink-0 flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+                    >
+                        <FileText size={14} />
+                        Generar Factura
+                    </button>
+                </div>
+            )}
 
             {/* Metrics Dashboard Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -403,6 +507,16 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                                             <List size={14} />
                                         </button>
                                     </div>
+                                    {proyecto.githubRepo && (
+                                        <button 
+                                            onClick={handleSyncPlan}
+                                            disabled={isSyncingPlan}
+                                            className="bg-mie-blue/10 hover:bg-mie-blue/20 text-mie-blue px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
+                                        >
+                                            {isSyncingPlan ? <Loader2 size={14} className="animate-spin" /> : <Github size={14} />}
+                                            <span className="hidden sm:inline">{isSyncingPlan ? "Sincronizando..." : "Sincronizar Plan"}</span>
+                                        </button>
+                                    )}
                                     <button 
                                         onClick={() => setShowAiTask(true)}
                                         className="bg-mie-purple/10 hover:bg-mie-purple/20 text-mie-purple px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
@@ -614,6 +728,15 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
             </Modal>
 
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+            
+            {showInvoiceModal && proyecto && (
+                <InvoiceModal 
+                    isOpen={showInvoiceModal} 
+                    onClose={() => setShowInvoiceModal(false)} 
+                    proyecto={proyecto} 
+                    cotizacion={cotizaciones.find(c => c.id === proyecto.cotizacionId) || null} 
+                />
+            )}
         </div>
     );
 }

@@ -61,6 +61,12 @@ export default function CotizacionesPage() {
     const [activeTab, setActiveTab] = useState<"activas" | "historial">("activas");
     const [quickStateMenu, setQuickStateMenu] = useState<string | null>(null); // cotizacion id with open menu
     const quickStateRef = useRef<HTMLDivElement>(null);
+    const [userRole, setUserRole] = useState<string>("");
+
+    useEffect(() => {
+        const role = document.cookie.split("mie-role=")[1]?.split(";")[0] || "";
+        setUserRole(role);
+    }, []);
 
     // Initializing Project Modal
     const [initProjectCot, setInitProjectCot] = useState<Cotizacion | null>(null);
@@ -331,7 +337,15 @@ export default function CotizacionesPage() {
                                             </button>
                                             {quickStateMenu === cot.id && (
                                                 <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-20 min-w-[160px] overflow-hidden">
-                                                    {Object.values(EstadoCotizacion).filter(e => e !== cot.estado).map(estado => {
+                                                    {Object.values(EstadoCotizacion)
+                                                        .filter(e => e !== cot.estado)
+                                                        .filter(e => {
+                                                             if (userRole === "comercial" && e === EstadoCotizacion.APROBADA_TECNICAMENTE) {
+                                                                return false;
+                                                            }
+                                                            return true;
+                                                        })
+                                                        .map(estado => {
                                                         const s = ESTADO_STYLES[estado];
                                                         return (
                                                             <button
@@ -371,7 +385,7 @@ export default function CotizacionesPage() {
 
                             {/* Actions */}
                             <div className="flex gap-2 mt-3 flex-wrap items-center border-t border-border/50 pt-3">
-                                {cot.estado === EstadoCotizacion.APROBADA_CLIENTE && !proyectos.find(p => p.cotizacionId === cot.id) ? (
+                                {cot.estado === EstadoCotizacion.APROBADA_CLIENTE && !proyectos.find(p => p.cotizacionId === cot.id) && userRole !== "comercial" ? (
                                     <button 
                                         onClick={() => openInitProject(cot)} 
                                         className="px-3 py-1.5 text-xs text-white bg-mie-secondary hover:bg-mie-secondary/90 rounded-lg flex items-center gap-1 font-bold shadow-sm shadow-mie-secondary/20 transition-all mr-2"

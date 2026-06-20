@@ -25,7 +25,12 @@ export async function PUT(request: NextRequest, props: { params: Promise<{ id: s
     if (leadId !== undefined) cotizacionData.leadId = leadId || null;
     if (empresaNombre !== undefined) cotizacionData.empresaNombre = empresaNombre;
     if (contactoNombre !== undefined) cotizacionData.contactoNombre = contactoNombre;
-    if (estado !== undefined) cotizacionData.estado = estado;
+    if (estado !== undefined) {
+      if (auth.role === "comercial" && (estado === "APROBADA_TECNICAMENTE" || estado === "APROBADA")) {
+        return NextResponse.json({ error: "No tienes permiso para realizar la aprobación técnica" }, { status: 403 });
+      }
+      cotizacionData.estado = estado;
+    }
     
     // Rich Proposal Fields
     if (tituloPropuesta !== undefined) cotizacionData.tituloPropuesta = tituloPropuesta;

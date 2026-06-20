@@ -116,11 +116,24 @@ export async function POST(request: NextRequest) {
       include: { conexion: true },
     });
 
-    // Fallback to env variable if no DB config is active
-    const apiKey = activeAgent?.conexion?.apiKey || process.env.OPENAI_API_KEY;
-    const modelo = activeAgent?.conexion?.modelo || 'gpt-4o-mini';
-    const baseURL = activeAgent?.conexion?.baseUrl || PROVIDER_BASE_URLS[activeAgent?.conexion?.proveedor ?? 'openai'];
-    const systemPromptBase = activeAgent?.systemPrompt || SYSTEM_PROMPT;
+    // Fallback logic: check active agent first, then any openai connection in DB, then env
+    let apiKey = activeAgent?.conexion?.apiKey;
+    let modelo = activeAgent?.conexion?.modelo || 'gpt-4o-mini';
+    let baseURL = activeAgent?.conexion?.baseUrl;
+    let systemPromptBase = activeAgent?.systemPrompt || SYSTEM_PROMPT;
+
+    if (!apiKey) {
+      const fallbackConnection = await prisma.aiConnection.findFirst({
+        where: { proveedor: "openai" }
+      });
+      if (fallbackConnection?.apiKey) {
+        apiKey = fallbackConnection.apiKey;
+        modelo = fallbackConnection.modelo || modelo;
+        baseURL = fallbackConnection.baseUrl || baseURL;
+      } else {
+        apiKey = process.env.OPENAI_API_KEY;
+      }
+    }
 
     // Currency instructions based on user selected currency
     const selectedMoneda = moneda || 'COP';

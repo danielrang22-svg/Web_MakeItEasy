@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
                 name: "web",
                 active: true,
-                events: ["pull_request"],
+                events: ["pull_request", "push"],
                 config: {
                     url: webhookUrl,
                     content_type: "json",

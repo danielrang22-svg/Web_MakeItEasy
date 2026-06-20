@@ -12,21 +12,34 @@ export async function PUT(request: NextRequest, props: { params: Promise<{ id: s
     const body = await request.json();
     
     // Sanitize body to only allow safe fields
-    const { estado, notas, fechaEntregaEstimada, herramientasUsadas } = body;
+    const { estado, notas, fechaEntregaEstimada, herramientasUsadas, githubRepo } = body;
     const dataToUpdate: any = {};
     if (estado !== undefined) dataToUpdate.estado = estado;
     if (notas !== undefined) dataToUpdate.notas = notas;
     if (fechaEntregaEstimada !== undefined) dataToUpdate.fechaEntregaEstimada = fechaEntregaEstimada ? new Date(fechaEntregaEstimada) : null;
     if (herramientasUsadas !== undefined) dataToUpdate.herramientasUsadas = herramientasUsadas;
+    if (githubRepo !== undefined) dataToUpdate.githubRepo = githubRepo;
 
     const updated = await prisma.proyecto.update({ where: { id }, data: dataToUpdate });
     
-    // If project is finalized (e.g. SOPORTE stage or similar)
-    if (estado === "SOPORTE") {
-        if (updated.leadId) {
+    // Pipeline triggers: sync lead stage with project state
+    if (estado && updated.leadId) {
+        let nuevaEtapa: string | null = null;
+
+        if (estado === "EN_REVISION") {
+            nuevaEtapa = "EN_REVISION";
+        } else if (estado === "ACEPTADO_CLIENTE") {
+            nuevaEtapa = "GANADO";
+        } else if (estado === "COMPLETADO") {
+            nuevaEtapa = "COMPLETADO";
+        } else if (estado === "SOPORTE") {
+            nuevaEtapa = "GANADO";
+        }
+
+        if (nuevaEtapa) {
             await prisma.lead.update({
                 where: { id: updated.leadId },
-                data: { etapa: "GANADO" }
+                data: { etapa: nuevaEtapa }
             });
         }
     }

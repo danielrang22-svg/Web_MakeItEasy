@@ -24,6 +24,10 @@ export async function POST(request: NextRequest) {
     if (!auth) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
     const body = await request.json();
+    const estado = body.estado || 'BORRADOR';
+    if (auth.role === "comercial" && (estado === "APROBADA_TECNICAMENTE" || estado === "APROBADA")) {
+      return NextResponse.json({ error: "No tienes permiso para crear cotizaciones con aprobación técnica" }, { status: 403 });
+    }
 
     const cotizacionData = {
       codigo:            body.codigo            ?? '',
@@ -33,7 +37,7 @@ export async function POST(request: NextRequest) {
       leadId:            body.leadId            || null,
       empresaNombre:     body.empresaNombre     ?? '',
       contactoNombre:    body.contactoNombre    ?? '',
-      estado:            body.estado            ?? 'BORRADOR',
+      estado,
       
       // Proposal Content
       tituloPropuesta:   body.tituloPropuesta    ?? 'Propuesta Comercial: Ecosistema Digital Omnicanal',

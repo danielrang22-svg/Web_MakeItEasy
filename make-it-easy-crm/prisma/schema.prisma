@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -18,7 +18,7 @@ model Lead {
   telefono           String
   email              String
   notas              String
-  etapa              String   // Mapped to Etapa enum ("NUEVO", "CALIFICADO", "PROPUESTA", "PERDIDO", "GANADO")
+  etapa              String   // "NUEVO" | "CONTACTADO" | "PROPUESTA" | "ACEPTADO" | "EN_DESARROLLO" | "EN_REVISION" | "GANADO" | "PERDIDO" | "COMPLETADO"
   origenLead         String   @default("Manual")
   
   // Custom Make It Easy fields
@@ -135,7 +135,7 @@ model Proyecto {
   cotizacionId         String?
   titulo               String
   clienteNombre        String
-  estado               String   // "DIAGNOSTICO" | "DISENO" | "IMPLEMENTACION" | "SOPORTE"
+  estado               String   // "DIAGNOSTICO" | "DISENO" | "IMPLEMENTACION" | "SOPORTE" | "EN_REVISION" | "ACEPTADO_CLIENTE" | "COMPLETADO"
   fechaInicio          DateTime @default(now())
   fechaEntregaEstimada DateTime?
   notas                String
