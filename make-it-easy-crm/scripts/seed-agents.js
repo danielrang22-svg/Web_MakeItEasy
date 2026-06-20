@@ -121,14 +121,20 @@ INSTRUCCIONES:
 async function main() {
   console.log('\n=== Seed de Agentes de IA - Make It Easy CRM ===\n');
 
-  const openaiConn = await prisma.aiConnection.findFirst({
+  let openaiConn = await prisma.aiConnection.findFirst({
     where: { proveedor: 'openai' },
   });
 
   if (!openaiConn) {
-    console.log('ERROR: No se encontro ninguna conexion de OpenAI en la base de datos.');
-    console.log('   Ve a Ajustes -> Conexiones de API y crea primero una conexion con proveedor OpenAI.\n');
-    process.exit(1);
+    console.log('No se encontro conexion de OpenAI. Creando una conexion por defecto...');
+    openaiConn = await prisma.aiConnection.create({
+      data: {
+        nombre: 'OPEN AI',
+        proveedor: 'openai',
+        modelo: 'gpt-4o-mini',
+        apiKey: process.env.OPENAI_API_KEY || 'sk-COLOCA_AQUI_TU_API_KEY_EN_AJUSTES'
+      }
+    });
   }
 
   console.log('Conexion de OpenAI encontrada:');
