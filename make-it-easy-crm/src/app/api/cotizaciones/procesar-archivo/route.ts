@@ -104,10 +104,20 @@ export async function POST(request: NextRequest) {
           rawText += "\n[Error al transcribir archivo de audio]\n";
         }
       } else if (isPdf) {
-        const pdfParse = require("pdf-parse");
+        const pdfParseModule = require("pdf-parse");
         const buffer = Buffer.from(await file.arrayBuffer());
-        const data = await pdfParse(buffer);
-        rawText += data.text;
+        let pdfText = "";
+        if (typeof pdfParseModule === 'function') {
+          const pdfData = await pdfParseModule(buffer);
+          pdfText = pdfData.text;
+        } else if (pdfParseModule && typeof pdfParseModule.PDFParse === 'function') {
+          const parser = new pdfParseModule.PDFParse({ data: buffer });
+          const res = await parser.getText();
+          pdfText = res.text;
+        } else {
+          throw new Error("No se pudo cargar un parser de PDF compatible (pdf-parse).");
+        }
+        rawText += pdfText;
       } else if (isText) {
         const buffer = Buffer.from(await file.arrayBuffer());
         rawText += buffer.toString("utf-8");

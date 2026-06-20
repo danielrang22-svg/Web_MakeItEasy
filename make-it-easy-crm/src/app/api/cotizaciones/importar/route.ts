@@ -30,10 +30,19 @@ export async function POST(request: NextRequest) {
 
     // Extracción de texto según el formato
     if (file.name.toLowerCase().endsWith('.pdf')) {
-      const pdfParse = require('pdf-parse');
-      // @ts-ignore
-      const pdfData = await pdfParse(buffer);
-      extractedText = pdfData.text;
+      const pdfParseModule = require('pdf-parse');
+      let pdfText = "";
+      if (typeof pdfParseModule === 'function') {
+        const pdfData = await pdfParseModule(buffer);
+        pdfText = pdfData.text;
+      } else if (pdfParseModule && typeof pdfParseModule.PDFParse === 'function') {
+        const parser = new pdfParseModule.PDFParse({ data: buffer });
+        const res = await parser.getText();
+        pdfText = res.text;
+      } else {
+        throw new Error("No se pudo cargar un parser de PDF compatible (pdf-parse).");
+      }
+      extractedText = pdfText;
     } else if (file.name.toLowerCase().endsWith('.docx')) {
       const mammoth = (await import('mammoth')).default;
       const result = await mammoth.extractRawText({ buffer });
