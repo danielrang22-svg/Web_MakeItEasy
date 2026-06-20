@@ -72,6 +72,8 @@ export default function CotizacionesPage() {
     const [initProjectCot, setInitProjectCot] = useState<Cotizacion | null>(null);
     const [createGithubRepo, setCreateGithubRepo] = useState(true);
     const [githubRepoVisibility, setGithubRepoVisibility] = useState<"private" | "public">("private");
+    const [githubMode, setGithubMode] = useState<"create" | "link">("create");
+    const [existingGithubRepo, setExistingGithubRepo] = useState("");
     const [isInitializing, setIsInitializing] = useState(false);
 
     useEffect(() => { 
@@ -163,6 +165,8 @@ export default function CotizacionesPage() {
         setInitProjectCot(cot);
         setCreateGithubRepo(true);
         setGithubRepoVisibility("private");
+        setGithubMode("create");
+        setExistingGithubRepo("");
     }
 
     async function handleInitProjectConfirmed(e: React.FormEvent) {
@@ -179,38 +183,98 @@ export default function CotizacionesPage() {
             let successMessage = "Proyecto generado exitosamente";
 
             if (createGithubRepo) {
-                setToast({ message: "Creando repositorio en GitHub y configurando webhooks...", type: "info" });
-                
-                // Safe name parsing: mie-company-name
-                const safeName = `mie-${initProjectCot.empresaNombre.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-                
-                const repoRes = await fetch("/api/github/repos", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        nombre: safeName,
-                        descripcion: `CRM Generated: ${initProjectCot.tituloPropuesta}`,
-                        privado: githubRepoVisibility === "private"
-                    })
-                });
+                if (githubMode === "link") {
+                    if (!existingGithubRepo.trim()) {
+                        throw new Error("Por favor, ingresa el nombre o link del repositorio de GitHub");
+                    }
 
-                if (repoRes.ok) {
-                    const repoData = await repoRes.json();
-                    if (repoData.full_name) {
-                        await fetch(`/api/proyectos/${proyecto.id}`, {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ githubRepo: repoData.full_name })
-                        });
-                        successMessage = "Proyecto y repositorio de GitHub creados exitosamente";
-                        if (!repoData.webhook_configured) {
-                            successMessage = "Repo creado, pero falló la configuración del Webhook.";
+                    // Extract owner/repo
+                    let repoFullName = existingGithubRepo.trim();
+                    const urlMatch = repoFullName.match(/github\.com\/([^\/]+)\/([^\/\s#?.]+)/i);
+                    const sshMatch = repoFullName.match(/github\.com:([^\/]+)\/([^\/\s#?.]+)/i);
+                    if (urlMatch) {
+                        repoFullName = `${urlMatch[1]}/${urlMatch[2]}`;
+                    } else if (sshMatch) {
+                        repoFullName = `${sshMatch[1]}/${sshMatch[2]}`;
+                    }
+
+                    setToast({ message: "Vinculando repositorio en GitHub y configurando webhooks...", type: "info" });
+
+                    const repoRes = await fetch("/api/github/repos", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: "link",
+                            fullName: repoFullName
+                        })
+                    });
+
+                    if (repoRes.ok) {
+                        const repoData = await repoRes.json();
+                        if (repoData.full_name) {
+                            // Link project to repo
+                            await fetch(`/api/proyectos/${proyecto.id}`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ githubRepo: repoData.full_name })
+                            });
+
+                            successMessage = "Proyecto y repositorio de GitHub vinculados exitosamente";
+
+                            // Trigger auto-sync plan
+                            setToast({ message: "Sincronizando plan de trabajo desde GitHub...", type: "info" });
+                            const syncRes = await fetch(`/api/proyectos/${proyecto.id}/sync-plan`, {
+                                method: "POST"
+                            });
+
+                            if (syncRes.ok) {
+                                const syncData = await syncRes.json();
+                                successMessage = `Proyecto y repositorio vinculados. Sincronizado: ${syncData.milestonesCreated || 0} hitos y ${syncData.tasksCreated || 0} tareas creadas.`;
+                            } else {
+                                const syncErr = await syncRes.json().catch(() => ({}));
+                                console.error("Sync plan error:", syncErr);
+                                setToast({ message: "Proyecto vinculado, pero no se encontró o falló el PLAN_DE_TRABAJO.md en el repositorio. Podrás sincronizarlo luego.", type: "error" });
+                            }
                         }
+                    } else {
+                        const err = await repoRes.json().catch(() => ({}));
+                        console.error("Github Link Error", err);
+                        throw new Error(err.error || "Falló la vinculación del repositorio en GitHub");
                     }
                 } else {
-                    const err = await repoRes.json();
-                    console.error("Github Error", err);
-                    setToast({ message: "Proyecto creado, pero falló la creación del repo en GitHub", type: "error" });
+                    setToast({ message: "Creando repositorio en GitHub y configurando webhooks...", type: "info" });
+                    
+                    // Safe name parsing: mie-company-name
+                    const safeName = `mie-${initProjectCot.empresaNombre.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                    
+                    const repoRes = await fetch("/api/github/repos", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            nombre: safeName,
+                            descripcion: `CRM Generated: ${initProjectCot.tituloPropuesta}`,
+                            privado: githubRepoVisibility === "private"
+                        })
+                    });
+
+                    if (repoRes.ok) {
+                        const repoData = await repoRes.json();
+                        if (repoData.full_name) {
+                            await fetch(`/api/proyectos/${proyecto.id}`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ githubRepo: repoData.full_name })
+                            });
+                            successMessage = "Proyecto y repositorio de GitHub creados exitosamente";
+                            if (!repoData.webhook_configured) {
+                                successMessage = "Repo creado, pero falló la configuración del Webhook.";
+                            }
+                        }
+                    } else {
+                        const err = await repoRes.json();
+                        console.error("Github Error", err);
+                        setToast({ message: "Proyecto creado, pero falló la creación del repo en GitHub", type: "error" });
+                    }
                 }
             }
 
@@ -218,9 +282,9 @@ export default function CotizacionesPage() {
             setTimeout(() => {
                 router.push(`/proyectos/${proyecto.id}`);
             }, 1000);
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            setToast({ message: "Error al generar proyecto", type: "error" });
+            setToast({ message: error.message || "Error al generar proyecto", type: "error" });
         } finally {
             setIsInitializing(false);
             setInitProjectCot(null);
@@ -580,34 +644,76 @@ export default function CotizacionesPage() {
                                     disabled={isInitializing}
                                 />
                                 <div>
-                                    <p className="font-bold text-sm flex items-center gap-2"><Github size={16}/> Crear repositorio en GitHub</p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">Automáticamente crea el repositorio y le asocia los webhooks de Make It Easy.</p>
+                                    <p className="font-bold text-sm flex items-center gap-2"><Github size={16}/> Integración con GitHub</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">Asociar un repositorio para gestionar el código y sincronizar el plan de trabajo.</p>
                                 </div>
                             </label>
 
                             {createGithubRepo && (
-                                <div className="mt-4 pt-4 border-t border-border space-y-3">
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Nombre propuesto</label>
-                                        <input 
-                                            type="text" 
-                                            readOnly 
-                                            className="w-full px-3 py-2 bg-background rounded-lg border border-border outline-none text-xs text-muted-foreground opacity-70" 
-                                            value={`mie-${initProjectCot.empresaNombre.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} 
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Visibilidad</label>
-                                        <select 
-                                            className="w-full px-3 py-2 bg-background rounded-lg border border-border outline-none text-sm font-medium"
-                                            value={githubRepoVisibility}
-                                            onChange={(e) => setGithubRepoVisibility(e.target.value as "private" | "public")}
+                                <div className="mt-4 pt-4 border-t border-border space-y-4 animate-fade-in">
+                                    {/* Tabs */}
+                                    <div className="flex border-b border-border text-xs mb-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setGithubMode("create")}
+                                            className={`flex-1 pb-2 font-bold border-b-2 text-center transition-all ${githubMode === "create" ? "border-mie-primary text-mie-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
                                             disabled={isInitializing}
                                         >
-                                            <option value="private">🔒 Privado (Solo tú e invitados)</option>
-                                            <option value="public">🌐 Público (Cualquiera en internet)</option>
-                                        </select>
+                                            Crear Repositorio Nuevo
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setGithubMode("link")}
+                                            className={`flex-1 pb-2 font-bold border-b-2 text-center transition-all ${githubMode === "link" ? "border-mie-primary text-mie-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                                            disabled={isInitializing}
+                                        >
+                                            Vincular Existente
+                                        </button>
                                     </div>
+
+                                    {githubMode === "create" ? (
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Nombre propuesto</label>
+                                                <input 
+                                                    type="text" 
+                                                    readOnly 
+                                                    className="w-full px-3 py-2 bg-background rounded-lg border border-border outline-none text-xs text-muted-foreground opacity-70" 
+                                                    value={`mie-${initProjectCot.empresaNombre.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} 
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Visibilidad</label>
+                                                <select 
+                                                    className="w-full px-3 py-2 bg-background rounded-lg border border-border outline-none text-sm font-medium"
+                                                    value={githubRepoVisibility}
+                                                    onChange={(e) => setGithubRepoVisibility(e.target.value as "private" | "public")}
+                                                    disabled={isInitializing}
+                                                >
+                                                    <option value="private">🔒 Privado (Solo tú e invitados)</option>
+                                                    <option value="public">🌐 Público (Cualquiera en internet)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Link o nombre del repositorio</label>
+                                                <input 
+                                                    type="text" 
+                                                    required
+                                                    className="w-full px-3 py-2 bg-background rounded-lg border border-border outline-none text-xs text-foreground focus:ring-2 focus:ring-mie-primary" 
+                                                    placeholder="Ej: danielrang22-svg/Web_MakeItEasy o URL completa"
+                                                    value={existingGithubRepo}
+                                                    onChange={(e) => setExistingGithubRepo(e.target.value)}
+                                                    disabled={isInitializing}
+                                                />
+                                                <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
+                                                    El repositorio debe contener un archivo <strong>PLAN_DE_TRABAJO.md</strong> en la raíz o dentro de <strong>_BLUEPRINT/</strong> para importar automáticamente las fases y tareas.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -627,7 +733,7 @@ export default function CotizacionesPage() {
                                 disabled={isInitializing}
                             >
                                 {isInitializing ? (
-                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> Creando...</>
+                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> Procesando...</>
                                 ) : "Confirmar e Iniciar"}
                             </button>
                         </div>
