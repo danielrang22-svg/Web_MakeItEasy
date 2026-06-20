@@ -16,13 +16,37 @@ export async function POST(request: NextRequest) {
       correcciones 
     } = body;
 
-    const aiConn = await prisma.aiConnection.findFirst({
-      where: { proveedor: "openai" }
+    // Load active Agent (or fallback to any agent with name containing 'tareas')
+    let activeAgent = await prisma.agent.findFirst({
+      where: { activo: true },
+      include: { conexion: true }
     });
 
-    let apiKey = aiConn?.apiKey;
+    if (!activeAgent || !activeAgent.nombre.toLowerCase().includes('tarea')) {
+      // Look specifically for a tasks agent if the active one isn't it
+      const tasksAgent = await prisma.agent.findFirst({
+        where: { nombre: { contains: 'Tareas' } },
+        include: { conexion: true }
+      });
+      if (tasksAgent) {
+        activeAgent = tasksAgent;
+      }
+    }
+
+    let apiKey = activeAgent?.conexion?.apiKey;
+    let modelo = activeAgent?.conexion?.modelo || 'gpt-4o-mini';
+    let baseURL = activeAgent?.conexion?.baseUrl;
+    let systemPromptBase = activeAgent?.systemPrompt;
+
     if (!apiKey) {
-      apiKey = process.env.OPENAI_API_KEY;
+      const aiConn = await prisma.aiConnection.findFirst({
+        where: { proveedor: "openai" }
+      });
+      apiKey = aiConn?.apiKey || process.env.OPENAI_API_KEY;
+      if (aiConn) {
+        modelo = aiConn.modelo || modelo;
+        baseURL = aiConn.baseUrl || baseURL;
+      }
     }
 
     if (!apiKey) {
@@ -34,7 +58,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "La API Key configurada es inválida (valor por defecto). Edítala en Ajustes -> Agente IA." }, { status: 400 });
     }
 
-    const openai = new OpenAI({ apiKey });
+    const openai = new OpenAI({
+      apiKey,
+      ...(baseURL ? { baseUrl: baseURL } : {})
+    });
 
     let context = "";
 
@@ -62,7 +89,7 @@ export async function POST(request: NextRequest) {
       context += `Correcciones solicitadas por el usuario:\n${correcciones}\n\n`;
     }
 
-    const systemPrompt = `Eres un experto Technical Project Manager.
+    const systemPrompt = systemPromptBase || `Eres un experto Technical Project Manager.
 Tu objetivo es generar o actualizar una lista de tareas (issues) y milestones (hitos) para un proyecto de desarrollo o servicios.
 
 INSTRUCCIONES:
@@ -92,7 +119,7 @@ INSTRUCCIONES:
 Nota: El 'milestoneIdTemp' en las tareas sirve para relacionarlas con el 'idTemp' de milestones en el mismo JSON. Si no hay milestones, devuélvelo como null.`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: modelo,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: context || "Genera un esquema de tareas inicial para un proyecto web básico." }
