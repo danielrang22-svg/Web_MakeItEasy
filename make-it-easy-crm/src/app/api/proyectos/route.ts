@@ -25,6 +25,19 @@ export async function POST(request: NextRequest) {
     const fieldError = requireFields(body, ['cotizacionId', 'titulo', 'clienteNombre', 'estado']);
     if (fieldError) return NextResponse.json({ error: fieldError }, { status: 400 });
 
+    let valorTotal = 0;
+    let moneda = "COP";
+
+    if (body.cotizacionId) {
+      const cot = await prisma.cotizacion.findUnique({
+        where: { id: body.cotizacionId }
+      });
+      if (cot) {
+        valorTotal = cot.totalProyectoCore;
+        moneda = cot.moneda;
+      }
+    }
+
     const newProyecto = await prisma.proyecto.create({
       data: {
         leadId:               body.leadId            || null,
@@ -35,6 +48,8 @@ export async function POST(request: NextRequest) {
         fechaEntregaEstimada: body.fechaEntregaEstimada ? new Date(body.fechaEntregaEstimada) : null,
         notas:                sanitize(body.notas) ?? '',
         herramientasUsadas:   body.herramientasUsadas ?? '',
+        valorTotal:           valorTotal,
+        moneda:               moneda,
       },
     });
 
