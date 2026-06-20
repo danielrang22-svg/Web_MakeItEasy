@@ -20,11 +20,21 @@ export async function POST(request: NextRequest) {
       where: { proveedor: "openai" }
     });
 
-    if (!aiConn?.apiKey) {
+    let apiKey = aiConn?.apiKey;
+    if (!apiKey) {
+      apiKey = process.env.OPENAI_API_KEY;
+    }
+
+    if (!apiKey) {
       return NextResponse.json({ error: "No hay una API Key de OpenAI configurada." }, { status: 500 });
     }
 
-    const openai = new OpenAI({ apiKey: aiConn.apiKey });
+    const isPlaceholder = apiKey.includes('COLOCA_AQUI_TU_API_KEY') || apiKey.startsWith('sk-COLOCA');
+    if (isPlaceholder) {
+      return NextResponse.json({ error: "La API Key configurada es inválida (valor por defecto). Edítala en Ajustes -> Agente IA." }, { status: 400 });
+    }
+
+    const openai = new OpenAI({ apiKey });
 
     let context = "";
 

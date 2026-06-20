@@ -76,12 +76,40 @@ export async function POST(request: NextRequest) {
       include: { conexion: true },
     });
 
-    const apiKey = activeAgent?.conexion?.apiKey || process.env.OPENAI_API_KEY;
-    const modelo = activeAgent?.conexion?.modelo || 'gpt-4o-mini';
-    const baseURL = activeAgent?.conexion?.baseUrl || PROVIDER_BASE_URLS[activeAgent?.conexion?.proveedor ?? 'openai'];
+    // Fallback logic: check active agent first, then any openai connection in DB, then env
+    let apiKey = activeAgent?.conexion?.apiKey;
+    let modelo = activeAgent?.conexion?.modelo || 'gpt-4o-mini';
+    let baseURL = activeAgent?.conexion?.baseUrl || PROVIDER_BASE_URLS[activeAgent?.conexion?.proveedor ?? 'openai'];
+
+    if (!apiKey) {
+      const fallbackConnection = await prisma.aiConnection.findFirst({
+        where: { proveedor: "openai" }
+      });
+      if (fallbackConnection?.apiKey) {
+        apiKey = fallbackConnection.apiKey;
+        modelo = fallbackConnection.modelo || modelo;
+        baseURL = fallbackConnection.baseUrl || baseURL;
+      } else {
+        apiKey = process.env.OPENAI_API_KEY;
+      }
+    }
 
     if (!apiKey) {
       return NextResponse.json({ error: 'No hay una API Key configurada.' }, { status: 503 });
+    }
+
+    const isPlaceholder = apiKey.includes('COLOCA_AQUI_TU_API_KEY') || apiKey.startsWith('sk-COLOCA');
+    if (isPlaceholder) {
+      const fallbackConnection = await prisma.aiConnection.findFirst({
+        where: { proveedor: "openai" }
+      });
+      if (fallbackConnection?.apiKey && !fallbackConnection.apiKey.includes('COLOCA_AQUI_TU_API_KEY') && !fallbackConnection.apiKey.startsWith('sk-COLOCA')) {
+        apiKey = fallbackConnection.apiKey;
+        modelo = fallbackConnection.modelo || modelo;
+        baseURL = fallbackConnection.baseUrl || baseURL;
+      } else {
+        return NextResponse.json({ error: 'La API Key activa en Ajustes es invalida (valor por defecto). Editala en Ajustes -> Agente IA.' }, { status: 400 });
+      }
     }
 
     const openai = new OpenAI({
