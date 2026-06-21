@@ -338,6 +338,23 @@ export default function QuotationForm({
                 </div>
             )}
 
+            {/* Persistent Top Settings Bar (Estado & Moneda) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/40 ring-1 ring-border rounded-2xl mb-2">
+                <div>
+                    <label className={labelCls}>Estado de la Propuesta</label>
+                    <select value={estado} onChange={(e) => setEstado(e.target.value as EstadoCotizacion)} className={inputCls}>
+                        {Object.values(EstadoCotizacion).map((e) => <option key={e} value={e}>{e}</option>)}
+                    </select>
+                </div>
+                <div>
+                    <label className={labelCls}>Moneda de Cotización</label>
+                    <select value={moneda} onChange={(e) => setMoneda(e.target.value)} className={inputCls}>
+                        <option value="COP">Pesos Colombianos (COP)</option>
+                        <option value="USD">Dólares Americanos (USD)</option>
+                    </select>
+                </div>
+            </div>
+
             {/* TAB Navigation Header */}
             <div className="flex border-b border-border text-sm overflow-x-auto custom-scrollbar whitespace-nowrap">
                 <button
@@ -408,25 +425,12 @@ export default function QuotationForm({
                             </datalist>
                         </div>
                         <div>
-                            <label className={labelCls}>Estado Propuesta</label>
-                            <select value={estado} onChange={(e) => setEstado(e.target.value as EstadoCotizacion)} className={inputCls}>
-                                {Object.values(EstadoCotizacion).map((e) => <option key={e} value={e}>{e}</option>)}
-                            </select>
-                        </div>
-                        <div>
                             <label className={labelCls}>Vendedor Responsable</label>
                             <input value={vendedor} onChange={(e) => setVendedor(e.target.value)} className={inputCls} />
                         </div>
                         <div>
                             <label className={labelCls}>Validez Propuesta</label>
                             <input value={validez} onChange={(e) => setValidez(e.target.value)} className={inputCls} placeholder="Ej: 30 días" />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Moneda</label>
-                            <select value={moneda} onChange={(e) => setMoneda(e.target.value)} className={inputCls}>
-                                <option value="COP">Pesos Colombianos (COP)</option>
-                                <option value="USD">Dólares Americanos (USD)</option>
-                            </select>
                         </div>
                     </div>
                 </div>
