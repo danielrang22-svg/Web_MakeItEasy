@@ -128,6 +128,7 @@ model Cotizacion {
   lead               Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
   proyectos          Proyecto[]
   lineas             LineaCotizacion[]
+  contratos          Contrato[]
 
   @@index([leadId])
   @@index([fechaCreacion])
@@ -181,6 +182,7 @@ model Proyecto {
   facturas             Factura[]
   lead                 Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
   cotizacion           Cotizacion?        @relation(fields: [cotizacionId], references: [id], onDelete: SetNull)
+  contratos            Contrato[]
 
   @@index([leadId])
   @@index([cotizacionId])
@@ -498,4 +500,27 @@ model LogIntegracion {
   fechaCreacion DateTime @default(now())
 
   @@map("logs_integracion")
+}
+
+model Contrato {
+  id                 String   @id @default(uuid())
+  cotizacionId       String
+  proyectoId         String?
+  estado             String   @default("PENDIENTE") // "PENDIENTE" | "FIRMADO"
+  trmAplicada        Float    @default(1.0)
+  condicionesPago    String?
+  contenidoPlantilla String   // Full text content with standard clauses and cotizacion description
+  ipFirma            String?
+  fechaFirma         DateTime?
+  nombreFirmante     String?
+  cedulaFirmante     String?
+  fechaCreacion      DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+
+  cotizacion         Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  proyecto           Proyecto?  @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+
+  @@index([cotizacionId])
+  @@index([proyectoId])
+  @@map("contratos")
 }

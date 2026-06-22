@@ -107,12 +107,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No hay una API Key configurada.' }, { status: 503 });
     }
 
-    const isPlaceholder = apiKey.includes('COLOCA_AQUI_TU_API_KEY') || apiKey.startsWith('sk-COLOCA');
+    const upperKey = apiKey.toUpperCase();
+    const isPlaceholder = upperKey.includes('COLOCA') || upperKey.includes('AQUI_TU_API_KEY') || upperKey.startsWith('SK-COLOCA');
     if (isPlaceholder) {
       const fallbackConnection = await prisma.aiConnection.findFirst({
         where: { proveedor: "openai" }
       });
-      if (fallbackConnection?.apiKey && !fallbackConnection.apiKey.includes('COLOCA_AQUI_TU_API_KEY') && !fallbackConnection.apiKey.startsWith('sk-COLOCA')) {
+      const fallbackKeyUpper = fallbackConnection?.apiKey ? fallbackConnection.apiKey.toUpperCase() : '';
+      if (fallbackConnection?.apiKey && !fallbackKeyUpper.includes('COLOCA') && !fallbackKeyUpper.startsWith('SK-COLOCA')) {
         apiKey = fallbackConnection.apiKey;
         modelo = fallbackConnection.modelo || modelo;
         baseURL = fallbackConnection.baseUrl || baseURL;
@@ -158,9 +160,15 @@ export async function POST(request: NextRequest) {
         ...parsedData
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('POST /api/cotizaciones/importar error:', error);
-    const msg = error instanceof Error ? error.message : 'Error desconocido al importar';
+    let msg = error instanceof Error ? error.message : 'Error desconocido al importar';
+    
+    // Interceptar el error 401 de OpenAI de raiz
+    if (msg.includes('401') && msg.toLowerCase().includes('api key')) {
+      msg = 'La API Key de OpenAI configurada es incorrecta o es un valor de prueba (ej. COLOCA_AQUI...). Por favor, actualízala con una clave real en Ajustes -> Agente IA.';
+    }
+    
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

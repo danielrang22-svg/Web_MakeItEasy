@@ -196,7 +196,8 @@ El usuario ha seleccionado cotizar en **Pesos Colombianos (COP)**.
 
     const hasNonAscii = /[^\x00-\x7F]/.test(apiKey);
     const hasWhitespace = /\s/.test(apiKey);
-    const isPlaceholder = apiKey.includes('COLOCA_AQUI_TU_API_KEY') || apiKey.startsWith('sk-COLOCA');
+    const upperKey = apiKey.toUpperCase();
+    const isPlaceholder = upperKey.includes('COLOCA') || upperKey.includes('AQUI_TU_API_KEY') || upperKey.startsWith('SK-COLOCA');
 
     if (hasNonAscii || hasWhitespace || isPlaceholder) {
       return NextResponse.json(
@@ -277,9 +278,15 @@ DATOS DEL LEAD EN CRM:
       proveedorUsado: activeAgent?.conexion?.proveedor ?? 'openai (env)',
       agenteUsado: activeAgent?.nombre ?? 'Por defecto',
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('POST /api/cotizaciones/generar-ai error:', error);
-    const msg = error instanceof Error ? error.message : 'Error desconocido';
+    let msg = error instanceof Error ? error.message : 'Error desconocido al generar la cotización';
+    
+    // Interceptar el error 401 de OpenAI de raiz
+    if (msg.includes('401') && msg.toLowerCase().includes('api key')) {
+      msg = 'La API Key de OpenAI configurada es incorrecta o es un valor de prueba (ej. COLOCA_AQUI...). Por favor, actualízala con una clave real en Ajustes -> Agente IA.';
+    }
+    
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

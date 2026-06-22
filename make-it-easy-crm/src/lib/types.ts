@@ -232,3 +232,30 @@ export interface User {
   rol: string;
   activo: boolean;
 }
+
+// ── Contrato / Firma Digital ──
+export interface Contrato {
+  id: string;
+  cotizacionId: string;
+  proyectoId: string | null;
+  estado: "PENDIENTE" | "FIRMADO";
+  trmAplicada: number;
+  condicionesPago: string | null;
+  contenidoPlantilla: string;
+  ipFirma: string | null;
+  fechaFirma: string | null; // ISO string
+  nombreFirmante: string | null;
+  cedulaFirmante: string | null;
+  fechaCreacion: string;
+  fechaActualizacion: string;
+  cotizacion?: {
+    codigo: string;
+    tituloPropuesta: string;
+    empresaNombre: string;
+    contactoNombre?: string;
+    totalProyectoCore?: number;
+    feeMensual?: number;
+    moneda?: string;
+  };
+}
+

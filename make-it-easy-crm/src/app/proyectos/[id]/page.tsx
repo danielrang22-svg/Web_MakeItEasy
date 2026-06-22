@@ -26,6 +26,7 @@ import BitacoraPanel from "@/components/proyectos/BitacoraPanel";
 import GastosPanel from "@/components/proyectos/GastosPanel";
 import IngresosPanel from "@/components/proyectos/IngresosPanel";
 import InvoiceModal from "@/components/proyectos/InvoiceModal";
+import DocumentosPanel from "@/components/proyectos/DocumentosPanel";
 import { useGastosStore } from "@/lib/state/gastosStore";
 
 const ESTADO_PROYECTO_STYLES: Record<EstadoProyecto, { bg: string; text: string; label: string }> = {
@@ -55,7 +56,7 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
     const [isSaving, setIsSaving] = useState(false);
 
     // View tabs
-    const [activeTab, setActiveTab] = useState<"tasks" | "flows" | "github" | "bitacora" | "finanzas">("tasks");
+    const [activeTab, setActiveTab] = useState<"tasks" | "flows" | "github" | "bitacora" | "finanzas" | "documentos">("tasks");
     const [taskViewMode, setTaskViewMode] = useState<"board" | "list">("board");
 
     // Gastos store
@@ -474,6 +475,12 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                 >
                     <DollarSign size={16}/> Finanzas
                 </button>
+                <button 
+                    onClick={() => setActiveTab("documentos")}
+                    className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "documentos" ? "border-mie-primary text-mie-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                >
+                    <FileText size={16}/> Documentos
+                </button>
             </div>
 
             {/* MAIN CONTENT AREA */}
@@ -643,6 +650,10 @@ export default function ProyectoDetallePage({ params }: { params: Promise<{ id: 
                                 <GastosPanel proyectoId={proyecto.id} />
                             </div>
                         </div>
+                    )}
+
+                    {activeTab === "documentos" && (
+                        <DocumentosPanel proyectoId={proyecto.id} cotizacionId={proyecto.cotizacionId} />
                     )}
 
                 </div>

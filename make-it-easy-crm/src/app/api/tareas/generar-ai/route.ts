@@ -53,9 +53,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No hay una API Key de OpenAI configurada." }, { status: 500 });
     }
 
-    const isPlaceholder = apiKey.includes('COLOCA_AQUI_TU_API_KEY') || apiKey.startsWith('sk-COLOCA');
-    if (isPlaceholder) {
-      return NextResponse.json({ error: "La API Key configurada es inválida (valor por defecto). Edítala en Ajustes -> Agente IA." }, { status: 400 });
+    const upperKey = apiKey.toUpperCase();
+    const isPlaceholder = upperKey.includes('COLOCA') || upperKey.includes('AQUI_TU_API_KEY') || upperKey.startsWith('SK-COLOCA');
+    const hasNonAscii = /[^\x00-\x7F]/.test(apiKey);
+    const hasWhitespace = /\s/.test(apiKey);
+
+    if (hasNonAscii || hasWhitespace || isPlaceholder) {
+      return NextResponse.json(
+        {
+          error:
+            'La API Key activa en Ajustes es invalida (contiene espacios, saltos de linea o es un valor por defecto). Editala en Ajustes -> Agente IA.',
+        },
+        { status: 400 }
+      );
     }
 
     const openai = new OpenAI({
@@ -133,8 +143,15 @@ Nota: El 'milestoneIdTemp' en las tareas sirve para relacionarlas con el 'idTemp
 
     return NextResponse.json(resultJson);
 
-  } catch (error) {
-    console.error("POST /api/tareas/generar-ai error:", error);
-    return NextResponse.json({ error: "Error en IA" }, { status: 500 });
+  } catch (error: any) {
+    console.error('POST /api/tareas/generar-ai error:', error);
+    let msg = error instanceof Error ? error.message : 'Error desconocido al generar la tarea';
+    
+    // Interceptar el error 401 de OpenAI de raiz
+    if (msg.includes('401') && msg.toLowerCase().includes('api key')) {
+      msg = 'La API Key de OpenAI configurada es incorrecta o es un valor de prueba (ej. COLOCA_AQUI...). Por favor, actualízala con una clave real en Ajustes -> Agente IA.';
+    }
+    
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

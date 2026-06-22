@@ -76,6 +76,22 @@ export default function CotizacionesPage() {
     const [existingGithubRepo, setExistingGithubRepo] = useState("");
     const [isInitializing, setIsInitializing] = useState(false);
 
+    // Contract generation state
+    const [contractModalCot, setContractModalCot] = useState<Cotizacion | null>(null);
+    const [contractTrm, setContractTrm] = useState("1");
+    const [contractPago, setContractPago] = useState("50% de anticipo para iniciar el desarrollo y 50% contra entrega final y puesta en marcha.");
+    const [generatedContractUrl, setGeneratedContractUrl] = useState<string | null>(null);
+    const [isGeneratingContract, setIsGeneratingContract] = useState(false);
+    const [copiedContract, setCopiedContract] = useState(false);
+
+    function openGenerateContract(cot: Cotizacion) {
+        setContractModalCot(cot);
+        setContractTrm(cot.moneda === "USD" ? "4000" : "1");
+        setContractPago("50% de anticipo para iniciar el desarrollo y 50% contra entrega final y puesta en marcha.");
+        setGeneratedContractUrl(null);
+        setCopiedContract(false);
+    }
+
     useEffect(() => { 
         loadCotizaciones(); 
         loadLeads(); 
@@ -142,8 +158,53 @@ export default function CotizacionesPage() {
 
     async function handleQuickStateChange(cot: Cotizacion, newEstado: EstadoCotizacion) {
         setQuickStateMenu(null);
+        if (newEstado === EstadoCotizacion.APROBADA_CLIENTE) {
+            openGenerateContract(cot);
+            return;
+        }
         await updateCotizacion(cot.id, { estado: newEstado });
         setToast({ message: `Estado cambiado a: ${newEstado}`, type: "success" });
+    }
+
+    async function handleGenerateContractSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        if (!contractModalCot) return;
+        setIsGeneratingContract(true);
+        try {
+            const res = await fetch("/api/contratos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    cotizacionId: contractModalCot.id,
+                    trmAplicada: parseFloat(contractTrm) || 1.0,
+                    condicionesPago: contractPago,
+                }),
+            });
+
+            if (res.ok) {
+                const contrato = await res.json();
+                const publicLink = `${window.location.origin}/contrato/${contrato.id}`;
+                setGeneratedContractUrl(publicLink);
+                // Auto-update quote status to APROBADA_CLIENTE
+                await updateCotizacion(contractModalCot.id, { estado: EstadoCotizacion.APROBADA_CLIENTE });
+                setToast({ message: "Contrato generado con éxito", type: "success" });
+            } else {
+                const err = await res.json().catch(() => ({}));
+                setToast({ message: err.error || "Error al generar contrato", type: "error" });
+            }
+        } catch (error) {
+            console.error(error);
+            setToast({ message: "Error de red al generar contrato", type: "error" });
+        } finally {
+            setIsGeneratingContract(false);
+        }
+    }
+
+    function copyContractLink() {
+        if (!generatedContractUrl) return;
+        navigator.clipboard.writeText(generatedContractUrl);
+        setCopiedContract(true);
+        setTimeout(() => setCopiedContract(false), 2000);
     }
 
     function openView(cot: Cotizacion, isClient: boolean) {
@@ -482,6 +543,12 @@ export default function CotizacionesPage() {
                                 <button onClick={() => handleExportPDF(cot)} className="px-2 py-1 text-xs text-mie-secondary hover:bg-mie-secondary/10 rounded-lg flex items-center gap-1">
                                     <Download size={12} /> Exportar PDF
                                 </button>
+                                <button 
+                                    onClick={() => openGenerateContract(cot)} 
+                                    className="px-2 py-1 text-xs text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/10 rounded-lg flex items-center gap-1 font-semibold"
+                                >
+                                    <FileText size={12} /> Generar Contrato
+                                </button>
                                 <button onClick={() => openEdit(cot)} className="px-2 py-1 text-xs text-muted-foreground hover:bg-muted rounded-lg flex items-center gap-1">
                                     <Pencil size={12} /> Editar
                                 </button>
@@ -737,6 +804,130 @@ export default function CotizacionesPage() {
                                 ) : "Confirmar e Iniciar"}
                             </button>
                         </div>
+                    </form>
+                )}
+            </Modal>
+
+            {/* Generar Contrato Modal */}
+            <Modal isOpen={!!contractModalCot} onClose={() => !isGeneratingContract && setContractModalCot(null)} title="📄 Generar Contrato y Condiciones de Pago">
+                {contractModalCot && (
+                    <form onSubmit={handleGenerateContractSubmit} className="space-y-4 text-sm text-white">
+                        {!generatedContractUrl ? (
+                            <>
+                                <div className="p-4 bg-muted/30 border border-border rounded-2xl space-y-2">
+                                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Propuesta Comercial</p>
+                                    <p className="text-sm font-black text-foreground">{contractModalCot.codigo} — {contractModalCot.empresaNombre}</p>
+                                    <p className="text-xs text-mie-secondary font-medium">{contractModalCot.tituloPropuesta}</p>
+                                    <div className="flex gap-4 pt-1.5 text-xs font-semibold text-muted-foreground">
+                                        <span>Total: <strong className="text-white">{formatCurrency(contractModalCot.totalProyectoCore, contractModalCot.moneda)}</strong></span>
+                                        <span>Mensual soporte: <strong className="text-white">{formatCurrency(contractModalCot.feeMensual, contractModalCot.moneda)}</strong></span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">Moneda Cotizada</label>
+                                        <input 
+                                            type="text" 
+                                            readOnly 
+                                            className="w-full px-3 py-2.5 bg-background rounded-xl border border-border outline-none text-xs text-muted-foreground opacity-70"
+                                            value={contractModalCot.moneda}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-muted-foreground mb-1.5">
+                                            {contractModalCot.moneda === "USD" ? "TRM de Conversión (COP) *" : "TRM (No aplica)"}
+                                        </label>
+                                        <input 
+                                            type="number" 
+                                            step="0.01"
+                                            required
+                                            disabled={contractModalCot.moneda !== "USD"}
+                                            className="w-full px-3 py-2.5 bg-[#1C2638] text-white border border-border rounded-xl outline-none text-xs focus:ring-2 focus:ring-mie-primary disabled:opacity-50"
+                                            placeholder="Ej: 4000.00"
+                                            value={contractTrm}
+                                            onChange={(e) => setContractTrm(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-bold uppercase text-muted-foreground">Condiciones de Pago *</label>
+                                    <textarea 
+                                        required
+                                        rows={4}
+                                        className="w-full px-3 py-2.5 bg-[#1C2638] text-white border border-border rounded-xl outline-none text-xs focus:ring-2 focus:ring-mie-primary"
+                                        placeholder="Ej: 50% de anticipo para iniciar el desarrollo y 50% contra entrega final y puesta en marcha."
+                                        value={contractPago}
+                                        onChange={(e) => setContractPago(e.target.value)}
+                                    />
+                                    <p className="text-[10px] text-muted-foreground leading-normal">
+                                        Estas condiciones y la TRM se incorporarán automáticamente en la sección de facturación y cláusulas del contrato estándar de Make It Easy.
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-3 pt-4">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setContractModalCot(null)}
+                                        className="flex-1 bg-muted hover:bg-muted/80 text-foreground font-bold py-3 rounded-xl transition-colors text-xs"
+                                        disabled={isGeneratingContract}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button 
+                                        type="submit"
+                                        className="flex-1 bg-mie-primary hover:bg-mie-primary/90 text-white font-bold py-3 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-2 text-xs"
+                                        disabled={isGeneratingContract}
+                                    >
+                                        {isGeneratingContract ? (
+                                            <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> Generando...</>
+                                        ) : (
+                                            <>Crear Contrato</>
+                                        )}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-center py-6 space-y-4 animate-fade-in text-white">
+                                <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                                    <span style={{ fontSize: "32px" }}>✅</span>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="font-bold text-base text-foreground">¡Contrato Generado con Éxito!</p>
+                                    <p className="text-xs text-muted-foreground">La cotización ha cambiado de estado a <strong>Aceptada Cliente</strong>.</p>
+                                </div>
+
+                                <div className="p-4 bg-muted/40 border border-border rounded-2xl text-left space-y-2 mt-4">
+                                    <label className="block text-xs font-bold uppercase text-muted-foreground">Enlace público de firma para el cliente:</label>
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            readOnly 
+                                            className="flex-1 px-3 py-2 bg-background border border-border rounded-xl text-xs outline-none text-muted-foreground"
+                                            value={generatedContractUrl} 
+                                        />
+                                        <button 
+                                            type="button"
+                                            onClick={copyContractLink}
+                                            className="px-3 bg-mie-secondary text-white font-bold rounded-xl text-xs hover:bg-mie-secondary/90 transition-all flex items-center gap-1.5"
+                                        >
+                                            {copiedContract ? "Copiado!" : "Copiar"}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-border">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setContractModalCot(null)}
+                                        className="bg-mie-primary hover:bg-mie-primary/90 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition-colors shadow-md"
+                                    >
+                                        Finalizar y Cerrar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </form>
                 )}
             </Modal>

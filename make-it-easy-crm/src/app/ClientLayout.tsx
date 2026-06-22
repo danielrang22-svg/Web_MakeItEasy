@@ -23,7 +23,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
     const pathname = usePathname();
-    const isLogin = pathname === "/login";
+    const isPublicRoute = pathname === "/login" || pathname?.startsWith("/contrato/");
 
     // Listen to sidebar create lead trigger
     useEffect(() => {
@@ -84,9 +84,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         setToast({ message: "Lead creado exitosamente", type: "success" });
     }
 
-    // If it's the login page, just render the children without the CRM shell
-    if (isLogin) {
-        return <main className="min-h-screen bg-[#0e0e0e] text-white flex items-center justify-center relative overflow-hidden">{children}</main>;
+    // If it's a public route, just render the children without the CRM shell
+    if (isPublicRoute) {
+        return <main className="min-h-screen bg-[#0e0e0e] text-white flex items-center justify-center relative overflow-hidden w-full">{children}</main>;
     }
 
     return (
