@@ -55,25 +55,53 @@
     "headline": "Impact Areas",
     "s1_title": "Sales & CRM",
     "s1_body": "Massive lead sync, automated qualification and prospect nurturing through conversational AI agents.",
-    "s1_tags": ["Leads", "Conversational AI", "CRM"],
+    "s1_tags": [
+      "Leads",
+      "Conversational AI",
+      "CRM"
+    ],
     "s2_title": "Logistics & Operations",
     "s2_body": "Real-time tracking, intelligent inventory management and automatic delivery route optimisation.",
-    "s2_tags": ["Inventory", "Routes", "Tracking"],
+    "s2_tags": [
+      "Inventory",
+      "Routes",
+      "Tracking"
+    ],
     "s3_title": "Finance & Procurement",
     "s3_body": "Automatic bank reconciliation, mass electronic invoicing and real-time profitability reports.",
-    "s3_tags": ["Invoicing", "Reconciliation", "Reports"],
+    "s3_tags": [
+      "Invoicing",
+      "Reconciliation",
+      "Reports"
+    ],
     "s4_title": "AI & Automation",
     "s4_body": "Design and implementation of custom AI workflows with n8n, Make, Zapier and language models.",
-    "s4_tags": ["n8n", "Make", "LLMs"],
+    "s4_tags": [
+      "n8n",
+      "Make",
+      "LLMs"
+    ],
     "s5_title": "Integration & Web",
     "s5_body": "ERP, CRM and external platform connections. High-performance interface development.",
-    "s5_tags": ["API", "ERP", "Dev"],
+    "s5_tags": [
+      "API",
+      "ERP",
+      "Dev"
+    ],
     "s6_title": "Legal & Admin",
     "s6_body": "Automation of contracts, approval workflows and document management with full traceability.",
-    "s6_tags": ["Contracts", "Approvals", "Docs"],
+    "s6_tags": [
+      "Contracts",
+      "Approvals",
+      "Docs"
+    ],
     "s7_title": "AI Training",
     "s7_body": "Practical training programmes for business teams on AI tools and automation.",
-    "s7_tags": ["Training", "Workshops", "AI"],
+    "s7_tags": [
+      "Training",
+      "Workshops",
+      "AI"
+    ],
     "details": "View details"
   },
   "process": {
@@ -100,35 +128,82 @@
     "s1_name": "AI Agent 🤖",
     "s1_q": "Is your team spending time answering the same questions over and over?",
     "s1_body": "We build an AI agent that supports your team by handling customer interactions via WhatsApp, web, or social media — 24/7. It answers questions, books appointments, takes orders, and frees your people for higher-value tasks.",
-    "s1_examples": ["WhatsApp Business chatbot", "Web assistant on your site", "Instagram or Telegram bot", "Automated sales bot"],
+    "s1_examples": [
+      "WhatsApp Business chatbot",
+      "Web assistant on your site",
+      "Instagram or Telegram bot",
+      "Automated sales bot"
+    ],
     "s2_name": "Website ✨",
     "s2_q": "Want customers to find you and trust you from the very first click?",
     "s2_body": "We design fast, modern websites optimised to convert visitors into customers. Landing pages, corporate sites, or online stores. SEO included.",
-    "s2_examples": ["Sales landing page", "Corporate website", "Product catalogue", "SEO-optimised blog"],
+    "s2_examples": [
+      "Sales landing page",
+      "Corporate website",
+      "Product catalogue",
+      "SEO-optimised blog"
+    ],
     "s3_name": "Process Automation ⚡",
     "s3_q": "Is your team spending hours on operational tasks instead of strategic work?",
     "s3_body": "We automate the repetitive by connecting your tools (ERPs, CRMs, spreadsheets) so your team becomes more productive: reports, emails, alerts, follow-ups, and more.",
-    "s3_examples": ["Automatic daily reports", "Mass email/WhatsApp sending", "Spreadsheet auto-updates", "Stock or deadline alerts"],
+    "s3_examples": [
+      "Automatic daily reports",
+      "Mass email/WhatsApp sending",
+      "Spreadsheet auto-updates",
+      "Stock or deadline alerts"
+    ],
     "s4_name": "CRM & Sales Management 💼",
     "s4_q": "Is your sales team losing opportunities due to lack of follow-up?",
     "s4_body": "We implement and automate your CRM (HubSpot, Pipedrive, Salesforce, or others) so your team sells more with less effort: leads, follow-up, reminders, and smart pipelines.",
-    "s4_examples": ["HubSpot or Pipedrive setup", "Automatic lead capture", "Follow-up sequences", "Real-time sales reports"],
+    "s4_examples": [
+      "HubSpot or Pipedrive setup",
+      "Automatic lead capture",
+      "Follow-up sequences",
+      "Real-time sales reports"
+    ],
     "s5_name": "System Integrations 🔗",
     "s5_q": "Are your ERP, CRM, and systems disconnected, wasting your team's time copying data?",
     "s5_body": "We integrate your ERP (SAP, Odoo, NetSuite), CRM (HubSpot, Salesforce), e-commerce, and any platform so data flows automatically and your team works with unified information.",
-    "s5_examples": ["Integrate ERP with CRM", "Sync billing with accounting", "Connect e-commerce with logistics", "Google Sheets with any platform"],
+    "s5_examples": [
+      "Integrate ERP with CRM",
+      "Sync billing with accounting",
+      "Connect e-commerce with logistics",
+      "Google Sheets with any platform"
+    ],
     "s6_name": "Dashboards & Reports 📊",
     "s6_q": "Making decisions without clear data because gathering it takes hours?",
     "s6_body": "We build real-time visual dashboards so you see the pulse of your business at a glance: sales, operations, finance, and more.",
-    "s6_examples": ["Real-time sales dashboard", "Automatic financial report", "Logistics & delivery panel", "Team KPI tracking"],
+    "s6_examples": [
+      "Real-time sales dashboard",
+      "Automatic financial report",
+      "Logistics & delivery panel",
+      "Team KPI tracking"
+    ],
     "s7_name": "AI Training 🎓",
     "s7_q": "Does your team want to use AI but doesn't know where to start?",
     "s7_body": "We train your team with practical, custom workshops on AI tools, automation, and productivity. No jargon — straight to what works.",
-    "s7_examples": ["AI workshop for non-techies", "Using ChatGPT at work", "Automation with n8n or Make", "Prompts and AI productivity"],
+    "s7_examples": [
+      "AI workshop for non-techies",
+      "Using ChatGPT at work",
+      "Automation with n8n or Make",
+      "Prompts and AI productivity"
+    ],
     "s8_name": "Custom Systems 💻",
     "s8_q": "Do you need a specific tool that doesn't exist in the market?",
     "s8_body": "We develop fully customized software solutions that adapt 100% to your business logic and specific needs.",
-    "s8_examples": ["Internal portals or platforms", "Custom management systems (Custom ERP/CRM)", "Dedicated web applications"]
+    "s8_examples": [
+      "Internal portals or platforms",
+      "Custom management systems (Custom ERP/CRM)",
+      "Dedicated web applications"
+    ],
+    "s9_name": "Process Auditing & Design 📋",
+    "s9_q": "Are your internal processes a mess and you don't know where to start automating?",
+    "s9_body": "We analyze the current architecture of your business, identify bottlenecks, and design optimized workflows ready to scale.",
+    "s9_examples": [
+      "Process architecture mapping",
+      "Bottleneck identification",
+      "Automation strategy"
+    ]
   },
   "team": {
     "overline": "The Team",
@@ -172,11 +247,35 @@
     "email": "Business email",
     "phone": "Phone / WhatsApp",
     "employees": "Number of employees",
-    "employees_opts": ["1–10", "11–50", "51–200", "200+"],
+    "employees_opts": [
+      "1–10",
+      "11–50",
+      "51–200",
+      "200+"
+    ],
     "sector": "Industry",
-    "sector_opts": ["Technology", "Retail / Commerce", "Logistics", "Finance / Banking", "Healthcare", "Manufacturing", "Education", "Legal", "Other"],
+    "sector_opts": [
+      "Technology",
+      "Retail / Commerce",
+      "Logistics",
+      "Finance / Banking",
+      "Healthcare",
+      "Manufacturing",
+      "Education",
+      "Legal",
+      "Other"
+    ],
     "plan": "Service of interest",
-    "plan_opts": ["Not sure yet", "AI Agent 🤖", "Website ✨", "Automation ⚡", "CRM & Sales 💼", "Integrations 🔗", "Dashboards 📊", "Training 🎓"],
+    "plan_opts": [
+      "Not sure yet",
+      "AI Agent 🤖",
+      "Website ✨",
+      "Automation ⚡",
+      "CRM & Sales 💼",
+      "Integrations 🔗",
+      "Dashboards 📊",
+      "Training 🎓"
+    ],
     "message": "What process do you want to automate?",
     "privacy": "I accept the privacy policy",
     "submit": "Request Diagnosis",

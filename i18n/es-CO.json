@@ -56,25 +56,53 @@
     "headline": "Áreas de Impacto",
     "s1_title": "Ventas & CRM",
     "s1_body": "Sincronización masiva de leads, calificación automática y nutrición de prospectos mediante agentes de IA conversacional.",
-    "s1_tags": ["Leads", "IA Conversacional", "CRM"],
+    "s1_tags": [
+      "Leads",
+      "IA Conversacional",
+      "CRM"
+    ],
     "s2_title": "Logística & Operaciones",
     "s2_body": "Rastreo en tiempo real, gestión de inventarios inteligente y optimización automática de rutas de entrega.",
-    "s2_tags": ["Inventario", "Rutas", "Tracking"],
+    "s2_tags": [
+      "Inventario",
+      "Rutas",
+      "Tracking"
+    ],
     "s3_title": "Finanzas & Compras",
     "s3_body": "Conciliación bancaria automática, facturación masiva electrónica y reportes de rentabilidad en tiempo real.",
-    "s3_tags": ["Facturación", "Conciliación", "Reportes"],
+    "s3_tags": [
+      "Facturación",
+      "Conciliación",
+      "Reportes"
+    ],
     "s4_title": "IA & Automatización",
     "s4_body": "Diseño e implementación de flujos de IA personalizados con n8n, Make, Zapier y modelos de lenguaje.",
-    "s4_tags": ["n8n", "Make", "LLMs"],
+    "s4_tags": [
+      "n8n",
+      "Make",
+      "LLMs"
+    ],
     "s5_title": "Integración & Web",
     "s5_body": "Conexión de sistemas ERP, CRM y plataformas externas. Desarrollo de interfaces de alto rendimiento.",
-    "s5_tags": ["API", "ERP", "Desarrollo"],
+    "s5_tags": [
+      "API",
+      "ERP",
+      "Desarrollo"
+    ],
     "s6_title": "Legal & Administrativo",
     "s6_body": "Automatización de contratos, flujos de aprobación y gestión documental con trazabilidad completa.",
-    "s6_tags": ["Contratos", "Aprobaciones", "Docs"],
+    "s6_tags": [
+      "Contratos",
+      "Aprobaciones",
+      "Docs"
+    ],
     "s7_title": "Capacitación en IA",
     "s7_body": "Programas de formación práctica para equipos empresariales en herramientas de IA y automatización.",
-    "s7_tags": ["Formación", "Talleres", "IA"],
+    "s7_tags": [
+      "Formación",
+      "Talleres",
+      "IA"
+    ],
     "details": "Ver detalles"
   },
   "process": {
@@ -101,35 +129,82 @@
     "s1_name": "Agente de IA 🤖",
     "s1_q": "¿Tu equipo pierde tiempo respondiendo las mismas preguntas una y otra vez?",
     "s1_body": "Creamos un agente IA que complementa a tu equipo atendiendo clientes por WhatsApp, web o redes — 24/7. Responde preguntas, agenda citas, toma pedidos y libera a tu gente para tareas de mayor valor.",
-    "s1_examples": ["Chatbot para WhatsApp Business", "Asistente web en tu sitio", "Agente para Instagram o Telegram", "Bot de ventas automatizado"],
+    "s1_examples": [
+      "Chatbot para WhatsApp Business",
+      "Asistente web en tu sitio",
+      "Agente para Instagram o Telegram",
+      "Bot de ventas automatizado"
+    ],
     "s2_name": "Página Web ✨",
     "s2_q": "¿Quieres que tus clientes te encuentren y confíen en ti desde el primer clic?",
     "s2_body": "Diseñamos sitios web rápidos, modernos y optimizados para convertir visitantes en clientes. Landing pages, corporativas o tiendas online. Con SEO incluido.",
-    "s2_examples": ["Landing page de ventas", "Sitio corporativo", "Catálogo de productos", "Blog con SEO"],
+    "s2_examples": [
+      "Landing page de ventas",
+      "Sitio corporativo",
+      "Catálogo de productos",
+      "Blog con SEO"
+    ],
     "s3_name": "Automatización de Procesos ⚡",
     "s3_q": "¿Tu equipo dedica horas a tareas operativas en vez de a lo estratégico?",
     "s3_body": "Automatizamos lo repetitivo conectando tus herramientas (ERPs, CRMs, hojas de cálculo) para que tu equipo sea más productivo: reportes, correos, alertas, seguimientos y más.",
-    "s3_examples": ["Reportes automáticos diarios", "Envío masivo de correos/WhatsApp", "Actualización de hojas de cálculo", "Alertas de stock o vencimientos"],
+    "s3_examples": [
+      "Reportes automáticos diarios",
+      "Envío masivo de correos/WhatsApp",
+      "Actualización de hojas de cálculo",
+      "Alertas de stock o vencimientos"
+    ],
     "s4_name": "CRM & Gestión de Ventas 💼",
     "s4_q": "¿Tu equipo de ventas pierde oportunidades por falta de seguimiento?",
     "s4_body": "Implementamos y automatizamos tu CRM (HubSpot, Pipedrive, Salesforce u otro) para que tu equipo venda más con menos esfuerzo: leads, seguimiento, recordatorios y pipelines inteligentes.",
-    "s4_examples": ["Configuración de HubSpot o Pipedrive", "Captura automática de leads", "Secuencias de seguimiento", "Reportes de ventas en tiempo real"],
+    "s4_examples": [
+      "Configuración de HubSpot o Pipedrive",
+      "Captura automática de leads",
+      "Secuencias de seguimiento",
+      "Reportes de ventas en tiempo real"
+    ],
     "s5_name": "Integraciones de Sistemas 🔗",
     "s5_q": "¿Tu ERP, CRM y demás sistemas no están conectados y tu equipo pierde tiempo copiando datos?",
     "s5_body": "Integramos tu ERP (SAP, Siigo, Odoo), CRM (HubSpot, Salesforce), e-commerce y cualquier plataforma para que los datos fluyan solos y tu equipo trabaje con información unificada.",
-    "s5_examples": ["Integrar ERP con CRM", "Sincronizar facturación con tu sistema contable", "Conectar e-commerce con logística", "Google Sheets con cualquier plataforma"],
+    "s5_examples": [
+      "Integrar ERP con CRM",
+      "Sincronizar facturación con tu sistema contable",
+      "Conectar e-commerce con logística",
+      "Google Sheets con cualquier plataforma"
+    ],
     "s6_name": "Dashboards & Reportes 📊",
     "s6_q": "¿Tomas decisiones sin datos claros porque juntarlos toma horas?",
     "s6_body": "Creamos paneles de control visuales y en tiempo real para que veas el pulso de tu negocio de un solo vistazo: ventas, operaciones, finanzas y más.",
-    "s6_examples": ["Dashboard de ventas en tiempo real", "Reporte financiero automático", "Panel de logística y entregas", "KPIs de equipo operativo"],
+    "s6_examples": [
+      "Dashboard de ventas en tiempo real",
+      "Reporte financiero automático",
+      "Panel de logística y entregas",
+      "KPIs de equipo operativo"
+    ],
     "s7_name": "Capacitación en IA 🎓",
     "s7_q": "¿Tu equipo quiere aprender a usar la IA pero no sabe por dónde empezar?",
     "s7_body": "Formamos a tu equipo con talleres prácticos y personalizados en herramientas de IA, automatización y productividad. Sin tecnicismos, directo a lo que sirve.",
-    "s7_examples": ["Taller de IA para no técnicos", "Uso de ChatGPT en el trabajo", "Automatización con n8n o Make", "Prompts y productividad con IA"],
+    "s7_examples": [
+      "Taller de IA para no técnicos",
+      "Uso de ChatGPT en el trabajo",
+      "Automatización con n8n o Make",
+      "Prompts y productividad con IA"
+    ],
     "s8_name": "Sistemas a la Medida 💻",
     "s8_q": "¿Necesitas una herramienta exacta que no existe en el mercado?",
     "s8_body": "Desarrollamos soluciones de software totalmente personalizadas que se adaptan al 100% a la lógica y necesidades de tu negocio.",
-    "s8_examples": ["Plataformas o portales internos", "Sistemas de gestión personalizados (ERP/CRM a medida)", "Aplicaciones web dedicadas"]
+    "s8_examples": [
+      "Plataformas o portales internos",
+      "Sistemas de gestión personalizados (ERP/CRM a medida)",
+      "Aplicaciones web dedicadas"
+    ],
+    "s9_name": "Auditoría y Diseño de Procesos 📋",
+    "s9_q": "¿Tus procesos internos son un caos y no sabes por dónde empezar a automatizar?",
+    "s9_body": "Analizamos la arquitectura actual de tu negocio, identificamos cuellos de botella y diseñamos flujos de trabajo optimizados y listos para escalar.",
+    "s9_examples": [
+      "Mapeo de arquitectura de procesos",
+      "Identificación de cuellos de botella",
+      "Estrategia de automatización"
+    ]
   },
   "team": {
     "overline": "El Equipo",
@@ -173,11 +248,35 @@
     "email": "Email empresarial",
     "phone": "Teléfono / WhatsApp",
     "employees": "Número de empleados",
-    "employees_opts": ["1–10", "11–50", "51–200", "200+"],
+    "employees_opts": [
+      "1–10",
+      "11–50",
+      "51–200",
+      "200+"
+    ],
     "sector": "Sector de la empresa",
-    "sector_opts": ["Tecnología", "Retail / Comercio", "Logística", "Finanzas / Banca", "Salud", "Manufactura", "Educación", "Legal / Jurídico", "Otro"],
+    "sector_opts": [
+      "Tecnología",
+      "Retail / Comercio",
+      "Logística",
+      "Finanzas / Banca",
+      "Salud",
+      "Manufactura",
+      "Educación",
+      "Legal / Jurídico",
+      "Otro"
+    ],
     "plan": "Servicio de interés",
-    "plan_opts": ["No definido", "Agente IA 🤖", "Página Web ✨", "Automatización ⚡", "CRM & Ventas 💼", "Integraciones 🔗", "Dashboards 📊", "Capacitación 🎓"],
+    "plan_opts": [
+      "No definido",
+      "Agente IA 🤖",
+      "Página Web ✨",
+      "Automatización ⚡",
+      "CRM & Ventas 💼",
+      "Integraciones 🔗",
+      "Dashboards 📊",
+      "Capacitación 🎓"
+    ],
     "message": "¿Qué proceso quieres automatizar?",
     "privacy": "Acepto la política de privacidad",
     "submit": "Solicitar Diagnóstico",

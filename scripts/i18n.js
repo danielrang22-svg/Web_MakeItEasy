@@ -20,6 +20,7 @@ const SERVICE_PRICES = {
     s6: '$700.000',
     s7: '$400.000',
     s8: '$1.000.000',
+    s9: '$700.000',
     currency_name: 'pesos colombianos (COP)',
   },
   'en-US': {
@@ -31,6 +32,7 @@ const SERVICE_PRICES = {
     s6: '$160',
     s7: '$90',
     s8: '$240',
+    s9: '$165',
     currency_name: 'US dollars (USD)',
   },
   'en-EU': {
@@ -42,6 +44,7 @@ const SERVICE_PRICES = {
     s6: '€150',
     s7: '€85',
     s8: '€220',
+    s9: '€155',
     currency_name: 'euros (EUR)',
   },
 };
@@ -150,7 +153,7 @@ function applyPrices() {
   const fromLabel = translations.services_pricing?.from || 'Desde';
 
   // Update each service card price
-  for (let i = 1; i <= 8; i++) {
+  for (let i = 1; i <= 9; i++) {
     const el = document.getElementById(`sp-price-${i}`);
     if (el) el.innerHTML = `<span class="sp-from">${fromLabel}</span> <strong>${p['s'+i]}</strong>`;
   }
