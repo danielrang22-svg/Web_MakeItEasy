@@ -17,6 +17,9 @@ jobs:
           MISSING=""
           [ -z "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" ] && MISSING="$MISSING DEPLOY_WEBHOOK_SECRET"
           [ -z "${{ secrets.VPS_APP_URL }}" ]           && MISSING="$MISSING VPS_APP_URL"
+          [ -z "${{ secrets.VPS_SSH_KEY }}" ]           && MISSING="$MISSING VPS_SSH_KEY"
+          [ -z "${{ secrets.VPS_HOST }}" ]              && MISSING="$MISSING VPS_HOST"
+          [ -z "${{ secrets.VPS_USER }}" ]              && MISSING="$MISSING VPS_USER"
           if [ -n "$MISSING" ]; then
             echo "❌ Faltan secretos en GitHub:$MISSING"
             echo "   Ve a: Repo → Settings → Secrets → Actions → New repository secret"
@@ -27,11 +30,11 @@ jobs:
       # ── Paso 1: copiar archivos al VPS por rsync ──────────────────────────
       - name: Copy files to VPS via rsync
         uses: easingthemes/ssh-deploy@main
-        env:
+        with:
           SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
           REMOTE_HOST:     ${{ secrets.VPS_HOST }}
           REMOTE_USER:     ${{ secrets.VPS_USER }}
-          REMOTE_PORT:     ${{ secrets.VPS_PORT || '22' }}
+          REMOTE_PORT:     ${{ secrets.VPS_PORT != '' && secrets.VPS_PORT || '22' }}
           ARGS: "-rlgoDzvc --delete"
           SOURCE: "/"
           TARGET: "/var/www/html/makeiteasy"
@@ -47,6 +50,7 @@ jobs:
         run: |
           echo "🔔 Notificando al VPS para build + restart..."
 
+          # Usar URL directa al CRM en el VPS (evita depender de Nginx)
           DEPLOY_URL="${{ secrets.VPS_APP_URL }}/api/deploy"
           BODY='{"ref":"main","event":"push"}'
           SECRET="${{ secrets.DEPLOY_WEBHOOK_SECRET }}"
@@ -83,3 +87,4 @@ jobs:
             "${{ secrets.VPS_APP_URL }}/login" --max-time 20)
           echo "CRM /login → HTTP $STATUS"
           [ "$STATUS" -eq 200 ] && echo "✅ CRM en producción OK" || echo "⚠️ HTTP $STATUS (puede estar iniciando)"
+
