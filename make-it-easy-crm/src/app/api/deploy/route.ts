@@ -55,7 +55,9 @@ export async function POST(request: NextRequest) {
       `npx prisma generate --schema=prisma/schema.production.prisma 2>&1 | tail -3`,
       `npx prisma db push --schema=prisma/schema.production.prisma --accept-data-loss 2>&1 | tail -10`,
       `npm run build 2>&1 | tail -20`,
-      `pm2 restart mie-crm --update-env`,
+      // Forzar el puerto correcto en .env si está en 3002
+      `sed -i 's/PORT=3002/PORT=3005/g' .env || true`,
+      `pm2 restart ecosystem.config.js --env production --update-env`,
       `echo "[Deploy] ✅ COMPLETADO $(date)"`,
 
     ].join(" && ");
