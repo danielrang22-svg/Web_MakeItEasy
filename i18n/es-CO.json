@@ -12,7 +12,8 @@
     "contact": "Contacto",
     "cta": "Diagnóstico Gratuito",
     "try_agent": "Explorar Herramientas",
-    "home": "Inicio"
+    "home": "Inicio",
+    "login_crm": "Acceder al CRM"
   },
   "hero": {
     "chip": "Automatización con IA · Resultados Reales",
@@ -446,5 +447,13 @@
     "billing": "Facturación/Op.",
     "taxes": "Impuestos",
     "footer": "© 2026 Make it Easy — Intelligent Automation. Todos los derechos reservados."
+  },
+  "metrics": {
+    "roi": "ROI anual",
+    "customer_attraction": "Atracción de clientes",
+    "response_time": "Tiempo de respuesta",
+    "sales_cycle": "Ciclo de ventas",
+    "operational_errors": "Errores operativos",
+    "billing_time": "Tiempo de facturación"
   }
 }

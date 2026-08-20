@@ -123,9 +123,7 @@
     <!-- Right: lang switcher + CTA -->
     <div class="nav-actions">
       <div id="lang-switcher" class="lang-switcher-wrap" aria-label="Cambiar idioma"></div>
-      <a href="https://crm.makeiteasy.com.co" target="_blank" class="btn btn-secondary btn-sm hide-mobile" style="margin-right: 0.5rem">
-        Acceder al CRM
-      </a>
+      <a href="https://crm.makeiteasy.com.co" target="_blank" class="btn btn-secondary btn-sm hide-mobile" style="margin-right: 0.5rem" data-i18n="nav.login_crm">Acceder al CRM</a>
       <a href="#contacto" class="btn btn-primary btn-sm hide-mobile" data-i18n="nav.cta" data-track="cta_click" data-track-label="nav_cta">
         Diagnóstico Gratuito
       </a>
@@ -151,9 +149,7 @@
     <li><a href="#faq" class="nav-link" data-i18n="nav.faq">FAQ</a></li>
     <li><a href="#contacto" class="nav-link" data-i18n="nav.contact">Contacto</a></li>
     <li>
-      <a href="https://crm.makeiteasy.com.co" target="_blank" class="btn btn-secondary" style="width: 100%; margin-bottom: 0.5rem; text-align: center; display: block;">
-        Acceder al CRM
-      </a>
+      <a href="https://crm.makeiteasy.com.co" target="_blank" class="btn btn-secondary" style="width: 100%; margin-bottom: 0.5rem; text-align: center; display: block;" data-i18n="nav.login_crm">Acceder al CRM</a>
     </li>
     <li>
       <a href="#contacto" class="btn btn-primary" style="width: 100%; text-align: center; display: block;" data-i18n="nav.cta" data-track="cta_click" data-track-label="nav_cta_mobile">
@@ -251,15 +247,15 @@
       </div>
       <!-- duplicate for seamless loop -->
       <div class="marquee-items" aria-hidden="true">
-        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900">3.5x</span><p>ROI anual</p></div>
+        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900">3.5x</span><p data-i18n="metrics.roi">ROI anual</p></div>
         <div class="marquee-sep">—</div>
-        <div class="marquee-stat"><span class="text-secondary glow-pulse" style="font-size:2.5rem;font-weight:900">+85%</span><p>Atracción de clientes</p></div>
+        <div class="marquee-stat"><span class="text-secondary glow-pulse" style="font-size:2.5rem;font-weight:900">+85%</span><p data-i18n="metrics.customer_attraction">Atracción de clientes</p></div>
         <div class="marquee-sep">—</div>
-        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900">&lt;2 min</span><p>Tiempo de respuesta</p></div>
+        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900">&lt;2 min</span><p data-i18n="metrics.response_time">Tiempo de respuesta</p></div>
         <div class="marquee-sep">—</div>
-        <div class="marquee-stat"><span class="text-secondary glow-pulse" style="font-size:2.5rem;font-weight:900">−40%</span><p>Ciclo de ventas</p></div>
+        <div class="marquee-stat"><span class="text-secondary glow-pulse" style="font-size:2.5rem;font-weight:900">−40%</span><p data-i18n="metrics.sales_cycle">Ciclo de ventas</p></div>
         <div class="marquee-sep">—</div>
-        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900">−60%</span><p>Errores operativos</p></div>
+        <div class="marquee-stat"><span class="text-primary glow-pulse" style="font-size:2.5rem;font-weight:900">−60%</span><p data-i18n="metrics.operational_errors">Errores operativos</p></div>
         <div class="marquee-sep">—</div>
         <div class="marquee-stat"><span class="text-tertiary glow-pulse" style="font-size:2.5rem;font-weight:900">−70%</span><p>Tiempo facturación</p></div>
         <div class="marquee-sep">—</div>
@@ -1287,7 +1283,7 @@
 <script type="module" src="scripts/main.js"></script>
 
 <!-- Unified Floating Actions Dock (Probar Agente + WhatsApp) -->
-<div class="floating-actions-dock" id="floating-actions-dock" style="opacity: 0; pointer-events: none;">
+<div class="floating-actions-dock" id="floating-actions-dock">
   <a href="herramientas.html" class="floating-agent-btn" aria-label="Explorar Herramientas Make it Easy">
     <span class="material-symbols-outlined icon-pulse">smart_toy</span>
     <span class="btn-text" data-i18n="nav.try_agent">Explorar Herramientas</span>

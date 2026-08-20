@@ -11,7 +11,9 @@
     "contact": "Contact",
     "cta": "Free Diagnosis",
     "try_agent": "Explore Tools",
-    "home": "Home"
+    "home": "Home",
+    "impact": "Impact",
+    "login_crm": "Access CRM"
   },
   "hero": {
     "chip": "AI Automation · Real Results",
@@ -445,5 +447,13 @@
     "billing": "Billing/Op.",
     "taxes": "Taxes",
     "footer": "© 2026 Make it Easy — Intelligent Automation. All rights reserved."
+  },
+  "metrics": {
+    "roi": "Annual ROI",
+    "customer_attraction": "Customer Attraction",
+    "response_time": "Response Time",
+    "sales_cycle": "Sales Cycle",
+    "operational_errors": "Operational Errors",
+    "billing_time": "Billing Time"
   }
 }

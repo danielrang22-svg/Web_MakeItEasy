@@ -2159,3 +2159,14 @@ details[open] .faq-question {
     display: none;
   }
 }
+
+
+/* Hide floating actions while preloader is active */
+body.loading #floating-actions-dock {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#floating-actions-dock {
+  transition: opacity 1s ease-out 0.5s;
+}
