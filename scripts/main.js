@@ -157,15 +157,7 @@ function initHeroParticles() {
    GSAP ANIMATIONS — Preloader & Hero Entrance
    ======================================================== */
 function initLoader() {
-  
-  if (document.readyState === 'complete') {
-    startLoaderAnimation();
-  } else {
-    window.addEventListener('load', startLoaderAnimation);
-  }
-
-  function startLoaderAnimation() {
-const tl = gsap.timeline();
+  const tl = gsap.timeline();
 
   // 1. Logo entrance (fade + scale)
   tl.to(".loader-logo", {
@@ -225,8 +217,7 @@ function initHeroAnimations() {
     duration: 1.6,
     stagger: 0.2,
     ease: "expo.out"
-    }
-});
+  });
 
   // Fade in other elements
   tl.from(".hero-section .chip", {
