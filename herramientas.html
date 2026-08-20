@@ -64,20 +64,23 @@
 
         <!-- Ecosystem Tabs Switcher -->
         <div class="flex justify-center mb-8 relative z-10">
-          <div class="ecosystem-tabs bg-surface-dark/80 backdrop-blur-md border border-light/10 p-1.5 rounded-full inline-flex relative gap-2 shadow-glass-lg overflow-hidden">
+          <div class="ecosystem-tabs bg-surface-dark/80 backdrop-blur-md border border-light/10 p-1.5 rounded-full inline-flex relative gap-2 shadow-glass-lg overflow-x-auto overflow-y-hidden max-w-full" style="scrollbar-width: none; -ms-overflow-style: none;">
+            <style>
+              .ecosystem-tabs::-webkit-scrollbar { display: none; }
+            </style>
             <div class="tab-indicator absolute top-1.5 bottom-1.5 bg-primary/20 border border-primary/40 rounded-full transition-all duration-300 pointer-events-none" style="left: 0.375rem; width: 130px;" id="tab-indicator"></div>
             
-            <button class="eco-tab-btn active relative z-10 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-colors flex items-center gap-2" data-target="tab-agent">
+            <button class="eco-tab-btn active relative z-10 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0" data-target="tab-agent">
               <span class="material-symbols-outlined text-lg">smart_toy</span>
               <span data-i18n="agent_tester.tabs.agent">Agentes IA</span>
             </button>
             
-            <button class="eco-tab-btn relative z-10 px-6 py-2.5 rounded-full text-sm font-semibold text-muted hover:text-white transition-colors flex items-center gap-2" data-target="tab-crm">
+            <button class="eco-tab-btn relative z-10 px-6 py-2.5 rounded-full text-sm font-semibold text-muted hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0" data-target="tab-crm">
               <span class="material-symbols-outlined text-lg">insights</span>
               <span data-i18n="agent_tester.tabs.crm">CRM & Ventas</span>
             </button>
             
-            <button class="eco-tab-btn relative z-10 px-6 py-2.5 rounded-full text-sm font-semibold text-muted hover:text-white transition-colors flex items-center gap-2" data-target="tab-erp">
+            <button class="eco-tab-btn relative z-10 px-6 py-2.5 rounded-full text-sm font-semibold text-muted hover:text-white transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0" data-target="tab-erp">
               <span class="material-symbols-outlined text-lg">account_balance</span>
               <span data-i18n="agent_tester.tabs.erp">ERP & Finanzas</span>
             </button>
