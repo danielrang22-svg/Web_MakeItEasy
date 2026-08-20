@@ -243,13 +243,11 @@ function initHeroAnimations() {
   }, "-=1.4");
 
   if (document.getElementById("floating-actions-dock")) {
-    gsap.to("#floating-actions-dock", {
-      opacity: 1,
-      pointerEvents: "auto",
-      duration: 1,
-      delay: 1.5,
-      ease: "power3.out"
-    });
+    setTimeout(() => {
+      const dock = document.getElementById("floating-actions-dock");
+      dock.style.opacity = "1";
+      dock.style.pointerEvents = "auto";
+    }, 1500);
   }
 }
 
