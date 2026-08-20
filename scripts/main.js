@@ -241,6 +241,13 @@ function initHeroAnimations() {
     duration: 2,
     ease: "expo.out"
   }, "-=1.4");
+
+  tl.to("#floating-actions-dock", {
+    opacity: 1,
+    pointerEvents: "auto",
+    duration: 1,
+    ease: "power3.out"
+  }, "-=0.5");
 }
 
 function initMouseFollow() {
