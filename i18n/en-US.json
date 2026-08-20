@@ -9,7 +9,9 @@
     "plans": "Pricing",
     "faq": "FAQ",
     "contact": "Contact",
-    "cta": "Free Diagnosis"
+    "cta": "Free Diagnosis",
+    "try_agent": "Explore Tools",
+    "home": "Home"
   },
   "hero": {
     "chip": "AI Automation · Real Results",
@@ -312,5 +314,136 @@
     "lang_switcher": "Change language",
     "back_top": "Back to top",
     "whatsapp": "Contact via WhatsApp"
+  },
+  "agent_tester": {
+    "badge": "Live AI Simulator",
+    "title": "Try Your Free AI Agent",
+    "subtitle": "Select your business type and see in real-time how a smart AI agent would interact with your customers before buying.",
+    "step1_title": "1. Select Your Business Industry",
+    "step2_title": "2. Select Agent Objectives (Multi-select allowed)",
+    "step2_desc": "Enable all the capabilities you want your AI agent to combine.",
+    "custom_desc_placeholder": "Optional: Add your business details (e.g., 'Dental clinic in NY open Mon-Sat')",
+    "btn_start_simulation": "Start Simulation with My Agent 🚀",
+    "simulator_header_status": "Online • Make It Easy AI",
+    "quick_questions_title": "Suggested FAQ Questions:",
+    "input_placeholder": "Type a message as a customer...",
+    "cta_title": "Like how this agent responds?",
+    "cta_desc": "We can deploy this custom AI agent to your WhatsApp, website, or CRM in less than 24 hours.",
+    "cta_btn": "Schedule Free Audit 🎯",
+    "businesses": {
+      "restaurant": {
+        "name": "Restaurant / Dining",
+        "icon": "restaurant"
+      },
+      "health": {
+        "name": "Healthcare / Clinic / Dental",
+        "icon": "medical_services"
+      },
+      "ecommerce": {
+        "name": "E-Commerce / Retail",
+        "icon": "shopping_bag"
+      },
+      "realestate": {
+        "name": "Real Estate",
+        "icon": "real_estate_agent"
+      },
+      "services": {
+        "name": "Professional Services / Consulting",
+        "icon": "work"
+      },
+      "beauty": {
+        "name": "Beauty / Barbershop / Spa",
+        "icon": "content_cut"
+      },
+      "automotive": {
+        "name": "Automotive / Repair"
+      }
+    },
+    "objectives": {
+      "support": {
+        "label": "Customer Support & FAQ",
+        "icon": "support_agent"
+      },
+      "sales": {
+        "label": "Sales & Product Recommendations",
+        "icon": "payments"
+      },
+      "booking": {
+        "label": "Appointment Scheduling & Bookings",
+        "icon": "calendar_month"
+      },
+      "pricing": {
+        "label": "Quotes & Pricing Info",
+        "icon": "request_quote"
+      },
+      "qualification": {
+        "label": "Lead Qualification"
+      },
+      "faq": {
+        "label": "FAQ & Info"
+      }
+    },
+    "tabs": {
+      "agent": "AI Agents",
+      "crm": "Smart CRM",
+      "erp": "ERP & Finance"
+    },
+    "crm": {
+      "title": "Smart CRM",
+      "subtitle": "Visualize your sales pipelines and close more deals.",
+      "revenue": "Total Revenue",
+      "leads": "New Leads",
+      "conversion": "Conversion",
+      "kanban": {
+        "new": "New",
+        "contacted": "Contacted",
+        "won": "Won"
+      }
+    },
+    "erp": {
+      "title": "ERP & Finance",
+      "subtitle": "Total control of your invoicing and accounting automation.",
+      "cashflow": "Cash Flow",
+      "expenses": "Operating Expenses",
+      "balance": "Monthly Balance",
+      "recent_transactions": "Recent Transactions"
+    },
+    "step2_badge": "✨ Multi-selection active"
+  },
+  "crm_mockup": {
+    "status": "Online • Make It Easy AI",
+    "vs_prev_month": "↑ +18.4% vs prev month",
+    "by_whatsapp": "↑ 92% by WhatsApp Agent",
+    "auto_close": "↑ Automated closing",
+    "lead1_name": "Carlos Mendoza",
+    "lead1_desc": "Interest in WhatsApp Agent",
+    "lead1_status": "High Priority",
+    "lead1_time": "2m ago",
+    "lead2_name": "Ana María Gómez",
+    "lead2_desc": "ERP Quote Inquiry",
+    "lead2_status": "Medium",
+    "lead2_time": "15m ago",
+    "lead3_name": "Sun Real Estate",
+    "lead3_desc": "Appointment Scheduler Demo sent",
+    "lead3_status": "Demo Scheduled",
+    "lead3_time": "1h ago",
+    "lead4_name": "Distribuidora Alfa SAS",
+    "lead4_desc": "Enterprise Plan ($1,500/mo)",
+    "lead4_status": "Contract Signed",
+    "lead4_time": "Today"
+  },
+  "erp_mockup": {
+    "sync_status": "Synced with Siigo / Dian",
+    "months": {
+      "jan": "Jan",
+      "feb": "Feb",
+      "mar": "Mar",
+      "apr": "Apr"
+    },
+    "expense_distribution": "Expense Distribution",
+    "payroll": "Payroll",
+    "billing": "Billing/Op.",
+    "taxes": "Taxes",
+    "footer": "© 2026 Make it Easy — Intelligent Automation. All rights reserved."
   }
 }

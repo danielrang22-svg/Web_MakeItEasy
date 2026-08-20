@@ -15,6 +15,8 @@ function initNavbar() {
   const menu = document.getElementById('mobile-menu');
   const overlay = document.getElementById('menu-overlay');
 
+  if (!nav) return;
+
   // Scroll glass effect
   const onScroll = () => {
     if (window.scrollY > 80) {
@@ -777,6 +779,9 @@ async function init() {
 
   // Analytics (respects cookie consent)
   initAnalytics();
+
+  if (typeof initAgentSimulator === "function") initAgentSimulator();
+  if (typeof initEcosystemTabs === "function") initEcosystemTabs();
 }
 
 // Run when DOM is ready
@@ -785,3 +790,16 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+// Re-animate mockups when locale changes
+document.addEventListener('localeChanged', () => {
+  const crmView = document.getElementById('tab-crm');
+  const erpView = document.getElementById('tab-erp');
+  
+  if (crmView && !crmView.classList.contains('hidden')) {
+    animateCrmMockup();
+  }
+  if (erpView && !erpView.classList.contains('hidden')) {
+    animateErpMockup();
+  }
+});

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es-CO" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ecosistema de Herramientas | Make it Easy</title>
+  <meta name="description" content="Explora y prueba las herramientas de automatización de Make it Easy: Agentes de IA, CRM Inteligente y ERP Financiero." />
+  <link rel="canonical" href="https://makeiteasy.com.co/herramientas.html" />
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles/globals.css?v=1.1" />
+  <link rel="stylesheet" href="styles/components.css?v=1.1" />
+  <link rel="icon" type="image/svg+xml" href="public/favicon.svg" />
+
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-surface text-light antialiased selection:bg-primary selection:text-white flex flex-col min-h-screen">
+
+  <!-- Header minimalista -->
+  <header class="simulator-header border-b border-glass py-4 bg-surface-darker/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="container flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3 group" aria-label="Volver a MakeItEasy Inicio">
+        <img src="make-it-easy-logo-transparent-fixed.svg" alt="MakeItEasy Logo" class="nav-logo-img" style="height: 36px; max-height: 36px; width: auto;" />
+      </a>
+
+      <!-- Desktop links to main sections -->
+      <nav class="hidden md:flex items-center gap-8">
+        <a href="index.html" class="text-sm font-medium text-muted hover:text-light transition-colors" data-i18n="nav.home">Inicio</a>
+        <a href="index.html#servicios" class="text-sm font-medium text-muted hover:text-light transition-colors" data-i18n="nav.services">Servicios</a>
+        <a href="index.html#nosotros" class="text-sm font-medium text-muted hover:text-light transition-colors" data-i18n="nav.about">Nosotros</a>
+        <a href="index.html#contacto" class="text-sm font-medium text-muted hover:text-light transition-colors" data-i18n="nav.contact">Contacto</a>
+      </nav>
+
+      <div class="flex items-center gap-4">
+        <div id="lang-switcher" class="lang-switcher-wrap" aria-label="Cambiar idioma"></div>
+        <a href="index.html" class="btn btn-secondary btn-sm flex items-center gap-2 text-xs">
+          <span class="material-symbols-outlined text-sm">arrow_back</span>
+          <span>Volver al Inicio</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content: ECOSYSTEM EXPLORER -->
+  <main class="flex-1 py-10">
+    <section id="probador-agentes" class="agent-simulator-section-page">
+      <div class="container max-w-6xl mx-auto px-4">
+        
+        <div class="text-center section-header mb-8">
+          <span class="badge badge-primary glow-pill-sm mb-3" style="transition: opacity 0.3s ease;" data-i18n="agent_tester.badge">Ecosistema Make it Easy</span>
+          <h1 id="probador-headline" class="display-md text-3xl md:text-4xl font-extrabold" style="transition: opacity 0.3s ease;" data-i18n="agent_tester.title">Explora Nuestras Herramientas</h1>
+          <p id="probador-subtitle" class="body-lg text-muted max-w-2xl mx-auto mt-3 text-sm md:text-base" style="transition: opacity 0.3s ease;" data-i18n="agent_tester.subtitle">
+            Haz clic en cada herramienta para ver en tiempo real cómo interactúan nuestros Agentes de IA, CRM y ERP.
+          </p>
+        </div>
+
+        <!-- Ecosystem Tabs Switcher -->
+        <div class="flex justify-center mb-8 relative z-10">
+          <div class="ecosystem-tabs bg-surface-dark/80 backdrop-blur-md border border-light/10 p-1.5 rounded-full inline-flex relative gap-2 shadow-glass-lg overflow-hidden">
+            <div class="tab-indicator absolute top-1.5 bottom-1.5 bg-primary/20 border border-primary/40 rounded-full transition-all duration-300 pointer-events-none" style="left: 0.375rem; width: 130px;" id="tab-indicator"></div>
+            
+            <button class="eco-tab-btn active relative z-10 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-colors flex items-center gap-2" data-target="tab-agent">
+              <span class="material-symbols-outlined text-lg">smart_toy</span>
+              <span data-i18n="agent_tester.tabs.agent">Agentes IA</span>
+            </button>
+            
+            <button class="eco-tab-btn relative z-10 px-6 py-2.5 rounded-full text-sm font-semibold text-muted hover:text-white transition-colors flex items-center gap-2" data-target="tab-crm">
+              <span class="material-symbols-outlined text-lg">insights</span>
+              <span data-i18n="agent_tester.tabs.crm">CRM & Ventas</span>
+            </button>
+            
+            <button class="eco-tab-btn relative z-10 px-6 py-2.5 rounded-full text-sm font-semibold text-muted hover:text-white transition-colors flex items-center gap-2" data-target="tab-erp">
+              <span class="material-symbols-outlined text-lg">account_balance</span>
+              <span data-i18n="agent_tester.tabs.erp">ERP & Finanzas</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Views Container -->
+        <div class="ecosystem-views-container relative w-full mt-4">
+          
+          <!-- VIEW 1: AGENT SIMULATOR -->
+          <div class="eco-view active opacity-100 transition-all duration-500" id="tab-agent">
+            <div class="agent-simulator-grid">
+              
+              <!-- Left Config Controls -->
+              <div class="agent-config-panel">
+                
+                <!-- Step 1: Business Selection -->
+                <div class="config-step">
+                  <h3 class="step-title" data-i18n="agent_tester.step1_title">
+                    <span class="step-num">1</span>
+                    Selecciona tu Rubro de Negocio
+                  </h3>
+                  <div class="business-selector-grid" id="business-options">
+                    <button type="button" class="biz-option-card active" data-biz="restaurant">
+                      <span class="material-symbols-outlined icon">restaurant</span>
+                      <span class="biz-name" data-i18n="agent_tester.businesses.restaurant.name">Restaurante / Gastronomía</span>
+                    </button>
+                    <button type="button" class="biz-option-card" data-biz="health">
+                      <span class="material-symbols-outlined icon">medical_services</span>
+                      <span class="biz-name" data-i18n="agent_tester.businesses.health.name">Salud / Odontología</span>
+                    </button>
+                    <button type="button" class="biz-option-card" data-biz="ecommerce">
+                      <span class="material-symbols-outlined icon">shopping_bag</span>
+                      <span class="biz-name" data-i18n="agent_tester.businesses.ecommerce.name">E-Commerce / Tienda</span>
+                    </button>
+                    <button type="button" class="biz-option-card" data-biz="realestate">
+                      <span class="material-symbols-outlined icon">real_estate_agent</span>
+                      <span class="biz-name" data-i18n="agent_tester.businesses.realestate.name">Inmobiliaria / Bienes Raíces</span>
+                    </button>
+                    <button type="button" class="biz-option-card" data-biz="services">
+                      <span class="material-symbols-outlined icon">work</span>
+                      <span class="biz-name" data-i18n="agent_tester.businesses.services.name">Servicios / Consultoría</span>
+                    </button>
+                    <button type="button" class="biz-option-card" data-biz="automotive">
+                      <span class="material-symbols-outlined icon">directions_car</span>
+                      <span class="biz-name" data-i18n="agent_tester.businesses.automotive.name">Talleres / Automotriz</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 2: Objectives Selection -->
+                <div class="config-step mt-6">
+                  <div class="step-header">
+                    <h3 class="step-title" data-i18n="agent_tester.step2_title">
+                      <span class="step-num">2</span>
+                      Selecciona los Objetivos
+                    </h3>
+                    <span class="multi-select-badge" data-i18n="agent_tester.step2_badge">✨ Multi-selección activa</span>
+                  </div>
+                  <div class="objectives-pill-grid" id="objective-options">
+                    <button type="button" class="obj-pill active" data-obj="sales">
+                      <span class="material-symbols-outlined text-sm">point_of_sale</span>
+                      <span data-i18n="agent_tester.objectives.sales.label">Ventas 24/7</span>
+                    </button>
+                    <button type="button" class="obj-pill active" data-obj="support">
+                      <span class="material-symbols-outlined text-sm">support_agent</span>
+                      <span data-i18n="agent_tester.objectives.support.label">Soporte al Cliente</span>
+                    </button>
+                    <button type="button" class="obj-pill" data-obj="booking">
+                      <span class="material-symbols-outlined text-sm">calendar_month</span>
+                      <span data-i18n="agent_tester.objectives.booking.label">Agendamiento de Citas</span>
+                    </button>
+                    <button type="button" class="obj-pill" data-obj="qualification">
+                      <span class="material-symbols-outlined text-sm">filter_alt</span>
+                      <span data-i18n="agent_tester.objectives.qualification.label">Calificación de Leads</span>
+                    </button>
+                    <button type="button" class="obj-pill" data-obj="faq">
+                      <span class="material-symbols-outlined text-sm">quiz</span>
+                      <span data-i18n="agent_tester.objectives.faq.label">Preguntas Frecuentes</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 3: Descripción y Contexto -->
+                <div class="config-step mt-8">
+                  <div class="flex items-center justify-between mb-4">
+                    <h3 class="step-title flex items-center gap-2">
+                      <span class="step-num w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold border border-primary/30">3</span>
+                      Personalidad y Contexto
+                    </h3>
+                  </div>
+                  <div class="context-input-wrap">
+                    <textarea id="sim-agent-context" class="w-full bg-[#0b0f19]/80 border border-white/10 rounded-xl p-3.5 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-primary/50 transition-colors resize-none shadow-inner" rows="3" placeholder="Ej: Quiero que seas un vendedor muy amable, uses emojis y respondas de forma breve..."></textarea>
+                  </div>
+                </div>
+
+                <!-- Start Button -->
+                <div class="mt-8 flex justify-center">
+                  <button type="button" id="btn-start-simulation" class="btn btn-primary w-full py-3.5 text-sm shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] transition-all flex items-center justify-center gap-2 font-bold tracking-wide">
+                    <span class="material-symbols-outlined text-lg">play_arrow</span> Iniciar Simulación
+                  </button>
+                </div>
+
+                <!-- Active Agent Summary -->
+                <div class="active-agent-summary glass-panel p-4 rounded-xl border border-primary/20 mt-6 hidden" id="active-agent-summary-box">
+                  <div class="flex items-center gap-3">
+                    <div class="agent-avatar-wrap">
+                      <span class="material-symbols-outlined text-primary text-2xl">smart_toy</span>
+                      <span class="online-indicator"></span>
+                    </div>
+                    <div>
+                      <h4 id="sim-agent-name" class="font-bold text-sm text-white">Agente Gourmet IA</h4>
+                      <p id="sim-agent-role" class="text-xs text-muted">Especialista en Ventas & Soporte</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Right Chat Mockup (WhatsApp Style) -->
+              <div class="agent-chat-panel relative rounded-2xl overflow-hidden flex flex-col h-[520px] shadow-2xl border border-white/5 bg-[#0b141a]">
+                
+                <!-- Chat Overlay (Hidden once simulation starts) -->
+                <div id="chat-overlay" class="absolute inset-0 z-50 bg-[#080c14]/90 backdrop-blur-[4px] flex flex-col items-center justify-center p-6 text-center transition-opacity duration-500">
+                  <div class="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4 border border-primary/30">
+                    <span class="material-symbols-outlined text-primary text-3xl">psychology</span>
+                  </div>
+                  <h4 class="text-white font-bold text-lg mb-2">Agente Inactivo</h4>
+                  <p class="text-muted text-sm max-w-[250px]">Configura tu rubro, objetivos y contexto en el panel izquierdo y haz clic en <strong>Iniciar Simulación</strong> para despertar al agente.</p>
+                </div>
+
+                <!-- WA Header -->
+                <div class="chat-header bg-[#202c33] px-3 py-2 flex items-center justify-between shadow-sm z-10">
+                  <div class="flex items-center gap-3">
+                    <button class="text-[#8696a0] hover:text-white transition-colors flex items-center">
+                      <span class="material-symbols-outlined text-xl">arrow_back</span>
+                    </button>
+                    <div class="relative w-10 h-10 rounded-full bg-[#111b21] flex items-center justify-center overflow-hidden">
+                      <img src="public/favicon.svg" alt="Avatar" class="w-6 h-6 object-contain opacity-80" />
+                    </div>
+                    <div class="flex flex-col">
+                      <span id="chat-header-title" class="text-[15px] font-medium text-[#e9edef] leading-tight">Agente Gourmet IA</span>
+                      <span class="text-[12px] text-[#8696a0]">en línea</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-4 text-[#8696a0]">
+                    <span class="material-symbols-outlined text-[22px] hover:text-white cursor-pointer transition-colors">videocam</span>
+                    <span class="material-symbols-outlined text-[20px] hover:text-white cursor-pointer transition-colors">call</span>
+                    <span class="material-symbols-outlined text-[22px] hover:text-white cursor-pointer transition-colors">more_vert</span>
+                  </div>
+                </div>
+
+                <!-- WA Chat Body (Background Pattern) -->
+                <!-- We simulate WA background with a dark color and a subtle CSS pattern or just dark color -->
+                <div id="sim-chat-body" class="chat-body flex-1 p-4 overflow-y-auto space-y-2 bg-[#0b141a] relative" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');">
+                  <!-- Messages rendered dynamically by main.js -->
+                </div>
+
+                <!-- WA Quick Prompts (optional, customized to look nice) -->
+                <div id="sim-quick-questions" class="px-3 py-2 bg-[#0b141a] flex gap-2 overflow-x-auto border-t border-[#202c33] hidden">
+                  <!-- Populated by main.js -->
+                </div>
+
+                <!-- WA Input Bar -->
+                <form id="sim-chat-form" class="bg-[#202c33] p-3 flex items-center gap-2">
+                  <button type="button" class="text-[#8696a0] hover:text-white transition-colors flex items-center justify-center p-1">
+                    <span class="material-symbols-outlined text-[26px]">add</span>
+                  </button>
+                  <div class="flex-1 bg-[#2a3942] rounded-lg flex items-center px-3 py-1.5 min-h-[42px]">
+                    <input type="text" id="sim-user-input" class="w-full bg-transparent text-[15px] text-[#e9edef] placeholder-[#8696a0] focus:outline-none" placeholder="Escribe un mensaje" autocomplete="off" />
+                  </div>
+                  <button type="submit" class="w-10 h-10 rounded-full bg-[#00a884] hover:bg-[#008f6f] text-white flex items-center justify-center transition-colors shadow-sm shrink-0" aria-label="Enviar mensaje">
+                    <span class="material-symbols-outlined text-[20px] ml-1">send</span>
+                  </button>
+                </form>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- VIEW 2: CRM & VENTAS -->
+          <div class="eco-view hidden opacity-0 transition-all duration-500" id="tab-crm">
+            <div class="crm-mockup-wrapper">
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-light/10 pb-4">
+                <div>
+                  <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">insights</span>
+                    <span data-i18n="agent_tester.crm.title">CRM Inteligente & Embudo de Ventas</span>
+                  </h3>
+                  <p class="text-xs text-muted mt-1" data-i18n="agent_tester.crm.subtitle">Visualiza tus embudos de venta y cierra más negocios automáticamente.</p>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span class="text-emerald-400 font-semibold" data-i18n="crm_mockup.status">En Línea • IA Make It Easy</span>
+                </div>
+              </div>
+
+              <!-- CRM Metric Cards Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div class="bg-surface-dark/60 border border-light/10 p-4 rounded-xl">
+                  <span class="text-xs text-muted block mb-1" data-i18n="agent_tester.crm.revenue">Ingresos Totales</span>
+                  <span class="text-2xl font-bold text-white crm-counter" data-target="24500">$0</span>
+                  <span class="text-[10px] text-emerald-400 mt-1 block" data-i18n="crm_mockup.vs_prev_month">↑ +18.4% vs mes anterior</span>
+                </div>
+                <div class="bg-surface-dark/60 border border-light/10 p-4 rounded-xl">
+                  <span class="text-xs text-muted block mb-1" data-i18n="agent_tester.crm.leads">Nuevos Leads Capturados</span>
+                  <span class="text-2xl font-bold text-primary crm-counter" data-target="142">0</span>
+                  <span class="text-[10px] text-primary mt-1 block" data-i18n="crm_mockup.by_whatsapp">↑ 92% por Agente de WhatsApp</span>
+                </div>
+                <div class="bg-surface-dark/60 border border-light/10 p-4 rounded-xl">
+                  <span class="text-xs text-muted block mb-1" data-i18n="agent_tester.crm.conversion">Tasa de Conversión</span>
+                  <span class="text-2xl font-bold text-emerald-400 crm-counter" data-target="28">%0</span>
+                  <span class="text-[10px] text-emerald-400 mt-1 block" data-i18n="crm_mockup.auto_close">↑ Cierre automatizado</span>
+                </div>
+              </div>
+
+              <!-- Kanban Board Demo -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 crm-kanban-board">
+                <!-- Column 1: Nuevos -->
+                <div class="bg-surface-dark/40 border border-light/10 p-3 rounded-xl">
+                  <span class="text-xs font-semibold text-white/90 block mb-3 border-b border-light/10 pb-2" data-i18n="agent_tester.crm.kanban.new">📥 Nuevos Leads (En caliente)</span>
+                  <div class="space-y-2">
+                    <div class="kanban-item bg-surface-dark/90 p-3 rounded-lg border border-light/10 text-xs shadow-sm hover:border-primary/50">
+                      <span class="font-bold text-white block mb-1" data-i18n="crm_mockup.lead1_name">Carlos Mendoza</span>
+                      <span class="text-muted block text-[11px] mb-2" data-i18n="crm_mockup.lead1_desc">Interés en Agente de WhatsApp</span>
+                      <div class="flex items-center justify-between">
+                        <span class="px-2 py-0.5 rounded bg-primary/20 text-primary text-[10px] font-semibold" data-i18n="crm_mockup.lead1_status">Alta Prioridad</span>
+                        <span class="text-[10px] text-muted" data-i18n="crm_mockup.lead1_time">Hace 2m</span>
+                      </div>
+                    </div>
+                    <div class="kanban-item bg-surface-dark/90 p-3 rounded-lg border border-light/10 text-xs shadow-sm hover:border-primary/50">
+                      <span class="font-bold text-white block mb-1" data-i18n="crm_mockup.lead2_name">Ana María Gómez</span>
+                      <span class="text-muted block text-[11px] mb-2" data-i18n="crm_mockup.lead2_desc">Consulta Cotización ERP</span>
+                      <div class="flex items-center justify-between">
+                        <span class="px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 text-[10px] font-semibold" data-i18n="crm_mockup.lead2_status">Media</span>
+                        <span class="text-[10px] text-muted" data-i18n="crm_mockup.lead2_time">Hace 15m</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Column 2: Contactados -->
+                <div class="bg-surface-dark/40 border border-light/10 p-3 rounded-xl">
+                  <span class="text-xs font-semibold text-white/90 block mb-3 border-b border-light/10 pb-2" data-i18n="agent_tester.crm.kanban.contacted">💬 Demo Programada</span>
+                  <div class="space-y-2">
+                    <div class="kanban-item bg-surface-dark/90 p-3 rounded-lg border border-light/10 text-xs shadow-sm hover:border-primary/50">
+                      <span class="font-bold text-white block mb-1" data-i18n="crm_mockup.lead3_name">Inmobiliaria del Sol</span>
+                      <span class="text-muted block text-[11px] mb-2" data-i18n="crm_mockup.lead3_desc">Demo de Agendador Citas enviado</span>
+                      <div class="flex items-center justify-between">
+                        <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[10px] font-semibold" data-i18n="crm_mockup.lead3_status">Demo Agendada</span>
+                        <span class="text-[10px] text-muted" data-i18n="crm_mockup.lead3_time">Hace 1h</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Column 3: Ganados -->
+                <div class="bg-surface-dark/40 border border-light/10 p-3 rounded-xl">
+                  <span class="text-xs font-semibold text-emerald-400 block mb-3 border-b border-light/10 pb-2" data-i18n="agent_tester.crm.kanban.won">🎉 Cierres Ganados</span>
+                  <div class="space-y-2">
+                    <div class="kanban-item bg-emerald-950/30 p-3 rounded-lg border border-emerald-500/30 text-xs shadow-sm">
+                      <span class="font-bold text-white block mb-1" data-i18n="crm_mockup.lead4_name">Distribuidora Alfa SAS</span>
+                      <span class="text-emerald-300/80 block text-[11px] mb-2" data-i18n="crm_mockup.lead4_desc">Plan Enterprise ($1,500/mes)</span>
+                      <div class="flex items-center justify-between">
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-semibold" data-i18n="crm_mockup.lead4_status">Contrato Firmado</span>
+                        <span class="text-[10px] text-muted" data-i18n="crm_mockup.lead4_time">Hoy</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW 3: ERP & FINANZAS -->
+          <div class="eco-view hidden opacity-0 transition-all duration-500" id="tab-erp">
+            <div class="erp-mockup-wrapper">
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-light/10 pb-4">
+                <div>
+                  <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">account_balance</span>
+                    <span data-i18n="agent_tester.erp.title">ERP & Control Financiero</span>
+                  </h3>
+                  <p class="text-xs text-muted mt-1" data-i18n="agent_tester.erp.subtitle">Control total de tu facturación electrónica, costos e inventario.</p>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span class="text-emerald-400 font-semibold" data-i18n="erp_mockup.sync_status">Sincronizado con Siigo / Dian</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 erp-dashboard-grid">
+                <div class="md:col-span-2 space-y-4">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-surface-dark/60 border border-light/10 p-4 rounded-xl">
+                      <span class="text-xs text-muted block mb-1" data-i18n="agent_tester.erp.cashflow">Flujo de Caja Disponible</span>
+                      <span class="text-xl font-bold text-white erp-counter" data-target="48200">$0</span>
+                    </div>
+                    <div class="bg-surface-dark/60 border border-light/10 p-4 rounded-xl">
+                      <span class="text-xs text-muted block mb-1" data-i18n="agent_tester.erp.expenses">Costos Operativos</span>
+                      <span class="text-xl font-bold text-rose-400 erp-counter" data-target="12500">$0</span>
+                    </div>
+                  </div>
+
+                  <!-- Monthly Balance Chart -->
+                  <div class="bg-surface-dark/60 border border-light/10 p-4 rounded-xl">
+                    <span class="text-xs font-semibold text-white block mb-4" data-i18n="agent_tester.erp.balance">Crecimiento Mensual</span>
+                    <div class="h-32 flex items-end justify-between gap-2 px-2 erp-bars">
+                      <div class="flex flex-col items-center gap-1 w-full h-full justify-end">
+                        <div class="erp-bar bg-[#8ff5ff]/40 hover:bg-[#8ff5ff] w-full rounded-t transition-all duration-700" data-h="40%" style="height: 0%"></div>
+                        <span class="text-[9px] text-muted mt-1" data-i18n="erp_mockup.months.jan">Ene</span>
+                      </div>
+                      <div class="flex flex-col items-center gap-1 w-full h-full justify-end">
+                        <div class="erp-bar bg-[#8ff5ff]/40 hover:bg-[#8ff5ff] w-full rounded-t transition-all duration-700" data-h="55%" style="height: 0%"></div>
+                        <span class="text-[9px] text-muted mt-1" data-i18n="erp_mockup.months.feb">Feb</span>
+                      </div>
+                      <div class="flex flex-col items-center gap-1 w-full h-full justify-end">
+                        <div class="erp-bar bg-[#8ff5ff]/40 hover:bg-[#8ff5ff] w-full rounded-t transition-all duration-700" data-h="70%" style="height: 0%"></div>
+                        <span class="text-[9px] text-muted mt-1" data-i18n="erp_mockup.months.mar">Mar</span>
+                      </div>
+                      <div class="flex flex-col items-center gap-1 w-full h-full justify-end">
+                        <div class="erp-bar bg-[#8ff5ff] w-full rounded-t transition-all duration-700" data-h="85%" style="height: 0%"></div>
+                        <span class="text-[9px] text-muted mt-1" data-i18n="erp_mockup.months.apr">Abr</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Donut & Breakdown -->
+                <div class="bg-surface-dark/60 border border-light/10 p-4 rounded-xl flex flex-col items-center justify-between">
+                  <span class="text-xs font-semibold text-white block mb-2 self-start" data-i18n="erp_mockup.expense_distribution">Distribución de Gastos</span>
+                  <div class="erp-donut-chart w-28 h-28 rounded-full flex items-center justify-center relative mb-4" style="background: conic-gradient(var(--primary) 0%, rgba(255,255,255,0.05) 0%);">
+                    <div class="absolute inset-3 rounded-full bg-surface-dark flex flex-col items-center justify-center">
+                      <span class="text-[9px] text-muted" data-i18n="erp_mockup.payroll">Nómina</span>
+                      <span class="text-xs font-bold text-white erp-counter" id="erp-donut-nomina" data-target="0">$0</span>
+                    </div>
+                  </div>
+                  <div class="w-full text-xs space-y-1.5">
+                    <div class="flex justify-between text-muted">
+                      <span data-i18n="erp_mockup.payroll">Nómina</span>
+                      <span class="text-white font-medium erp-counter" id="erp-list-nomina" data-target="0">$0</span>
+                    </div>
+                    <div class="flex justify-between text-muted">
+                      <span data-i18n="erp_mockup.billing">Facturación/Op.</span>
+                      <span class="text-white font-medium erp-counter" id="erp-list-fact" data-target="0">$0</span>
+                    </div>
+                    <div class="flex justify-between text-muted">
+                      <span data-i18n="erp_mockup.taxes">Impuestos</span>
+                      <span class="text-white font-medium erp-counter" id="erp-list-imp" data-target="0">$0</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div> <!-- End ecosystem-views-container -->
+
+        <!-- Conversion Banner (CRO) -->
+        <div id="sim-cro-banner" class="cro-conversion-banner mt-10">
+          <div class="cro-text">
+            <h3 class="cro-heading">
+              <span class="material-symbols-outlined icon-sparkle text-primary">auto_awesome</span>
+              <span data-i18n="agent_tester.cta_title">¿Quieres ver este ecosistema funcionando en tu empresa?</span>
+            </h3>
+            <p class="cro-subtext" data-i18n="agent_tester.cta_desc">
+              Integramos tu Agente de WhatsApp, CRM y ERP en un solo sistema automatizado en menos de 24 horas.
+            </p>
+          </div>
+          <a href="index.html#contacto" class="btn btn-primary cro-btn" data-i18n="agent_tester.cta_btn">
+            Agendar Diagnóstico Gratuito 🎯
+          </a>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Clean Footer -->
+  <footer class="footer border-t border-glass py-6 bg-surface-darker">
+    <div class="container text-center text-xs text-muted">
+      <p data-i18n="erp_mockup.footer">© 2026 Make it Easy — Intelligent Automation. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="scripts/ecosystem.js"></script>
+  <script type="module" src="scripts/main.js"></script>
+</body>
+</html>

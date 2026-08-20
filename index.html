@@ -1265,15 +1265,6 @@
   </div>
 </footer>
 
-<!-- WhatsApp FAB -->
-<a href="https://wa.me/573181154477?text=Hola%2C%20quiero%20agendar%20mi%20diagn%C3%B3stico%20gratuito%20con%20Make%20it%20Easy"
-   class="whatsapp-fab" target="_blank" rel="noopener"
-   aria-label="Contactar por WhatsApp" data-i18n="aria.whatsapp" data-i18n-attr="aria-label"
-   data-track="whatsapp_click">
-  <span class="material-symbols-outlined">chat</span>
-  <span class="whatsapp-fab-tooltip" data-i18n="contact.whatsapp_cta">Chatear en WhatsApp</span>
-</a>
-
 <!-- Back to top -->
 <button id="back-top" class="back-top" aria-label="Volver arriba" data-i18n="aria.back_top" data-i18n-attr="aria-label">
   <span class="material-symbols-outlined">arrow_upward</span>
@@ -1293,5 +1284,24 @@
 
 <!-- Scripts -->
 <script type="module" src="scripts/main.js"></script>
+
+<!-- Unified Floating Actions Dock (Probar Agente + WhatsApp) -->
+<div class="floating-actions-dock" id="floating-actions-dock" style="opacity: 0; pointer-events: none;">
+  <a href="herramientas.html" class="floating-agent-btn" aria-label="Explorar Herramientas Make it Easy">
+    <span class="material-symbols-outlined icon-pulse">smart_toy</span>
+    <span class="btn-text" data-i18n="nav.try_agent">Explorar Herramientas</span>
+    <span class="badge-free">GRATIS</span>
+  </a>
+
+  <div class="dock-separator" role="separator" aria-hidden="true"></div>
+
+  <a href="https://wa.me/573181154477?text=Hola%2C%20quiero%20agendar%20mi%20diagn%C3%B3stico%20gratuito%20con%20Make%20it%20Easy"
+     class="whatsapp-fab" target="_blank" rel="noopener"
+     aria-label="Chatear por WhatsApp" data-track="whatsapp_click"
+     style="position:relative;">
+    <span class="material-symbols-outlined" style="font-size:1.25rem">chat</span>
+  </a>
+</div>
+
 </body>
 </html>

@@ -53,6 +53,7 @@ const SERVICE_PRICES = {
 const PRICES = SERVICE_PRICES;
 
 let currentLocale = 'es-CO';
+window.currentLocale = currentLocale;
 let translations  = {};
 
 /* ----------- Load translation ----------- */
@@ -62,6 +63,7 @@ async function loadLocale(locale) {
     if (!res.ok) throw new Error(`Could not load ${locale}`);
     translations = await res.json();
     currentLocale = locale;
+    window.currentLocale = currentLocale;
     localStorage.setItem('mie_locale', locale);
     applyTranslations();
     applyPrices();
@@ -276,3 +278,8 @@ export async function initI18n() {
   const locale = (searchLang && LOCALES[searchLang]) ? searchLang : detectLocale();
   await loadLocale(locale);
 }
+
+
+document.addEventListener('reapplyI18n', () => {
+  applyTranslations();
+});

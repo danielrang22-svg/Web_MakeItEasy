@@ -10,7 +10,9 @@
     "plans": "Cotizar",
     "faq": "FAQ",
     "contact": "Contacto",
-    "cta": "Diagnóstico Gratuito"
+    "cta": "Diagnóstico Gratuito",
+    "try_agent": "Explorar Herramientas",
+    "home": "Inicio"
   },
   "hero": {
     "chip": "Automatización con IA · Resultados Reales",
@@ -313,5 +315,136 @@
     "lang_switcher": "Cambiar idioma",
     "back_top": "Volver arriba",
     "whatsapp": "Contactar por WhatsApp"
+  },
+  "agent_tester": {
+    "badge": "Simulador de IA en Vivo",
+    "title": "Prueba tu Agente de IA Gratis",
+    "subtitle": "Selecciona tu tipo de negocio y mira en tiempo real cómo interactuaría un agente inteligente con tus clientes antes de adquirirlo.",
+    "step1_title": "1. Selecciona tu Rubro de Negocio",
+    "step2_title": "2. Selecciona los Objetivos de tu Agente (Puedes elegir varios)",
+    "step2_desc": "Activa las capacidades que deseas que combine tu agente de IA.",
+    "custom_desc_placeholder": "Opcional: Escribe detalles de tu negocio (ej. 'Clínica dental en Bogotá con atención Lunes a Sábado')",
+    "btn_start_simulation": "Iniciar Simulación con mi Agente 🚀",
+    "simulator_header_status": "En Línea • IA Make It Easy",
+    "quick_questions_title": "Preguntas Frecuentes Sugeridas:",
+    "input_placeholder": "Escribe un mensaje como cliente...",
+    "cta_title": "¿Te gusta cómo responde este agente?",
+    "cta_desc": "Podemos instalar este agente personalizado en tu WhatsApp, sitio web o CRM en menos de 24 horas.",
+    "cta_btn": "Agendar Diagnóstico Gratuito 🎯",
+    "businesses": {
+      "restaurant": {
+        "name": "Restaurante / Gastronomía",
+        "icon": "restaurant"
+      },
+      "health": {
+        "name": "Salud / Clínica / Odontología",
+        "icon": "medical_services"
+      },
+      "ecommerce": {
+        "name": "E-Commerce / Tienda de Ropa",
+        "icon": "shopping_bag"
+      },
+      "realestate": {
+        "name": "Inmobiliaria / Bienes Raíces",
+        "icon": "real_estate_agent"
+      },
+      "services": {
+        "name": "Servicios Profesionales / Consultoría",
+        "icon": "work"
+      },
+      "beauty": {
+        "name": "Estética / Barbería / Spa",
+        "icon": "content_cut"
+      },
+      "automotive": {
+        "name": "Talleres / Automotriz"
+      }
+    },
+    "objectives": {
+      "support": {
+        "label": "Servicio al Cliente & Preguntas Frecuentes",
+        "icon": "support_agent"
+      },
+      "sales": {
+        "label": "Ventas & Recomendación de Productos",
+        "icon": "payments"
+      },
+      "booking": {
+        "label": "Agendamiento de Citas & Turnos",
+        "icon": "calendar_month"
+      },
+      "pricing": {
+        "label": "Cotización & Tarifas",
+        "icon": "request_quote"
+      },
+      "qualification": {
+        "label": "Calificación de Leads"
+      },
+      "faq": {
+        "label": "Preguntas Frecuentes"
+      }
+    },
+    "tabs": {
+      "agent": "Agentes IA",
+      "crm": "CRM & Ventas",
+      "erp": "ERP & Finanzas"
+    },
+    "crm": {
+      "title": "CRM Inteligente",
+      "subtitle": "Visualiza tus embudos de venta y cierra más negocios.",
+      "revenue": "Ingresos Totales",
+      "leads": "Nuevos Leads",
+      "conversion": "Conversión",
+      "kanban": {
+        "new": "Nuevos",
+        "contacted": "Contactados",
+        "won": "Ganados"
+      }
+    },
+    "erp": {
+      "title": "ERP & Finanzas",
+      "subtitle": "Control total de tu facturación y automatización contable.",
+      "cashflow": "Flujo de Caja",
+      "expenses": "Gastos Operativos",
+      "balance": "Balance Mensual",
+      "recent_transactions": "Transacciones Recientes"
+    },
+    "step2_badge": "✨ Multi-selección activa"
+  },
+  "crm_mockup": {
+    "status": "En Línea • IA Make It Easy",
+    "vs_prev_month": "↑ +18.4% vs mes anterior",
+    "by_whatsapp": "↑ 92% por Agente de WhatsApp",
+    "auto_close": "↑ Cierre automatizado",
+    "lead1_name": "Carlos Mendoza",
+    "lead1_desc": "Interés en Agente de WhatsApp",
+    "lead1_status": "Alta Prioridad",
+    "lead1_time": "Hace 2m",
+    "lead2_name": "Ana María Gómez",
+    "lead2_desc": "Consulta Cotización ERP",
+    "lead2_status": "Media",
+    "lead2_time": "Hace 15m",
+    "lead3_name": "Inmobiliaria del Sol",
+    "lead3_desc": "Demo de Agendador Citas enviado",
+    "lead3_status": "Demo Agendada",
+    "lead3_time": "Hace 1h",
+    "lead4_name": "Distribuidora Alfa SAS",
+    "lead4_desc": "Plan Enterprise ($1,500/mes)",
+    "lead4_status": "Contrato Firmado",
+    "lead4_time": "Hoy"
+  },
+  "erp_mockup": {
+    "sync_status": "Sincronizado con Siigo / Dian",
+    "months": {
+      "jan": "Ene",
+      "feb": "Feb",
+      "mar": "Mar",
+      "apr": "Abr"
+    },
+    "expense_distribution": "Distribución de Gastos",
+    "payroll": "Nómina",
+    "billing": "Facturación/Op.",
+    "taxes": "Impuestos",
+    "footer": "© 2026 Make it Easy — Intelligent Automation. Todos los derechos reservados."
   }
 }
