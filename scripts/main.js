@@ -243,9 +243,9 @@ function initHeroAnimations() {
   }, "-=1.4");
 
   if (document.getElementById("floating-actions-dock")) {
-    gsap.from("#floating-actions-dock", {
-      opacity: 0,
-      pointerEvents: "none",
+    gsap.to("#floating-actions-dock", {
+      opacity: 1,
+      pointerEvents: "auto",
       duration: 1,
       delay: 1.5,
       ease: "power3.out"
