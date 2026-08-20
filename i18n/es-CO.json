@@ -410,7 +410,16 @@
       "balance": "Balance Mensual",
       "recent_transactions": "Transacciones Recientes"
     },
-    "step2_badge": "✨ Multi-selección activa"
+    "step2_badge": "✨ Multi-selección activa",
+    "back_home": "Volver al Inicio",
+    "select_industry": "Selecciona tu Rubro de Negocio",
+    "select_objectives": "Selecciona los Objetivos",
+    "personality_context": "Personalidad y Contexto",
+    "context_placeholder": "Ej: Quiero que seas un vendedor muy amable, uses emojis y respondas de forma breve...",
+    "agent_inactive": "Agente Inactivo",
+    "configure_agent_desc": "Configura tu rubro, objetivos y contexto en el panel izquierdo y haz clic en Iniciar Simulación para despertar al agente.",
+    "online": "en línea",
+    "start_simulation": "Iniciar Simulación"
   },
   "crm_mockup": {
     "status": "En Línea • IA Make It Easy",
