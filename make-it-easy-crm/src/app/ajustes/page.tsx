@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Settings, Moon, Sun, Trash2, Download, Database, FileSpreadsheet, Users, Sparkles, Plus, Eye, EyeOff, Check, X, Pencil, Zap, AlertCircle } from "lucide-react";
 import { ConfirmDialog, Toast, Modal } from "@/components/ui/SharedUI";
-import * as XLSX from "xlsx";
 import { useLeadsStore } from "@/lib/state/leadsStore";
 
 export default function AjustesPage() {
@@ -146,6 +145,7 @@ export default function AjustesPage() {
             return;
         }
         
+        const XLSX = await import("xlsx");
         const wb = XLSX.utils.book_new();
         
         for (const [key, items] of Object.entries(data)) {

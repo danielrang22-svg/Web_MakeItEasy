@@ -8,7 +8,6 @@ import { PIPELINE_STAGES, formatCurrency, formatDate, getStageConfig } from "@/l
 import { Modal, Toast, Badge } from "@/components/ui/SharedUI";
 import LeadForm from "@/components/leads/LeadForm";
 import Link from "next/link";
-import * as XLSX from "xlsx";
 import {
   TrendingUp, Users, Trophy, ArrowRight, Building2,
   Plus, FolderKanban, Package, Zap, BarChart3, ChevronRight,
@@ -102,12 +101,13 @@ export default function DashboardPage() {
     .slice(0, 4);
 
   // Excel Export Handler
-  const handleExportData = () => {
+  const handleExportData = async () => {
     if (filteredLeads.length === 0 && filteredProyectos.length === 0) {
       setToast({ message: "No hay datos para exportar en este período", type: "error" });
       return;
     }
 
+    const XLSX = await import("xlsx");
     const wb = XLSX.utils.book_new();
 
     if (filteredLeads.length > 0) {
