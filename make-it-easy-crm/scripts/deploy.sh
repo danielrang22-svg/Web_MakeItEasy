@@ -1,19 +1,27 @@
 #!/usr/bin/env bash
 # Deploy seguro del CRM (Make it Easy)
-# - Sincroniza el código que publica GitHub Actions en el webroot.
+# - Sincroniza el código que publica GitHub Actions en el webroot (SKIP_SYNC=1 lo omite).
 # - Nunca toca .env, la base de datos ni los datos de usuario.
 # - Rebuild con Turbopack + salida standalone y reload de pm2 (zero-downtime).
 set -euo pipefail
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  # shellcheck disable=SC1091
+  . "$NVM_DIR/nvm.sh"
+fi
+
+command -v node >/dev/null 2>&1 || { echo "[deploy] ERROR: node no está en PATH"; exit 1; }
 
 APP=/var/www/apps/mie-crm
 SRC=/var/www/html/makeiteasy/make-it-easy-crm
 
 cd "$APP"
 
-if [ -d "$SRC/src" ]; then
+echo "[deploy] $(date -Iseconds) | node $(node -v) | $(pwd)"
+
+if [ "${SKIP_SYNC:-0}" != "1" ] && [ -d "$SRC/src" ]; then
   echo "[deploy] Sincronizando código desde $SRC"
   rsync -a --delete "$SRC/src/" "$APP/src/"
   rsync -a "$SRC/prisma/schema.prisma" "$APP/prisma/schema.prisma"
@@ -21,10 +29,10 @@ if [ -d "$SRC/src" ]; then
     rsync -a "$SRC/prisma/migrations/" "$APP/prisma/migrations/"
   fi
   for f in package.json next.config.ts postcss.config.mjs tsconfig.json; do
-    [ -f "$SRC/$f" ] && rsync -a "$SRC/$f" "$APP/$f"
+    if [ -f "$SRC/$f" ]; then rsync -a "$SRC/$f" "$APP/$f"; fi
   done
 else
-  echo "[deploy] Aviso: no hay código en $SRC, se usa el actual"
+  echo "[deploy] Sync de código omitido, se usa el código local de $APP"
 fi
 
 echo "[deploy] Instalando dependencias"

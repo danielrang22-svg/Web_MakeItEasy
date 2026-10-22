@@ -42,14 +42,11 @@ export async function POST(request: NextRequest) {
 
     console.log("[Deploy] ✅ Solicitud autorizada — iniciando deploy...");
 
-    const nvmInit = `export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`;
-
     // Script de deploy — sin git pull (el código ya está en disco por rsync)
-    // Solo rebuilda y reinicia
+    // deploy.sh resuelve node, instala, migra, compila y recarga pm2.
     const deployScript = [
-      nvmInit,
       `cd "${APP_DIR}"`,
-      `bash "${APP_DIR}/scripts/deploy.sh"`,
+      `bash "${APP_DIR}/scripts/deploy.sh" >> /var/log/mie-crm-deploy.log 2>&1`,
     ].join(" && ");
 
     // Responder inmediatamente y ejecutar en background
