@@ -109,7 +109,6 @@ async function photonRequest(
     lat: String(zone.lat),
     lon: String(zone.lng),
     limit: "50",
-    lang: "es",
   });
   if (tag) params.set("osm_tag", tag);
 
