@@ -6,12 +6,13 @@ import { useEffect, useState } from "react";
 import {
     Home, LayoutDashboard, BarChart3, Users, Building2,
     Briefcase, FileText, Package, FolderKanban, Factory,
-    Settings, HelpCircle, Sparkles, Plus, ShoppingCart, DollarSign
+    Settings, HelpCircle, Sparkles, Plus, ShoppingCart, DollarSign, Radar
 } from "lucide-react";
 
 // Items accesibles por todos los roles
 const ALL_MENU_ITEMS = [
     { href: "/",             icon: Home,            label: "Dashboard",     roles: ["admin", "ventas", "comercial"] },
+    { href: "/radar",        icon: Radar,           label: "Radar",         roles: ["admin", "ventas", "comercial"] },
     { href: "/leads",        icon: Briefcase,       label: "Leads",         roles: ["admin", "ventas", "comercial"] },
     { href: "/kanban",       icon: LayoutDashboard, label: "Pipeline",      roles: ["admin", "ventas", "comercial"] },
     { href: "/contactos",    icon: Users,           label: "Contactos",     roles: ["admin", "ventas", "comercial"] },
