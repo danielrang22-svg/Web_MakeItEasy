@@ -1,0 +1,27 @@
+# Make it Easy — https://makeiteasycol.com
+# Automatización con IA para empresas en Colombia
+
+User-agent: *
+Allow: /
+
+# Rutas internas y assets de desarrollo
+Disallow: /api/
+Disallow: /make-it-easy-crm/
+Disallow: /skills/
+Disallow: /stitch/
+Disallow: /docs/
+
+# Motor de búsqueda de IA (opcional, permitido explícitamente)
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+Sitemap: https://makeiteasycol.com/sitemap.xml

@@ -3,7 +3,7 @@
 Thumbs.db
 .vscode/
 
-# Node (if used in future)
+# Node
 node_modules/
 package-lock.json
 
@@ -14,8 +14,31 @@ package-lock.json
 .windsurf/
 scratch/
 
-# Docs de desarrollo / diseño (no van a producción)
+# Documentación y material de trabajo (no va a producción)
+docs/
 stitch/
 skills/
 skills-lock.json
 SRS_MakeItEasy_Website.md
+README*.md
+*.docx
+*.zip
+*.log
+
+# Scripts y backups locales con credenciales (NUNCA al repo)
+deploy.js
+deploy_vps_1.bat
+VPS.md
+.env
+.env.*
+*.pem
+*.key
+
+# Archivos de prueba / descartados
+original_index.html
+hero-prueba.html
+test.html
+downloaded_main.js
+recovered_agent_*
+scratch_*
+logo-original.svg

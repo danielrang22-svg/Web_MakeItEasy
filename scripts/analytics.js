@@ -3,17 +3,7 @@
    scripts/analytics.js
    ============================================================ */
 
-/* ---- GA4 stub (replace G-XXXXXXXX with real ID) ---- */
-const GA4_ID = 'G-XXXXXXXX'; // TODO: replace with real GA4 Measurement ID
-
-function initGA4() {
-  if (typeof gtag !== 'function') return;
-  gtag('config', GA4_ID, {
-    page_title: document.title,
-    page_location: window.location.href,
-    send_page_view: true,
-  });
-}
+/* ---- GA4: la carga vive en scripts/main.js (respeta consentimiento de cookies) ---- */
 
 /* ---- Structured event tracker ---- */
 function trackEvent(eventName, params = {}) {
@@ -121,14 +111,11 @@ export function initAnalytics() {
   }
 
   // Time on page
-  let startTime = Date.now();
+  const startTime = Date.now();
   window.addEventListener('beforeunload', () => {
     const seconds = Math.round((Date.now() - startTime) / 1000);
-    navigator.sendBeacon?.('/api/beacon', JSON.stringify({ event: 'time_on_page', seconds }));
+    trackEvent('time_on_page', { seconds });
   });
-
-  // Init GA4 if script loaded
-  if (typeof gtag !== 'undefined') initGA4();
 }
 
 export { trackEvent, captureUTM, injectUTMIntoForm };
