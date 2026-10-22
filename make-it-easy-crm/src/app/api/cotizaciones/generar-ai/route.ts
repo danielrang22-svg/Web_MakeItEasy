@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { verifyAuthRole } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { resolveBaseUrl } from '@/lib/ai/providers';
 
 const SYSTEM_PROMPT = `Eres el agente comercial de Make It Easy, una agencia colombiana de automatización de negocios con IA fundada por Daniel, con sede en Bogotá. Generas propuestas comerciales profesionales en español basadas en el brief del cliente.
 
@@ -112,14 +113,14 @@ export async function POST(request: NextRequest) {
 
     // ── Load active Agent and its associated AiConnection ────────────
     const activeAgent = await prisma.agent.findFirst({
-      where: { activo: true },
+      where: { activo: true, proposito: 'cotizaciones' },
       include: { conexion: true },
     });
 
     // Fallback logic: check active agent first, then any openai connection in DB, then env
     let apiKey = activeAgent?.conexion?.apiKey;
     let modelo = activeAgent?.conexion?.modelo || 'gpt-4o-mini';
-    let baseURL = activeAgent?.conexion?.baseUrl;
+    let baseURL = resolveBaseUrl(activeAgent?.conexion?.proveedor ?? 'openai', activeAgent?.conexion?.baseUrl);
     let systemPromptBase = activeAgent?.systemPrompt || SYSTEM_PROMPT;
 
     if (!apiKey) {
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
       if (fallbackConnection?.apiKey) {
         apiKey = fallbackConnection.apiKey;
         modelo = fallbackConnection.modelo || modelo;
-        baseURL = fallbackConnection.baseUrl || baseURL;
+        baseURL = fallbackConnection.baseUrl ? resolveBaseUrl(fallbackConnection.proveedor, fallbackConnection.baseUrl) : baseURL;
       } else {
         apiKey = process.env.OPENAI_API_KEY;
       }

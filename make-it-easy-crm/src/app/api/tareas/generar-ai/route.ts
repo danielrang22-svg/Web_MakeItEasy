@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { resolveBaseUrl } from "@/lib/ai/providers";
 import OpenAI from "openai";
 import { verifyAuthRole } from "@/lib/auth";
 
@@ -16,26 +17,23 @@ export async function POST(request: NextRequest) {
       correcciones 
     } = body;
 
-    // Load active Agent (or fallback to any agent with name containing 'tareas')
+    // Agente activo del propósito "tareas" (con respaldo al primero de ese propósito)
     let activeAgent = await prisma.agent.findFirst({
-      where: { activo: true },
+      where: { activo: true, proposito: 'tareas' },
       include: { conexion: true }
     });
 
-    if (!activeAgent || !activeAgent.nombre.toLowerCase().includes('tarea')) {
-      // Look specifically for a tasks agent if the active one isn't it
-      const tasksAgent = await prisma.agent.findFirst({
-        where: { nombre: { contains: 'Tareas' } },
+    if (!activeAgent) {
+      activeAgent = await prisma.agent.findFirst({
+        where: { proposito: 'tareas' },
+        orderBy: { fechaCreacion: 'desc' },
         include: { conexion: true }
       });
-      if (tasksAgent) {
-        activeAgent = tasksAgent;
-      }
     }
 
     let apiKey = activeAgent?.conexion?.apiKey;
     let modelo = activeAgent?.conexion?.modelo || 'gpt-4o-mini';
-    let baseURL = activeAgent?.conexion?.baseUrl;
+    let baseURL = resolveBaseUrl(activeAgent?.conexion?.proveedor ?? 'openai', activeAgent?.conexion?.baseUrl);
     let systemPromptBase = activeAgent?.systemPrompt;
 
     if (!apiKey) {
@@ -45,7 +43,7 @@ export async function POST(request: NextRequest) {
       apiKey = aiConn?.apiKey || process.env.OPENAI_API_KEY;
       if (aiConn) {
         modelo = aiConn.modelo || modelo;
-        baseURL = aiConn.baseUrl || baseURL;
+        baseURL = aiConn.baseUrl ? resolveBaseUrl(aiConn.proveedor, aiConn.baseUrl) : baseURL;
       }
     }
 

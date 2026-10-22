@@ -30,6 +30,7 @@ model Lead {
   numEmpleados       String?
   procesoAAutomatizar String?
   planInteres        String?
+  radarPlaceId       String?
 
   cotizaciones       Cotizacion[]
   proyectos          Proyecto[]
@@ -523,4 +524,12 @@ model Contrato {
   @@index([cotizacionId])
   @@index([proyectoId])
   @@map("contratos")
+}
+
+model RadarUsage {
+  month       String   @id
+  placesCalls Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@map("radar_usage")
 }

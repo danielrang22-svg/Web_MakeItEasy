@@ -16,28 +16,39 @@ export default function AjustesPage() {
     // ── AI Connection state ──────────────────────────────────────────
     type AiConnectionRow = {
         id: string; nombre: string; proveedor: string; modelo: string;
-        apiKey: string; baseUrl?: string | null;
+        apiKey: string; baseUrl?: string | null; baseUrlEfectiva?: string | null;
         fechaCreacion: string;
     };
     // ── Agent state ──────────────────────────────────────────
     type AgentRow = {
         id: string; nombre: string; descripcion?: string | null; systemPrompt: string;
-        activo: boolean; connectionId: string;
+        proposito: string; activo: boolean; connectionId: string;
         conexion?: AiConnectionRow | null;
         fechaCreacion: string;
     };
 
+    const PROPOSITOS = [
+        { value: "cotizaciones", label: "Cotizaciones" },
+        { value: "tareas", label: "Tareas" },
+        { value: "radar", label: "Radar de clientes" },
+        { value: "personalizado", label: "Personalizado" },
+    ];
+
     const PROVEEDORES = [
-        { value: "openai",    label: "OpenAI",          models: ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"] },
-        { value: "deepseek",  label: "DeepSeek",        models: ["deepseek-chat", "deepseek-reasoner"] },
-        { value: "gemini",    label: "Google Gemini",   models: ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"] },
-        { value: "anthropic", label: "Anthropic Claude",models: ["claude-3-5-haiku-20241022", "claude-sonnet-4-5"] },
+        { value: "openai",     label: "OpenAI",                        models: ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini", "gpt-4.1"], baseUrl: "" },
+        { value: "deepseek",   label: "DeepSeek",                      models: ["deepseek-chat", "deepseek-reasoner"], baseUrl: "https://api.deepseek.com" },
+        { value: "gemini",     label: "Google Gemini",                 models: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"], baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/" },
+        { value: "openrouter", label: "OpenRouter",                    models: ["openai/gpt-4o-mini", "google/gemini-2.5-flash", "deepseek/deepseek-chat"], baseUrl: "https://openrouter.ai/api/v1" },
+        { value: "custom",     label: "Custom (compatible con OpenAI)", models: [], baseUrl: "" },
+        { value: "anthropic",  label: "Anthropic Claude (no disponible)", models: ["claude-3-5-haiku-20241022", "claude-sonnet-4-5"], baseUrl: "" },
     ];
     const PROVEEDOR_COLORS: Record<string, string> = {
-        openai:    "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300",
-        deepseek:  "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300",
-        gemini:    "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300",
-        anthropic: "bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300",
+        openai:     "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300",
+        deepseek:   "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300",
+        gemini:     "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300",
+        openrouter: "bg-cyan-100 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300",
+        custom:     "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
+        anthropic:  "bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300",
     };
 
     const [aiConfigs, setAiConfigs] = useState<AiConnectionRow[]>([]);
@@ -47,13 +58,15 @@ export default function AjustesPage() {
     const [showApiKey, setShowApiKey] = useState(false);
     const [aiForm, setAiForm] = useState({ nombre: "", proveedor: "openai", modelo: "gpt-4o-mini", apiKey: "", baseUrl: "" });
     const [aiLoading, setAiLoading] = useState(false);
+    const [testingAi, setTestingAi] = useState<string | null>(null);
+    const [aiStatus, setAiStatus] = useState<Record<string, { ok: boolean; message: string }>>({});
 
     // Agents state
     const [agents, setAgents] = useState<AgentRow[]>([]);
     const [showAgentForm, setShowAgentForm] = useState(false);
     const [editingAgent, setEditingAgent] = useState<AgentRow | null>(null);
     const [deletingAgent, setDeletingAgent] = useState<AgentRow | null>(null);
-    const [agentForm, setAgentForm] = useState({ nombre: "", descripcion: "", systemPrompt: "", connectionId: "", activo: false });
+    const [agentForm, setAgentForm] = useState({ nombre: "", descripcion: "", proposito: "cotizaciones", systemPrompt: "", connectionId: "", activo: false });
     const [agentLoading, setAgentLoading] = useState(false);
     // ─────────────────────────────────────────────────────────────
 
@@ -66,7 +79,9 @@ export default function AjustesPage() {
     async function loadAiConfigs() {
         try {
             const res = await fetch("/api/admin/ai-config");
-            if (res.ok) setAiConfigs(await res.json());
+            if (!res.ok) return;
+            const data = await res.json();
+            setAiConfigs(Array.isArray(data) ? data : (data.connections ?? []));
         } catch {}
     }
 
@@ -215,6 +230,16 @@ export default function AjustesPage() {
         setShowAiForm(true);
     }
 
+    function handleProviderChange(value: string) {
+        const provider = PROVEEDORES.find(p => p.value === value);
+        setAiForm(f => ({
+            ...f,
+            proveedor: value,
+            modelo: provider?.models[0] ?? f.modelo,
+            baseUrl: provider?.baseUrl ?? "",
+        }));
+    }
+
     async function handleSaveAgent() {
         setAgentLoading(true);
         try {
@@ -254,9 +279,60 @@ export default function AjustesPage() {
             });
             if (!res.ok) throw new Error("Error al activar");
             loadAgents();
-            setToast({ message: "Agente activado como principal", type: "success" });
+            setToast({ message: "Agente activado para su propósito", type: "success" });
         } catch {
             setToast({ message: "Error al activar agente", type: "error" });
+        }
+    }
+
+    /** Cambia la API de un agente al instante (sin reiniciar nada). */
+    async function handleChangeAgentConnection(agentId: string, connectionId: string) {
+        const previous = agents;
+        const connection = aiConfigs.find(c => c.id === connectionId) ?? null;
+
+        setAgents(prev => prev.map(a =>
+            a.id === agentId ? { ...a, connectionId, conexion: connection } : a
+        ));
+
+        try {
+            const res = await fetch(`/api/admin/agentes/${agentId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ connectionId }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || "Error al cambiar la API");
+
+            setAgents(prev => prev.map(a => a.id === agentId ? data : a));
+            setToast({
+                message: `Agente actualizado: ahora usa ${connection?.nombre ?? "otra API"}${connection ? ` (${connection.proveedor}/${connection.modelo})` : ""}`,
+                type: "success",
+            });
+        } catch (err) {
+            setAgents(previous);
+            setToast({ message: err instanceof Error ? err.message : "Error al cambiar la API", type: "error" });
+        }
+    }
+
+    async function handleTestConnection(config: AiConnectionRow) {
+        setTestingAi(config.id);
+        try {
+            const res = await fetch(`/api/admin/ai-config/${config.id}/test`, { method: "POST" });
+            const data = await res.json().catch(() => ({}));
+            if (data.ok) {
+                const message = `OK · ${data.latencyMs} ms · ${data.model}`;
+                setAiStatus(s => ({ ...s, [config.id]: { ok: true, message } }));
+                setToast({ message: `Conexión "${config.nombre}" responde bien (${data.latencyMs} ms)`, type: "success" });
+            } else {
+                const message = data.error || "La conexión no respondió";
+                setAiStatus(s => ({ ...s, [config.id]: { ok: false, message } }));
+                setToast({ message: `Error en "${config.nombre}": ${message}`, type: "error" });
+            }
+        } catch {
+            setAiStatus(s => ({ ...s, [config.id]: { ok: false, message: "No se pudo probar la conexión" } }));
+            setToast({ message: "No se pudo probar la conexión", type: "error" });
+        } finally {
+            setTestingAi(null);
         }
     }
 
@@ -275,7 +351,7 @@ export default function AjustesPage() {
     function openCreateAgent() {
         setEditingAgent(null);
         const defaultConn = aiConfigs.length > 0 ? aiConfigs[0].id : "";
-        setAgentForm({ nombre: "", descripcion: "", systemPrompt: "", connectionId: defaultConn, activo: false });
+        setAgentForm({ nombre: "", descripcion: "", proposito: "cotizaciones", systemPrompt: "", connectionId: defaultConn, activo: false });
         setShowAgentForm(true);
     }
 
@@ -284,6 +360,7 @@ export default function AjustesPage() {
         setAgentForm({
             nombre: a.nombre,
             descripcion: a.descripcion || "",
+            proposito: a.proposito || "personalizado",
             systemPrompt: a.systemPrompt,
             connectionId: a.connectionId,
             activo: a.activo
@@ -475,14 +552,27 @@ export default function AjustesPage() {
                                         </span>
                                         <span className="text-xs text-muted-foreground font-mono">{config.modelo}</span>
                                         <span className="text-xs text-muted-foreground font-mono">{config.apiKey}</span>
-                                        {config.baseUrl && (
-                                            <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground font-mono truncate max-w-[150px]" title={config.baseUrl}>
-                                                URL: {config.baseUrl}
+                                        {(config.baseUrlEfectiva || config.baseUrl) && (
+                                            <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground font-mono truncate max-w-[220px]" title={config.baseUrlEfectiva || config.baseUrl || ""}>
+                                                {config.baseUrlEfectiva || config.baseUrl}
+                                            </span>
+                                        )}
+                                        {aiStatus[config.id] && (
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${aiStatus[config.id].ok ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300" : "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300"}`}>
+                                                {aiStatus[config.id].message}
                                             </span>
                                         )}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                        onClick={() => handleTestConnection(config)}
+                                        disabled={testingAi === config.id}
+                                        title="Probar conexión"
+                                        className="p-1.5 text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 rounded-lg transition-colors disabled:opacity-40"
+                                    >
+                                        <Zap size={14} className={testingAi === config.id ? "animate-pulse" : ""} />
+                                    </button>
                                     <button
                                         onClick={() => openEditAi(config)}
                                         title="Editar"
@@ -510,7 +600,7 @@ export default function AjustesPage() {
                             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                                 <Sparkles size={12} className="text-violet-500" /> Agentes de IA
                             </h3>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">Define las instrucciones, prompts y asocia la conexión de API que usará cada agente.</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Define el prompt de cada agente y cámbiale la API cuando quieras: el cambio se aplica en la siguiente llamada.</p>
                         </div>
                         <button
                             onClick={openCreateAgent}
@@ -547,9 +637,32 @@ export default function AjustesPage() {
                                         <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{agent.descripcion}</p>
                                     )}
                                     <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                        <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground font-mono">
-                                            Conexión: {agent.conexion?.nombre || "Ninguna (Eliminada)"} ({agent.conexion?.proveedor?.toUpperCase()} - {agent.conexion?.modelo})
+                                        <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                                            {PROPOSITOS.find(p => p.value === agent.proposito)?.label ?? "Personalizado"}
                                         </span>
+                                        <label className="text-[10px] text-muted-foreground">API:</label>
+                                        <select
+                                            value={agent.connectionId}
+                                            onChange={(e) => handleChangeAgentConnection(agent.id, e.target.value)}
+                                            title="Cambiar la API de este agente (se aplica al instante)"
+                                            className="text-[11px] px-2 py-1 bg-muted rounded-lg ring-1 ring-border outline-none focus:ring-2 focus:ring-cyan-500 max-w-[260px]"
+                                        >
+                                            {aiConfigs.map(c => (
+                                                <option key={c.id} value={c.id}>
+                                                    {c.nombre} · {c.proveedor}/{c.modelo}
+                                                </option>
+                                            ))}
+                                            {!aiConfigs.some(c => c.id === agent.connectionId) && (
+                                                <option value={agent.connectionId}>
+                                                    {agent.conexion?.nombre ?? "Conexión eliminada"}
+                                                </option>
+                                            )}
+                                        </select>
+                                        {agent.conexion && (
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${PROVEEDOR_COLORS[agent.conexion.proveedor] ?? "bg-muted text-muted-foreground"}`}>
+                                                {agent.conexion.proveedor.toUpperCase()} · {agent.conexion.modelo}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1.5 shrink-0">
@@ -600,24 +713,31 @@ export default function AjustesPage() {
                             <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Proveedor *</label>
                             <select
                                 value={aiForm.proveedor}
-                                onChange={e => {
-                                    const prov = PROVEEDORES.find(p => p.value === e.target.value);
-                                    setAiForm(f => ({ ...f, proveedor: e.target.value, modelo: prov?.models[0] ?? "" }));
-                                }}
+                                onChange={e => handleProviderChange(e.target.value)}
                                 className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
                             >
-                                {PROVEEDORES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                                {PROVEEDORES.map(p => (
+                                    <option key={p.value} value={p.value} disabled={p.value === "anthropic"}>
+                                        {p.label}
+                                    </option>
+                                ))}
                             </select>
+                            {aiForm.proveedor === "anthropic" && (
+                                <p className="text-[10px] text-red-500 mt-1">Anthropic no es compatible con el formato actual. Usa OpenAI, DeepSeek, Gemini u OpenRouter.</p>
+                            )}
                         </div>
                         <div>
                             <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Modelo *</label>
-                            <select
+                            <input
+                                list="model-options"
                                 value={aiForm.modelo}
                                 onChange={e => setAiForm(f => ({ ...f, modelo: e.target.value }))}
-                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
-                            >
-                                {selectedProveedor?.models.map(m => <option key={m} value={m}>{m}</option>)}
-                            </select>
+                                placeholder="Escribe o elige un modelo"
+                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm font-mono"
+                            />
+                            <datalist id="model-options">
+                                {selectedProveedor?.models.map(m => <option key={m} value={m} />)}
+                            </datalist>
                         </div>
                         <div className="col-span-2">
                             <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
@@ -640,15 +760,20 @@ export default function AjustesPage() {
                                 </button>
                             </div>
                         </div>
-                        {(aiForm.proveedor === "deepseek" || aiForm.proveedor === "gemini") && (
+                        {aiForm.proveedor !== "openai" && aiForm.proveedor !== "anthropic" && (
                             <div className="col-span-2">
-                                <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Base URL (opcional)</label>
+                                <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">
+                                    Base URL {aiForm.proveedor === "custom" ? "*" : "(opcional)"}
+                                </label>
                                 <input
                                     value={aiForm.baseUrl}
                                     onChange={e => setAiForm(f => ({ ...f, baseUrl: e.target.value }))}
-                                    placeholder={aiForm.proveedor === "deepseek" ? "https://api.deepseek.com" : "https://generativelanguage.googleapis.com/v1beta/openai/"}
+                                    placeholder={selectedProveedor?.baseUrl || "https://tu-proveedor.com/v1"}
                                     className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm font-mono"
                                 />
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                    Se rellena automáticamente según el proveedor y puedes sobrescribirla.
+                                </p>
                             </div>
                         )}
                     </div>
@@ -656,7 +781,7 @@ export default function AjustesPage() {
                     <div className="flex gap-3 pt-2">
                         <button
                             onClick={handleSaveAiConfig}
-                            disabled={aiLoading || !aiForm.nombre || !aiForm.proveedor || !aiForm.modelo || (!editingAi && !aiForm.apiKey)}
+                            disabled={aiLoading || aiForm.proveedor === "anthropic" || !aiForm.nombre || !aiForm.proveedor || !aiForm.modelo || (!editingAi && !aiForm.apiKey) || (aiForm.proveedor === "custom" && !aiForm.baseUrl)}
                             className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all"
                         >
                             {aiLoading ? "Guardando..." : editingAi ? "Guardar Cambios" : "Crear Conexión"}
@@ -689,6 +814,17 @@ export default function AjustesPage() {
                                 placeholder="Ej: Agente entrenado para cotizar productos de imprenta..."
                                 className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
                             />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Propósito *</label>
+                            <select
+                                value={agentForm.proposito}
+                                onChange={e => setAgentForm(f => ({ ...f, proposito: e.target.value }))}
+                                className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-violet-500 outline-none text-sm"
+                            >
+                                {PROPOSITOS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                            </select>
+                            <p className="text-[10px] text-muted-foreground mt-1">Solo puede haber un agente activo por propósito.</p>
                         </div>
                         <div>
                             <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Conexión de API Asociada *</label>
