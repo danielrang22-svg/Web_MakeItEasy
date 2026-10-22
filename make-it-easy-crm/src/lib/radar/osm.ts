@@ -8,10 +8,12 @@ const NOMINATIM = "https://nominatim.openstreetmap.org/search";
 const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
 ];
 
 const zoneCache = new Map<string, { at: number; zone: RadarZone }>();
 const searchCache = new Map<string, { at: number; data: RadarBusiness[] }>();
+const inFlight = new Map<string, Promise<{ zone: RadarZone; businesses: RadarBusiness[]; cached: boolean }>>();
 
 const ZONE_TTL = 1000 * 60 * 60 * 24 * 30;
 const SEARCH_TTL = 1000 * 60 * 10;
@@ -33,7 +35,7 @@ export async function geocodeZone(zona: string): Promise<RadarZone> {
   const url = `${NOMINATIM}?format=jsonv2&limit=1&countrycodes=es&q=${encodeURIComponent(zona)}`;
   const res = await fetch(url, {
     headers: { "User-Agent": UA, Accept: "application/json" },
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!res.ok) {
@@ -118,7 +120,7 @@ async function runOverpass(query: string): Promise<OverpassElement[]> {
           Accept: "application/json",
         },
         body: new URLSearchParams({ data: query }),
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(15000),
       });
 
       if (!res.ok) {
@@ -134,8 +136,8 @@ async function runOverpass(query: string): Promise<OverpassElement[]> {
   }
 
   throw new RadarUpstreamError(
-    `OpenStreetMap no respondió. ${lastError.slice(0, 180)}`,
-    502
+    `OpenStreetMap está tardando más de lo normal. Reintenta en unos segundos. (${lastError.slice(0, 120)})`,
+    504
   );
 }
 
@@ -159,63 +161,75 @@ export async function searchOsm(
     return { zone: await geocodeZone(zona), businesses: hit.data, cached: true };
   }
 
-  const zone = await geocodeZone(zona);
-  const query = buildOverpassQuery(zone.bbox, nicho, keyword);
-  const elements = await runOverpass(query);
+  const running = inFlight.get(cacheKey);
+  if (running) return running;
 
-  const categoryLabel = findCategory(nicho)?.label ?? (keyword || "Búsqueda libre");
-  const byId = new Map<string, RadarBusiness>();
+  const promise = (async () => {
+    const zone = await geocodeZone(zona);
+    const query = buildOverpassQuery(zone.bbox, nicho, keyword);
+    const elements = await runOverpass(query);
 
-  for (const el of elements) {
-    const tags = el.tags ?? {};
-    if (Object.keys(tags).length === 0) continue;
+    const categoryLabel = findCategory(nicho)?.label ?? (keyword || "Búsqueda libre");
+    const byId = new Map<string, RadarBusiness>();
 
-    const lat = el.lat ?? el.center?.lat ?? null;
-    const lng = el.lon ?? el.center?.lon ?? null;
-    const name = (tags.name || tags.brand || "").trim();
-    const phone = (tags.phone || tags["contact:phone"] || "").split(";")[0].trim();
-    const rawWebsite = tags.website || tags["contact:website"] || tags.url || "";
-    const website = rawWebsite ? normalizeUrl(rawWebsite) : "";
-    const websiteKind = classifyWebsite(website);
+    for (const el of elements) {
+      const tags = el.tags ?? {};
+      if (Object.keys(tags).length === 0) continue;
 
-    const { score, breakdown } = scoreFromOsm({
-      name,
-      websiteKind,
-      phone,
-      street: tags["addr:street"],
-      housenumber: tags["addr:housenumber"],
-      openingHours: tags.opening_hours,
-      brand: tags.brand,
-    });
+      const lat = el.lat ?? el.center?.lat ?? null;
+      const lng = el.lon ?? el.center?.lon ?? null;
+      const name = (tags.name || tags.brand || "").trim();
+      const phone = (tags.phone || tags["contact:phone"] || "").split(";")[0].trim();
+      const rawWebsite = tags.website || tags["contact:website"] || tags.url || "";
+      const website = rawWebsite ? normalizeUrl(rawWebsite) : "";
+      const websiteKind = classifyWebsite(website);
 
-    const id = `osm:${el.type}/${el.id}`;
-    byId.set(id, {
-      id,
-      source: "osm",
-      name: name || "(sin nombre)",
-      category: categoryLabel,
-      address: buildAddress(tags),
-      phone,
-      website,
-      websiteKind,
-      lat,
-      lng,
-      mapsUrl:
-        lat != null && lng != null
-          ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=19/${lat}/${lng}`
-          : `https://www.openstreetmap.org/${el.type}/${el.id}`,
-      rating: null,
-      reviews: null,
-      tags,
-      score,
-      breakdown,
-    });
+      const { score, breakdown } = scoreFromOsm({
+        name,
+        websiteKind,
+        phone,
+        street: tags["addr:street"],
+        housenumber: tags["addr:housenumber"],
+        openingHours: tags.opening_hours,
+        brand: tags.brand,
+      });
+
+      const id = `osm:${el.type}/${el.id}`;
+      byId.set(id, {
+        id,
+        source: "osm",
+        name: name || "(sin nombre)",
+        category: categoryLabel,
+        address: buildAddress(tags),
+        phone,
+        website,
+        websiteKind,
+        lat,
+        lng,
+        mapsUrl:
+          lat != null && lng != null
+            ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=19/${lat}/${lng}`
+            : `https://www.openstreetmap.org/${el.type}/${el.id}`,
+        rating: null,
+        reviews: null,
+        tags,
+        score,
+        breakdown,
+      });
+    }
+
+    const businesses = [...byId.values()].sort((a, b) => b.score - a.score);
+    searchCache.set(cacheKey, { at: Date.now(), data: businesses });
+
+    return { zone, businesses, cached: false };
+  })();
+
+  inFlight.set(cacheKey, promise);
+  try {
+    return await promise;
+  } finally {
+    inFlight.delete(cacheKey);
   }
-
-  const businesses = [...byId.values()].sort((a, b) => b.score - a.score);
-  searchCache.set(cacheKey, { at: Date.now(), data: businesses });
-
-  return { zone, businesses, cached: false };
 }
 
 async function safeText(res: Response): Promise<string> {

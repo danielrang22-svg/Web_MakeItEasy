@@ -271,17 +271,23 @@ export default function RadarPage() {
       {error && (
         <div className="mt-4 flex items-start gap-3 p-3 rounded-xl bg-red-500/10 ring-1 ring-red-500/30 text-xs text-red-300">
           <AlertCircle size={15} className="shrink-0 mt-0.5" />
-          <div>
+          <div className="flex-1">
             <strong className="block">No se pudo completar la búsqueda</strong>
             <span>{error}</span>
           </div>
+          <button
+            onClick={() => handleSearch()}
+            className="shrink-0 px-2.5 py-1.5 rounded-lg ring-1 ring-red-500/40 font-semibold hover:bg-red-500/10"
+          >
+            Reintentar
+          </button>
         </div>
       )}
 
       {loading && (
         <div className="mt-4 bg-card ring-1 ring-border rounded-2xl p-8 text-center text-sm text-muted-foreground">
           <Loader2 size={22} className="animate-spin mx-auto mb-3 text-cyan-400" />
-          Consultando OpenStreetMap… puede tardar unos segundos.
+          Consultando OpenStreetMap… suele tardar entre 3 y 15 segundos.
         </div>
       )}
 
