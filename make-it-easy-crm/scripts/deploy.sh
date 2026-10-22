@@ -36,14 +36,30 @@ else
 fi
 
 echo "[deploy] Instalando dependencias"
-npm install --no-audit --no-fund --loglevel=error
+# --include=dev es obligatorio: el webhook corre con NODE_ENV=production y
+# sin esto npm omite typescript/tailwind y el build falla.
+NODE_ENV=development npm install --include=dev --no-audit --no-fund --loglevel=error
 
 echo "[deploy] Prisma generate + migrate"
 npx prisma generate
 npx prisma migrate deploy
 
 echo "[deploy] Build"
-NEXT_TELEMETRY_DISABLED=1 npm run build
+# El build se ejecuta con entorno limpio: si hereda las variables del proceso
+# de Next (cuando lo dispara /api/deploy) `next build` falla.
+set -a
+# shellcheck disable=SC1090
+. "$APP/.env"
+set +a
+env -i \
+  HOME="$HOME" \
+  PATH="$PATH" \
+  TMPDIR="${TMPDIR:-/tmp}" \
+  NODE_ENV=production \
+  NEXT_TELEMETRY_DISABLED=1 \
+  DATABASE_URL="${DATABASE_URL:-}" \
+  AUTH_SECRET="${AUTH_SECRET:-}" \
+  npm run build
 
 echo "[deploy] Preparando standalone"
 rm -rf "$APP/.next/standalone/.next/static"
