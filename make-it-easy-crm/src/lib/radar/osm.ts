@@ -15,6 +15,22 @@ const zoneCache = new Map<string, { at: number; zone: RadarZone }>();
 const searchCache = new Map<string, { at: number; data: RadarBusiness[]; provider: RadarProvider }>();
 const inFlight = new Map<string, Promise<SearchOutcome>>();
 
+let nominatimChain: Promise<unknown> = Promise.resolve();
+let lastNominatimAt = 0;
+
+/** Nominatim exige 1 petición por segundo: serializamos y espaciamos. */
+function nominatimFetch(url: string): Promise<Response> {
+  const run = async () => {
+    const wait = Math.max(0, 1100 - (Date.now() - lastNominatimAt));
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastNominatimAt = Date.now();
+    return fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" } });
+  };
+  const next = nominatimChain.then(run, run);
+  nominatimChain = next.catch(() => undefined);
+  return next;
+}
+
 const ZONE_TTL = 1000 * 60 * 60 * 24 * 30;
 const SEARCH_TTL = 1000 * 60 * 60 * 6;
 
@@ -42,10 +58,7 @@ export async function geocodeZone(zona: string): Promise<RadarZone> {
   if (hit && Date.now() - hit.at < ZONE_TTL) return hit.zone;
 
   const url = `${NOMINATIM}/search?format=jsonv2&limit=1&countrycodes=es&q=${encodeURIComponent(zona)}`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": UA, Accept: "application/json" },
-    signal: AbortSignal.timeout(15000),
-  });
+  const res = await nominatimFetch(url);
 
   if (!res.ok) {
     throw new RadarUpstreamError(
@@ -147,15 +160,41 @@ async function lookupDetails(ids: string[]): Promise<LookupItem[]> {
   for (let i = 0; i < ids.length; i += 40) {
     const batch = ids.slice(i, i + 40);
     const url = `${NOMINATIM}/lookup?osm_ids=${batch.join(",")}&format=jsonv2&extratags=1&addressdetails=1`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": UA, Accept: "application/json" },
-      signal: AbortSignal.timeout(15000),
-    });
+    const res = await nominatimFetch(url);
     if (!res.ok) continue;
     const list = (await res.json()) as LookupItem[];
     out.push(...list);
   }
   return out;
+}
+
+/** Nominatim responde "node"/"way"/"relation"; Photon usa "N"/"W"/"R". */
+function normalizeOsmType(type: string | undefined): string {
+  switch ((type || "").toLowerCase()) {
+    case "node":
+    case "n":
+      return "N";
+    case "way":
+    case "w":
+      return "W";
+    case "relation":
+    case "r":
+      return "R";
+    default:
+      return "";
+  }
+}
+
+function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
 }
 
 async function searchPhoton(
@@ -182,12 +221,19 @@ async function searchPhoton(
   }
   if (!anyOk) throw new RadarUpstreamError("No se pudo consultar el buscador de OpenStreetMap.");
 
-  // Deduplicar por osm id
+  // Deduplicar por osm id y limitar a la zona (25 km del centro)
   const unique = new Map<string, PhotonFeature>();
   for (const f of features) {
     const props = f.properties ?? {};
     if (!props.osm_type || !props.osm_id) continue;
-    const key = `${props.osm_type}${props.osm_id}`;
+
+    const coords = f.geometry?.coordinates;
+    if (coords) {
+      const km = distanceKm(zone.lat, zone.lng, coords[1], coords[0]);
+      if (km > 25) continue;
+    }
+
+    const key = `${normalizeOsmType(props.osm_type)}${props.osm_id}`;
     if (!unique.has(key)) unique.set(key, f);
   }
 
@@ -195,7 +241,8 @@ async function searchPhoton(
   const details = await lookupDetails(ids);
   const detailByKey = new Map<string, LookupItem>();
   for (const d of details) {
-    if (d.osm_type && d.osm_id) detailByKey.set(`${d.osm_type}${d.osm_id}`, d);
+    const key = `${normalizeOsmType(d.osm_type)}${d.osm_id}`;
+    if (key.length > 1) detailByKey.set(key, d);
   }
 
   const categoryLabel = category?.label ?? (keyword || "Búsqueda libre");
