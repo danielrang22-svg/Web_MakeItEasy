@@ -43,18 +43,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Elige un nicho o escribe una palabra clave.' }, { status: 400 });
     }
 
-    const { zone, businesses, cached } = await searchOsm(zona, nicho, keyword);
+    const { zone, businesses, cached, provider } = await searchOsm(zona, nicho, keyword);
     const filtered = applyFilters(businesses, body);
+
+    const warnings = [
+      'Fuente gratuita: OpenStreetMap. No incluye reseñas ni valoraciones de Google, así que la puntuación se calcula con web, teléfono, dirección y horario.',
+    ];
+    if (provider === 'overpass') {
+      warnings.push('Se usó el respaldo de Overpass porque el buscador rápido no respondió; la búsqueda puede haber tardado más.');
+    }
 
     return NextResponse.json({
       zone,
       businesses: filtered,
       source: 'osm',
+      provider,
       total: filtered.length,
       cached,
-      warnings: [
-        'Fuente gratuita: OpenStreetMap. No incluye reseñas ni valoraciones de Google, así que la puntuación se calcula con web, teléfono, dirección y horario.',
-      ],
+      warnings,
     });
   } catch (error) {
     if (error instanceof RadarUpstreamError) {

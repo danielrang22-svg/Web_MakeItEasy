@@ -10,6 +10,7 @@ export interface RadarBusiness {
   /** Identificador estable: "osm:node/123" o "google:<placeId>" */
   id: string;
   source: RadarSource;
+  provider?: 'photon' | 'overpass';
   name: string;
   category: string;
   address: string;
@@ -47,6 +48,7 @@ export interface RadarSearchResult {
   zone: RadarZone;
   businesses: RadarBusiness[];
   source: RadarSource;
+  provider?: 'photon' | 'overpass';
   total: number;
   warnings: string[];
   cached: boolean;

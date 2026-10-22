@@ -4,18 +4,28 @@ import type { RadarBusiness, RadarZone } from "./types";
 import { findCategory, RADAR_CATEGORIES } from "./categories";
 
 const UA = "MakeItEasy-Radar/1.0 (contacto: daniel.makeiteasy@gmail.com)";
-const NOMINATIM = "https://nominatim.openstreetmap.org/search";
+const NOMINATIM = "https://nominatim.openstreetmap.org";
+const PHOTON = "https://photon.komoot.io/api/";
 const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
 ];
 
 const zoneCache = new Map<string, { at: number; zone: RadarZone }>();
-const searchCache = new Map<string, { at: number; data: RadarBusiness[] }>();
-const inFlight = new Map<string, Promise<{ zone: RadarZone; businesses: RadarBusiness[]; cached: boolean }>>();
+const searchCache = new Map<string, { at: number; data: RadarBusiness[]; provider: RadarProvider }>();
+const inFlight = new Map<string, Promise<SearchOutcome>>();
 
 const ZONE_TTL = 1000 * 60 * 60 * 24 * 30;
 const SEARCH_TTL = 1000 * 60 * 60 * 6;
+
+export type RadarProvider = "photon" | "overpass";
+
+export interface SearchOutcome {
+  zone: RadarZone;
+  businesses: RadarBusiness[];
+  cached: boolean;
+  provider: RadarProvider;
+}
 
 export class RadarUpstreamError extends Error {
   status: number;
@@ -31,10 +41,10 @@ export async function geocodeZone(zona: string): Promise<RadarZone> {
   const hit = zoneCache.get(key);
   if (hit && Date.now() - hit.at < ZONE_TTL) return hit.zone;
 
-  const url = `${NOMINATIM}?format=jsonv2&limit=1&countrycodes=es&q=${encodeURIComponent(zona)}`;
+  const url = `${NOMINATIM}/search?format=jsonv2&limit=1&countrycodes=es&q=${encodeURIComponent(zona)}`;
   const res = await fetch(url, {
     headers: { "User-Agent": UA, Accept: "application/json" },
-    signal: AbortSignal.timeout(45000),
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!res.ok) {
@@ -71,6 +81,200 @@ export async function geocodeZone(zona: string): Promise<RadarZone> {
   return zone;
 }
 
+/* ────────────────────────── Photon (rápido) ────────────────────────── */
+
+interface PhotonFeature {
+  geometry?: { coordinates?: [number, number] };
+  properties?: {
+    osm_type?: string;
+    osm_id?: number;
+    name?: string;
+    street?: string;
+    housenumber?: string;
+    postcode?: string;
+    city?: string;
+    district?: string;
+    osm_key?: string;
+    osm_value?: string;
+  };
+}
+
+async function photonRequest(
+  q: string,
+  zone: RadarZone,
+  tag?: string
+): Promise<PhotonFeature[]> {
+  const params = new URLSearchParams({
+    q,
+    lat: String(zone.lat),
+    lon: String(zone.lng),
+    limit: "50",
+    lang: "es",
+  });
+  if (tag) params.set("osm_tag", tag);
+
+  const res = await fetch(`${PHOTON}?${params.toString()}`, {
+    headers: { "User-Agent": UA, Accept: "application/json" },
+    signal: AbortSignal.timeout(12000),
+  });
+
+  if (!res.ok) {
+    throw new RadarUpstreamError(`Photon ${res.status}: ${await safeText(res)}`, res.status);
+  }
+
+  const json = (await res.json()) as { features?: PhotonFeature[] };
+  return json.features ?? [];
+}
+
+/* ─────────────────── Nominatim lookup (detalles) ─────────────────── */
+
+interface LookupItem {
+  osm_type?: string;
+  osm_id?: number;
+  name?: string;
+  display_name?: string;
+  lat?: string;
+  lon?: string;
+  category?: string;
+  type?: string;
+  address?: Record<string, string>;
+  extratags?: Record<string, string>;
+}
+
+async function lookupDetails(ids: string[]): Promise<LookupItem[]> {
+  if (ids.length === 0) return [];
+
+  const out: LookupItem[] = [];
+  for (let i = 0; i < ids.length; i += 40) {
+    const batch = ids.slice(i, i + 40);
+    const url = `${NOMINATIM}/lookup?osm_ids=${batch.join(",")}&format=jsonv2&extratags=1&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": UA, Accept: "application/json" },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) continue;
+    const list = (await res.json()) as LookupItem[];
+    out.push(...list);
+  }
+  return out;
+}
+
+async function searchPhoton(
+  zone: RadarZone,
+  nicho: string,
+  keyword: string
+): Promise<RadarBusiness[]> {
+  const category = findCategory(nicho);
+  const tags = category?.osm ?? [];
+  const q = keyword || category?.photonQuery || category?.label || nicho;
+
+  const requests = tags.length
+    ? tags.map(([k, v]) => photonRequest(q, zone, `${k}:${v}`))
+    : [photonRequest(q, zone)];
+
+  const responses = await Promise.allSettled(requests);
+  const features: PhotonFeature[] = [];
+  let anyOk = false;
+  for (const r of responses) {
+    if (r.status === "fulfilled") {
+      anyOk = true;
+      features.push(...r.value);
+    }
+  }
+  if (!anyOk) throw new RadarUpstreamError("No se pudo consultar el buscador de OpenStreetMap.");
+
+  // Deduplicar por osm id
+  const unique = new Map<string, PhotonFeature>();
+  for (const f of features) {
+    const props = f.properties ?? {};
+    if (!props.osm_type || !props.osm_id) continue;
+    const key = `${props.osm_type}${props.osm_id}`;
+    if (!unique.has(key)) unique.set(key, f);
+  }
+
+  const ids = [...unique.keys()];
+  const details = await lookupDetails(ids);
+  const detailByKey = new Map<string, LookupItem>();
+  for (const d of details) {
+    if (d.osm_type && d.osm_id) detailByKey.set(`${d.osm_type}${d.osm_id}`, d);
+  }
+
+  const categoryLabel = category?.label ?? (keyword || "Búsqueda libre");
+  const businesses: RadarBusiness[] = [];
+
+  for (const [key, feature] of unique) {
+    const props = feature.properties ?? {};
+    const detail = detailByKey.get(key);
+    const extra = detail?.extratags ?? {};
+    const addr = detail?.address ?? {};
+
+    const name = (detail?.name || props.name || extra.name || "").trim();
+    const phone = (extra.phone || extra["contact:phone"] || "").split(";")[0].trim();
+    const rawWebsite = extra.website || extra["contact:website"] || extra.url || "";
+    const website = rawWebsite ? normalizeUrl(rawWebsite) : "";
+    const websiteKind = classifyWebsite(website);
+
+    const street = addr.road || props.street || "";
+    const number = addr.house_number || props.housenumber || "";
+    const postcode = addr.postcode || props.postcode || "";
+    const city = addr.city || addr.town || addr.village || props.city || "";
+    const address = [
+      [street, number].filter(Boolean).join(", "),
+      [postcode, city].filter(Boolean).join(" "),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+    const lat = detail?.lat ? Number(detail.lat) : feature.geometry?.coordinates?.[1] ?? null;
+    const lng = detail?.lon ? Number(detail.lon) : feature.geometry?.coordinates?.[0] ?? null;
+
+    const { score, breakdown } = scoreFromOsm({
+      name,
+      websiteKind,
+      phone,
+      street: street || undefined,
+      housenumber: number || undefined,
+      openingHours: extra.opening_hours,
+      brand: extra.brand,
+    });
+
+    businesses.push({
+      id: `osm:${props.osm_type}/${props.osm_id}`,
+      source: "osm",
+      name: name || "(sin nombre)",
+      category: categoryLabel,
+      address,
+      phone,
+      website,
+      websiteKind,
+      lat,
+      lng,
+      mapsUrl:
+        lat != null && lng != null
+          ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=19/${lat}/${lng}`
+          : `https://www.openstreetmap.org/${props.osm_type}/${props.osm_id}`,
+      rating: null,
+      reviews: null,
+      tags: { ...extra, ...(detail?.category ? { osm_category: detail.category } : {}) },
+      score,
+      breakdown,
+    });
+  }
+
+  return businesses;
+}
+
+/* ─────────────────── Overpass (respaldo) ─────────────────── */
+
+interface OverpassElement {
+  type: "node" | "way" | "relation";
+  id: number;
+  lat?: number;
+  lon?: number;
+  center?: { lat: number; lon: number };
+  tags?: Record<string, string>;
+}
+
 function buildOverpassQuery(bbox: RadarZone["bbox"], nicho: string, keyword: string): string {
   const [s, w, n, e] = bbox;
   const box = `(${s},${w},${n},${e})`;
@@ -82,28 +286,17 @@ function buildOverpassQuery(bbox: RadarZone["bbox"], nicho: string, keyword: str
   }
 
   const custom = keyword.trim();
-  if (custom) {
-    parts.push(`nwr["name"~"${escapeRegex(custom)}",i]${box};`);
-  }
+  if (custom) parts.push(`nwr["name"~"${escapeRegex(custom)}",i]${box};`);
 
   if (parts.length === 0) {
     throw new RadarUpstreamError("Elige un nicho de la lista o escribe una palabra clave.", 400);
   }
 
-  return `[out:json][timeout:25];\n(\n  ${parts.join("\n  ")}\n);\nout center tags 200;`;
+  return `[out:json][timeout:20];\n(\n  ${parts.join("\n  ")}\n);\nout center tags 200;`;
 }
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-interface OverpassElement {
-  type: "node" | "way" | "relation";
-  id: number;
-  lat?: number;
-  lon?: number;
-  center?: { lat: number; lon: number };
-  tags?: Record<string, string>;
 }
 
 async function runOverpass(query: string): Promise<OverpassElement[]> {
@@ -119,108 +312,126 @@ async function runOverpass(query: string): Promise<OverpassElement[]> {
           Accept: "application/json",
         },
         body: new URLSearchParams({ data: query }),
-        signal: AbortSignal.timeout(45000),
+        signal: AbortSignal.timeout(25000),
       });
 
       if (!res.ok) {
-        lastError = `Overpass ${res.status}: ${await safeText(res)}`;
+        lastError = `Overpass ${res.status}`;
         continue;
       }
 
       const json = (await res.json()) as { elements?: OverpassElement[] };
       return json.elements ?? [];
     } catch (err) {
-      lastError = err instanceof Error ? err.message : "Error de red con Overpass";
+      lastError = err instanceof Error ? err.message : "Error de red";
     }
   }
 
-  throw new RadarUpstreamError(
-    `OpenStreetMap está tardando más de lo normal. Reintenta en unos segundos. (${lastError.slice(0, 120)})`,
-    504
-  );
+  throw new RadarUpstreamError(`Respaldo Overpass no disponible (${lastError.slice(0, 80)}).`, 504);
+}
+
+async function searchOverpass(
+  zone: RadarZone,
+  nicho: string,
+  keyword: string
+): Promise<RadarBusiness[]> {
+  const elements = await runOverpass(buildOverpassQuery(zone.bbox, nicho, keyword));
+  const categoryLabel = findCategory(nicho)?.label ?? (keyword || "Búsqueda libre");
+  const businesses: RadarBusiness[] = [];
+
+  for (const el of elements) {
+    const tags = el.tags ?? {};
+    if (Object.keys(tags).length === 0) continue;
+
+    const lat = el.lat ?? el.center?.lat ?? null;
+    const lng = el.lon ?? el.center?.lon ?? null;
+    const name = (tags.name || tags.brand || "").trim();
+    const phone = (tags.phone || tags["contact:phone"] || "").split(";")[0].trim();
+    const rawWebsite = tags.website || tags["contact:website"] || tags.url || "";
+    const website = rawWebsite ? normalizeUrl(rawWebsite) : "";
+    const websiteKind = classifyWebsite(website);
+
+    const { score, breakdown } = scoreFromOsm({
+      name,
+      websiteKind,
+      phone,
+      street: tags["addr:street"],
+      housenumber: tags["addr:housenumber"],
+      openingHours: tags.opening_hours,
+      brand: tags.brand,
+    });
+
+    businesses.push({
+      id: `osm:${el.type}/${el.id}`,
+      source: "osm",
+      name: name || "(sin nombre)",
+      category: categoryLabel,
+      address: buildAddress(tags),
+      phone,
+      website,
+      websiteKind,
+      lat,
+      lng,
+      mapsUrl:
+        lat != null && lng != null
+          ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=19/${lat}/${lng}`
+          : `https://www.openstreetmap.org/${el.type}/${el.id}`,
+      rating: null,
+      reviews: null,
+      tags,
+      score,
+      breakdown,
+    });
+  }
+
+  return businesses;
 }
 
 function buildAddress(tags: Record<string, string>): string {
-  const street = tags["addr:street"] || "";
-  const number = tags["addr:housenumber"] || "";
-  const postcode = tags["addr:postcode"] || "";
+  const line1 = [tags["addr:street"] || "", tags["addr:housenumber"] || ""].filter(Boolean).join(", ");
   const city = tags["addr:city"] || tags["addr:town"] || tags["addr:village"] || "";
-  const line1 = [street, number].filter(Boolean).join(", ");
-  return [line1, [postcode, city].filter(Boolean).join(" ")].filter(Boolean).join(" · ");
+  const line2 = [tags["addr:postcode"] || "", city].filter(Boolean).join(" ");
+  return [line1, line2].filter(Boolean).join(" · ");
 }
 
-export async function searchOsm(
-  zona: string,
-  nicho: string,
-  keyword = ""
-): Promise<{ zone: RadarZone; businesses: RadarBusiness[]; cached: boolean }> {
+/* ───────────────────────── API pública ───────────────────────── */
+
+export async function searchOsm(zona: string, nicho: string, keyword = ""): Promise<SearchOutcome> {
   const cacheKey = `${zona}|${nicho}|${keyword}`.toLowerCase();
   const hit = searchCache.get(cacheKey);
   if (hit && Date.now() - hit.at < SEARCH_TTL) {
-    return { zone: await geocodeZone(zona), businesses: hit.data, cached: true };
+    return { zone: await geocodeZone(zona), businesses: hit.data, cached: true, provider: hit.provider };
   }
 
   const running = inFlight.get(cacheKey);
   if (running) return running;
 
-  const promise = (async () => {
+  const promise = (async (): Promise<SearchOutcome> => {
     const zone = await geocodeZone(zona);
-    const query = buildOverpassQuery(zone.bbox, nicho, keyword);
-    const elements = await runOverpass(query);
+    let provider: RadarProvider = "photon";
+    let businesses: RadarBusiness[] = [];
 
-    const categoryLabel = findCategory(nicho)?.label ?? (keyword || "Búsqueda libre");
-    const byId = new Map<string, RadarBusiness>();
-
-    for (const el of elements) {
-      const tags = el.tags ?? {};
-      if (Object.keys(tags).length === 0) continue;
-
-      const lat = el.lat ?? el.center?.lat ?? null;
-      const lng = el.lon ?? el.center?.lon ?? null;
-      const name = (tags.name || tags.brand || "").trim();
-      const phone = (tags.phone || tags["contact:phone"] || "").split(";")[0].trim();
-      const rawWebsite = tags.website || tags["contact:website"] || tags.url || "";
-      const website = rawWebsite ? normalizeUrl(rawWebsite) : "";
-      const websiteKind = classifyWebsite(website);
-
-      const { score, breakdown } = scoreFromOsm({
-        name,
-        websiteKind,
-        phone,
-        street: tags["addr:street"],
-        housenumber: tags["addr:housenumber"],
-        openingHours: tags.opening_hours,
-        brand: tags.brand,
-      });
-
-      const id = `osm:${el.type}/${el.id}`;
-      byId.set(id, {
-        id,
-        source: "osm",
-        name: name || "(sin nombre)",
-        category: categoryLabel,
-        address: buildAddress(tags),
-        phone,
-        website,
-        websiteKind,
-        lat,
-        lng,
-        mapsUrl:
-          lat != null && lng != null
-            ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=19/${lat}/${lng}`
-            : `https://www.openstreetmap.org/${el.type}/${el.id}`,
-        rating: null,
-        reviews: null,
-        tags,
-        score,
-        breakdown,
-      });
+    try {
+      businesses = await searchPhoton(zone, nicho, keyword);
+    } catch {
+      provider = "overpass";
+      businesses = await searchOverpass(zone, nicho, keyword);
     }
 
-    const businesses = [...byId.values()].sort((a, b) => b.score - a.score);
-    searchCache.set(cacheKey, { at: Date.now(), data: businesses });
+    // Si Photon devuelve muy poco, completamos con Overpass (mejor cobertura).
+    if (provider === "photon" && businesses.length < 5) {
+      try {
+        const extra = await searchOverpass(zone, nicho, keyword);
+        const seen = new Set(businesses.map((b) => b.id));
+        for (const b of extra) if (!seen.has(b.id)) businesses.push(b);
+      } catch {
+        // silencioso: nos quedamos con Photon
+      }
+    }
 
-    return { zone, businesses, cached: false };
+    businesses.sort((a, b) => b.score - a.score);
+    searchCache.set(cacheKey, { at: Date.now(), data: businesses, provider });
+    return { zone, businesses, cached: false, provider };
   })();
 
   inFlight.set(cacheKey, promise);
@@ -233,8 +444,7 @@ export async function searchOsm(
 
 async function safeText(res: Response): Promise<string> {
   try {
-    const text = await res.text();
-    return text.slice(0, 200).replace(/\s+/g, " ");
+    return (await res.text()).slice(0, 200).replace(/\s+/g, " ");
   } catch {
     return "";
   }
