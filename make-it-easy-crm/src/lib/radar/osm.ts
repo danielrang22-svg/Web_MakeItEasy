@@ -8,7 +8,6 @@ const NOMINATIM = "https://nominatim.openstreetmap.org/search";
 const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
-  "https://overpass.private.coffee/api/interpreter",
 ];
 
 const zoneCache = new Map<string, { at: number; zone: RadarZone }>();
@@ -16,7 +15,7 @@ const searchCache = new Map<string, { at: number; data: RadarBusiness[] }>();
 const inFlight = new Map<string, Promise<{ zone: RadarZone; businesses: RadarBusiness[]; cached: boolean }>>();
 
 const ZONE_TTL = 1000 * 60 * 60 * 24 * 30;
-const SEARCH_TTL = 1000 * 60 * 10;
+const SEARCH_TTL = 1000 * 60 * 60 * 6;
 
 export class RadarUpstreamError extends Error {
   status: number;
@@ -35,7 +34,7 @@ export async function geocodeZone(zona: string): Promise<RadarZone> {
   const url = `${NOMINATIM}?format=jsonv2&limit=1&countrycodes=es&q=${encodeURIComponent(zona)}`;
   const res = await fetch(url, {
     headers: { "User-Agent": UA, Accept: "application/json" },
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(45000),
   });
 
   if (!res.ok) {
@@ -120,7 +119,7 @@ async function runOverpass(query: string): Promise<OverpassElement[]> {
           Accept: "application/json",
         },
         body: new URLSearchParams({ data: query }),
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(45000),
       });
 
       if (!res.ok) {

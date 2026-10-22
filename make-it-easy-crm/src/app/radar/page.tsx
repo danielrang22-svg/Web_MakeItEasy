@@ -287,7 +287,7 @@ export default function RadarPage() {
       {loading && (
         <div className="mt-4 bg-card ring-1 ring-border rounded-2xl p-8 text-center text-sm text-muted-foreground">
           <Loader2 size={22} className="animate-spin mx-auto mb-3 text-cyan-400" />
-          Consultando OpenStreetMap… suele tardar entre 3 y 15 segundos.
+          Consultando OpenStreetMap… el servidor público puede tardar hasta 40 segundos. Después queda en caché 6 horas.
         </div>
       )}
 

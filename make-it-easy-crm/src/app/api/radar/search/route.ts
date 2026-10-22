@@ -3,7 +3,7 @@ import { verifyAuthRole } from '@/lib/auth';
 import { searchOsm, RadarUpstreamError } from '@/lib/radar/osm';
 import type { RadarBusiness } from '@/lib/radar/types';
 
-export const maxDuration = 60;
+export const maxDuration = 90;
 
 interface SearchBody {
   zona?: string;
