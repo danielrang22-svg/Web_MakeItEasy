@@ -20,7 +20,7 @@ export function scoreFromOsm(input: {
   switch (input.websiteKind) {
     case "none":
       score += 30;
-      breakdown.push({ label: "Sin web propia", points: 30 });
+      breakdown.push({ label: "Sin web registrada (verificar)", points: 30 });
       break;
     case "social":
       score += 20;

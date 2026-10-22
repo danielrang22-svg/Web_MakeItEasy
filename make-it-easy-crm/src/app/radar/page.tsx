@@ -246,7 +246,7 @@ export default function RadarPage() {
         <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-border">
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={onlyNoWebsite} onChange={(e) => setOnlyNoWebsite(e.target.checked)} className="accent-cyan-500" />
-            Solo sin web propia
+            Solo sin web registrada
           </label>
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={onlyWithPhone} onChange={(e) => setOnlyWithPhone(e.target.checked)} className="accent-cyan-500" />
@@ -384,8 +384,8 @@ export default function RadarPage() {
                               <Globe size={12} /> {b.websiteKind === "own" ? "Web" : "Ficha externa"}
                             </a>
                           ) : (
-                            <span className="text-xs text-amber-300 flex items-center gap-1">
-                              <Globe size={12} /> Sin web propia
+                            <span className="text-xs text-amber-300 flex items-center gap-1" title="OpenStreetMap no registra web para este negocio; confírmalo antes de contactar">
+                              <Globe size={12} /> Sin web (OSM)
                             </span>
                           )}
                         </div>
@@ -511,8 +511,8 @@ function BusinessRows({
               {business.websiteKind === "own" ? business.website.replace(/^https?:\/\//, "") : "Ficha externa"}
             </a>
           ) : (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30">
-              Sin web propia
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30" title="OpenStreetMap no registra web para este negocio; confírmalo antes de contactar">
+              Sin web (OSM)
             </span>
           )}
         </td>
