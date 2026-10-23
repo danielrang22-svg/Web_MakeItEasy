@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   Check,
@@ -16,13 +17,15 @@ import {
   Users,
 } from "lucide-react";
 import { RADAR_CATEGORIES } from "@/lib/radar/categories";
+import RadarNav from "@/components/radar/RadarNav";
+import { saveBusinessSnapshot } from "@/lib/radar/repository";
 import { radarRepository } from "@/lib/radar/repository";
 import { scoreClasses } from "@/lib/radar/score";
 import type { RadarBusiness, RadarSearchResult } from "@/lib/radar/types";
 
 const PAGE_SIZE = 20;
 
-export default function RadarPage() {
+function RadarPageContent() {
   const [zona, setZona] = useState("");
   const [nicho, setNicho] = useState("talleres");
   const [keyword, setKeyword] = useState("");
@@ -40,6 +43,8 @@ export default function RadarPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   useEffect(() => {
@@ -52,9 +57,19 @@ export default function RadarPage() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  async function handleSearch(e?: React.FormEvent) {
-    e?.preventDefault();
-    if (!zona.trim()) {
+  useEffect(() => {
+    const z = searchParams.get("zona");
+    const n = searchParams.get("nicho");
+    if (!z || !n) return;
+    setZona(z);
+    setLibre(false);
+    setNicho(n);
+    void runSearch(z, n, "", false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function runSearch(zone: string, category: string, kw = "", ex = false) {
+    if (!zone.trim()) {
       setError("Escribe una zona: ciudad, barrio o código postal.");
       return;
     }
@@ -69,10 +84,10 @@ export default function RadarPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          zona: zona.trim(),
-          nicho: libre ? "" : nicho,
-          keyword: libre ? keyword.trim() : "",
-          mode: exhaustive ? "exhaustive" : "fast",
+          zona: zone.trim(),
+          nicho: category,
+          keyword: kw,
+          mode: ex ? "exhaustive" : "fast",
         }),
       });
       const data = await res.json();
@@ -83,6 +98,18 @@ export default function RadarPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleSearch(e?: React.FormEvent) {
+    e?.preventDefault();
+    return runSearch(zona, libre ? "" : nicho, libre ? keyword.trim() : "", exhaustive);
+  }
+
+  function openFicha(b: RadarBusiness) {
+    saveBusinessSnapshot(b);
+    radarRepository.upsert([b]);
+    setSavedCount(radarRepository.list().length);
+    router.push(`/radar/negocio?id=${encodeURIComponent(b.id)}`);
   }
 
   const filtered = useMemo(() => {
@@ -158,6 +185,8 @@ export default function RadarPage() {
 
   return (
     <div className="px-4 md:px-6 pb-32">
+      <div className="mt-4"><RadarNav /></div>
+
       <div className="mt-4 mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -350,6 +379,7 @@ export default function RadarPage() {
                         expanded={expanded === b.id}
                         onToggle={() => toggleSelected(b.id)}
                         onExpand={() => setExpanded(expanded === b.id ? null : b.id)}
+                        onOpen={() => openFicha(b)}
                       />
                     ))}
                   </tbody>
@@ -399,9 +429,12 @@ export default function RadarPage() {
                           <button onClick={() => setExpanded(expanded === b.id ? null : b.id)} className="text-[11px] text-muted-foreground flex items-center gap-1">
                             {expanded === b.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Desglose
                           </button>
-                          <a href={b.mapsUrl} target="_blank" rel="noopener" className="text-[11px] text-muted-foreground flex items-center gap-1">
-                            Ver mapa <ExternalLink size={11} />
-                          </a>
+                          <div className="flex items-center gap-3">
+                            <button onClick={() => openFicha(b)} className="text-[11px] font-semibold text-cyan-400">Ficha</button>
+                            <a href={b.mapsUrl} target="_blank" rel="noopener" className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              Ver mapa <ExternalLink size={11} />
+                            </a>
+                          </div>
                         </div>
                         {expanded === b.id && (
                           <ul className="mt-2 space-y-1">
@@ -469,18 +502,28 @@ export default function RadarPage() {
   );
 }
 
+export default function RadarPage() {
+  return (
+    <Suspense fallback={<div className="px-6 py-10 text-sm text-muted-foreground">Cargando Radar…</div>}>
+      <RadarPageContent />
+    </Suspense>
+  );
+}
+
 function BusinessRows({
   business,
   selected,
   expanded,
   onToggle,
   onExpand,
+  onOpen,
 }: {
   business: RadarBusiness;
   selected: boolean;
   expanded: boolean;
   onToggle: () => void;
   onExpand: () => void;
+  onOpen: () => void;
 }) {
   return (
     <>
@@ -533,9 +576,14 @@ function BusinessRows({
           </button>
         </td>
         <td className="px-3 py-3 text-right">
-          <a href={business.mapsUrl} target="_blank" rel="noopener" className="inline-flex text-muted-foreground hover:text-foreground" title="Abrir en el mapa">
-            <ExternalLink size={14} />
-          </a>
+          <div className="flex items-center justify-end gap-2">
+            <button onClick={onOpen} className="text-[11px] font-semibold text-cyan-400 hover:underline">
+              Ficha
+            </button>
+            <a href={business.mapsUrl} target="_blank" rel="noopener" className="inline-flex text-muted-foreground hover:text-foreground" title="Abrir en el mapa">
+              <ExternalLink size={14} />
+            </a>
+          </div>
         </td>
       </tr>
       {expanded && (

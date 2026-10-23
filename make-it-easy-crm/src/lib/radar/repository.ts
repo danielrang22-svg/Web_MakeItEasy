@@ -82,6 +82,97 @@ export const radarRepository: RadarRepository = {
   },
 };
 
+export interface RadarPagespeedScores {
+  performance: number | null;
+  seo: number | null;
+  accessibility: number | null;
+  bestPractices: number | null;
+}
+
+export interface RadarAnalysisRecord {
+  businessId: string;
+  analyzedAt: string;
+  pagespeed: (RadarPagespeedScores & { screenshot?: string | null; metrics?: Record<string, string | null> }) | null;
+  analysis: {
+    summary: string;
+    checklist: Record<string, boolean>;
+    contacts: { emails: string[]; socials: string[] };
+    problems: Array<{ title: string; detail: string }>;
+    recommendedService: { type: string; reason: string };
+  };
+  meta?: Record<string, unknown>;
+}
+
+export interface RadarSettings {
+  sellerName: string;
+  whatISell: string;
+  proposal: string;
+  tone: "cercano" | "directo" | "formal";
+  agentId: string;
+}
+
+const BIZ_KEY = "radar.businesses.v1";
+const ANALYSIS_KEY = "radar.analyses.v1";
+const SETTINGS_KEY = "radar.settings.v1";
+
+function readMap<T>(key: string): Record<string, T> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as Record<string, T>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeMap<T>(key: string, value: Record<string, T>): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+export function saveBusinessSnapshot(business: RadarBusiness): void {
+  const map = readMap<RadarBusiness>(BIZ_KEY);
+  map[business.id] = business;
+  writeMap(BIZ_KEY, map);
+}
+
+export function getBusinessSnapshot(id: string): RadarBusiness | null {
+  return readMap<RadarBusiness>(BIZ_KEY)[id] ?? null;
+}
+
+export function saveAnalysis(record: RadarAnalysisRecord): void {
+  const map = readMap<RadarAnalysisRecord>(ANALYSIS_KEY);
+  map[record.businessId] = record;
+  writeMap(ANALYSIS_KEY, map);
+}
+
+export function getAnalysis(businessId: string): RadarAnalysisRecord | null {
+  return readMap<RadarAnalysisRecord>(ANALYSIS_KEY)[businessId] ?? null;
+}
+
+const DEFAULT_SETTINGS: RadarSettings = {
+  sellerName: "",
+  whatISell: "páginas web, agentes de IA por WhatsApp y sistemas de citas",
+  proposal: "soluciones sencillas que ahorran tiempo y captan más clientes",
+  tone: "cercano",
+  agentId: "",
+};
+
+export function getSettings(): RadarSettings {
+  if (typeof window === "undefined") return DEFAULT_SETTINGS;
+  try {
+    const raw = window.localStorage.getItem(SETTINGS_KEY);
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+export function saveSettings(settings: RadarSettings): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
 export const LEAD_STATUSES: Array<{ value: RadarLeadStatus; label: string }> = [
   { value: "NUEVO", label: "Nuevo" },
   { value: "ANALIZADO", label: "Analizado" },

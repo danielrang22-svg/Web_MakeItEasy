@@ -424,7 +424,7 @@ async function runOverpass(query: string): Promise<OverpassElement[]> {
           Accept: "application/json",
         },
         body: new URLSearchParams({ data: query }),
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(40000),
       });
 
       if (!res.ok) {
