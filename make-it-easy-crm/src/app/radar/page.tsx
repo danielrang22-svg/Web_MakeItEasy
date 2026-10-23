@@ -31,6 +31,7 @@ export default function RadarPage() {
   const [onlyNoWebsite, setOnlyNoWebsite] = useState(false);
   const [onlyWithPhone, setOnlyWithPhone] = useState(false);
   const [hideUnnamed, setHideUnnamed] = useState(true);
+  const [exhaustive, setExhaustive] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -71,6 +72,7 @@ export default function RadarPage() {
           zona: zona.trim(),
           nicho: libre ? "" : nicho,
           keyword: libre ? keyword.trim() : "",
+          mode: exhaustive ? "exhaustive" : "fast",
         }),
       });
       const data = await res.json();
@@ -256,6 +258,10 @@ export default function RadarPage() {
             <input type="checkbox" checked={hideUnnamed} onChange={(e) => setHideUnnamed(e.target.checked)} className="accent-cyan-500" />
             Ocultar fichas sin nombre
           </label>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" title="Usa Overpass: puede tardar hasta 60 s, pero encuentra muchos más negocios">
+            <input type="checkbox" checked={exhaustive} onChange={(e) => setExhaustive(e.target.checked)} className="accent-cyan-500" />
+            Búsqueda exhaustiva (lenta)
+          </label>
           {filtered.length > 0 && (
             <button
               type="button"
@@ -287,7 +293,7 @@ export default function RadarPage() {
       {loading && (
         <div className="mt-4 bg-card ring-1 ring-border rounded-2xl p-8 text-center text-sm text-muted-foreground">
           <Loader2 size={22} className="animate-spin mx-auto mb-3 text-cyan-400" />
-          Consultando OpenStreetMap… el servidor público puede tardar hasta 40 segundos. Después queda en caché 6 horas.
+          {exhaustive ? "Búsqueda exhaustiva en Overpass… puede tardar hasta 60 segundos." : "Consultando OpenStreetMap… suele tardar 1-3 segundos."}
         </div>
       )}
 

@@ -9,6 +9,7 @@ interface SearchBody {
   zona?: string;
   nicho?: string;
   keyword?: string;
+  mode?: 'fast' | 'exhaustive';
   filtros?: {
     onlyNoWebsite?: boolean;
     onlyWithPhone?: boolean;
@@ -43,7 +44,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Elige un nicho o escribe una palabra clave.' }, { status: 400 });
     }
 
-    const { zone, businesses, cached, provider } = await searchOsm(zona, nicho, keyword);
+    const mode = body.mode === 'exhaustive' ? 'exhaustive' : 'fast';
+    const { zone, businesses, cached, provider } = await searchOsm(zona, nicho, keyword, mode);
     const filtered = applyFilters(businesses, body);
 
     const warnings = [

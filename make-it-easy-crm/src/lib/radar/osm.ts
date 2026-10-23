@@ -509,8 +509,15 @@ function buildAddress(tags: Record<string, string>): string {
 
 /* ───────────────────────── API pública ───────────────────────── */
 
-export async function searchOsm(zona: string, nicho: string, keyword = ""): Promise<SearchOutcome> {
-  const cacheKey = `${zona}|${nicho}|${keyword}`.toLowerCase();
+export type RadarMode = "fast" | "exhaustive";
+
+export async function searchOsm(
+  zona: string,
+  nicho: string,
+  keyword = "",
+  mode: RadarMode = "fast"
+): Promise<SearchOutcome> {
+  const cacheKey = `${zona}|${nicho}|${keyword}|${mode}`.toLowerCase();
   const hit = searchCache.get(cacheKey);
   if (hit && Date.now() - hit.at < SEARCH_TTL) {
     return { zone: await geocodeZone(zona), businesses: hit.data, cached: true, provider: hit.provider };
@@ -524,11 +531,16 @@ export async function searchOsm(zona: string, nicho: string, keyword = ""): Prom
     let provider: RadarProvider = "photon";
     let businesses: RadarBusiness[] = [];
 
-    try {
-      businesses = await searchPhoton(zone, nicho, keyword);
-    } catch {
+    if (mode === "exhaustive") {
       provider = "overpass";
       businesses = await searchOverpass(zone, nicho, keyword);
+    } else {
+      try {
+        businesses = await searchPhoton(zone, nicho, keyword);
+      } catch {
+        provider = "overpass";
+        businesses = await searchOverpass(zone, nicho, keyword);
+      }
     }
 
     businesses.sort((a, b) => b.score - a.score);
