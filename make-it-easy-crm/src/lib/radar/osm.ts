@@ -125,17 +125,29 @@ async function photonRequest(
   });
   if (tag) params.set("osm_tag", tag);
 
-  const res = await fetch(`${PHOTON}?${params.toString()}`, {
-    headers: { "User-Agent": UA, Accept: "application/json" },
-    signal: AbortSignal.timeout(12000),
-  });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetch(`${PHOTON}?${params.toString()}`, {
+      headers: { "User-Agent": UA, Accept: "application/json" },
+      signal: AbortSignal.timeout(12000),
+    });
 
-  if (!res.ok) {
-    throw new RadarUpstreamError(`Photon ${res.status}: ${await safeText(res)}`, res.status);
+    if (res.status === 429 || res.status === 503) {
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 1500));
+        continue;
+      }
+      throw new RadarUpstreamError("El buscador rápido está limitando peticiones.", 429);
+    }
+
+    if (!res.ok) {
+      throw new RadarUpstreamError(`Photon ${res.status}: ${await safeText(res)}`, res.status);
+    }
+
+    const json = (await res.json()) as { features?: PhotonFeature[] };
+    return json.features ?? [];
   }
 
-  const json = (await res.json()) as { features?: PhotonFeature[] };
-  return json.features ?? [];
+  return [];
 }
 
 /* ─────────────────── Nominatim lookup (detalles) ─────────────────── */
@@ -206,32 +218,40 @@ async function searchPhoton(
   const tags = category?.osm ?? [];
   const q = keyword || category?.photonQuery || category?.label || nicho;
 
-  const requests = tags.length
-    ? tags.map(([k, v]) => photonRequest(q, zone, `${k}:${v}`))
-    : [photonRequest(q, zone)];
-
-  const responses = await Promise.allSettled(requests);
-  const features: PhotonFeature[] = [];
+  const requests: PhotonFeature[][] = [];
   let anyOk = false;
-  for (const r of responses) {
-    if (r.status === "fulfilled") {
-      anyOk = true;
-      features.push(...r.value);
-    }
-  }
-  if (!anyOk) throw new RadarUpstreamError("No se pudo consultar el buscador de OpenStreetMap.");
 
-  // Deduplicar por osm id y limitar a la zona (25 km del centro)
+  // En serie y espaciadas: Photon limita las ráfagas en paralelo.
+  for (let i = 0; i < (tags.length || 1); i++) {
+    const tag = tags.length ? `${tags[i][0]}:${tags[i][1]}` : undefined;
+    try {
+      const features = await photonRequest(q, zone, tag);
+      anyOk = true;
+      requests.push(features);
+    } catch {
+      // seguimos con el siguiente filtro
+    }
+    if (i < (tags.length || 1) - 1) await new Promise((r) => setTimeout(r, 400));
+  }
+
+  if (!anyOk) throw new RadarUpstreamError("No se pudo consultar el buscador de OpenStreetMap.");
+  const features: PhotonFeature[] = requests.flat();
+
+  // Deduplicar por osm id y limitar a la zona
+  const [s, w, n, e] = zone.bbox;
+  const spanOk = n - s < 1.5 && e - w < 1.5;
+  const inZone = (lat: number, lng: number) =>
+    spanOk
+      ? lat >= s && lat <= n && lng >= w && lng <= e
+      : distanceKm(zone.lat, zone.lng, lat, lng) <= 25;
+
   const unique = new Map<string, PhotonFeature>();
   for (const f of features) {
     const props = f.properties ?? {};
     if (!props.osm_type || !props.osm_id) continue;
 
     const coords = f.geometry?.coordinates;
-    if (coords) {
-      const km = distanceKm(zone.lat, zone.lng, coords[1], coords[0]);
-      if (km > 25) continue;
-    }
+    if (coords && !inZone(coords[1], coords[0])) continue;
 
     const key = `${normalizeOsmType(props.osm_type)}${props.osm_id}`;
     if (!unique.has(key)) unique.set(key, f);
