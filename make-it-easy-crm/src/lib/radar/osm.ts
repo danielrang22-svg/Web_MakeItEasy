@@ -424,7 +424,7 @@ async function runOverpass(query: string): Promise<OverpassElement[]> {
           Accept: "application/json",
         },
         body: new URLSearchParams({ data: query }),
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(15000),
       });
 
       if (!res.ok) {
@@ -457,6 +457,7 @@ async function searchOverpass(
 
     const lat = el.lat ?? el.center?.lat ?? null;
     const lng = el.lon ?? el.center?.lon ?? null;
+    if (lat != null && lng != null && !isInsideZone(zone, lat, lng)) continue;
     const name = (tags.name || tags.brand || "").trim();
     const phone = (tags.phone || tags["contact:phone"] || "").split(";")[0].trim();
     const rawWebsite = tags.website || tags["contact:website"] || tags.url || "";
@@ -528,17 +529,6 @@ export async function searchOsm(zona: string, nicho: string, keyword = ""): Prom
     } catch {
       provider = "overpass";
       businesses = await searchOverpass(zone, nicho, keyword);
-    }
-
-    // Si Photon devuelve muy poco, completamos con Overpass (mejor cobertura).
-    if (provider === "photon" && businesses.length < 5) {
-      try {
-        const extra = await searchOverpass(zone, nicho, keyword);
-        const seen = new Set(businesses.map((b) => b.id));
-        for (const b of extra) if (!seen.has(b.id)) businesses.push(b);
-      } catch {
-        // silencioso: nos quedamos con Photon
-      }
     }
 
     businesses.sort((a, b) => b.score - a.score);
