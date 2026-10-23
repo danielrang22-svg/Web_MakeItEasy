@@ -57,7 +57,7 @@ export async function geocodeZone(zona: string): Promise<RadarZone> {
   const hit = zoneCache.get(key);
   if (hit && Date.now() - hit.at < ZONE_TTL) return hit.zone;
 
-  const url = `${NOMINATIM}/search?format=jsonv2&limit=1&countrycodes=es&q=${encodeURIComponent(zona)}`;
+  const url = `${NOMINATIM}/search?format=jsonv2&limit=1&countrycodes=es&polygon_geojson=1&q=${encodeURIComponent(zona)}`;
   const res = await nominatimFetch(url);
 
   if (!res.ok) {
@@ -72,6 +72,7 @@ export async function geocodeZone(zona: string): Promise<RadarZone> {
     lat?: string;
     lon?: string;
     boundingbox?: [string, string, string, string];
+    geojson?: { type?: string; coordinates?: unknown };
   }>;
 
   const first = list[0];
@@ -88,6 +89,7 @@ export async function geocodeZone(zona: string): Promise<RadarZone> {
     lat: Number(first.lat),
     lng: Number(first.lon),
     bbox: [s, w, n, e],
+    polygons: extractPolygons(first.geojson),
   };
 
   zoneCache.set(key, { at: Date.now(), zone });
@@ -209,6 +211,52 @@ function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): num
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
+function extractPolygons(geojson: { type?: string; coordinates?: unknown } | undefined): number[][][][] | undefined {
+  if (!geojson?.coordinates) return undefined;
+  if (geojson.type === "Polygon") return [geojson.coordinates as number[][][]];
+  if (geojson.type === "MultiPolygon") return geojson.coordinates as number[][][][];
+  return undefined;
+}
+
+function pointInRing(lng: number, lat: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0];
+    const yi = ring[i][1];
+    const xj = ring[j][0];
+    const yj = ring[j][1];
+    const intersects = yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function pointInPolygon(lng: number, lat: number, rings: number[][][]): boolean {
+  if (!rings.length || !pointInRing(lng, lat, rings[0])) return false;
+  // Los anillos interiores son huecos
+  for (let i = 1; i < rings.length; i++) {
+    if (pointInRing(lng, lat, rings[i])) return false;
+  }
+  return true;
+}
+
+function isInsideZone(zone: RadarZone, lat: number, lng: number): boolean {
+  if (zone.polygons?.length) {
+    return zone.polygons.some((rings) => pointInPolygon(lng, lat, rings));
+  }
+  const [s, w, n, e] = zone.bbox;
+  return lat >= s && lat <= n && lng >= w && lng <= e;
+}
+
+const EXTRA_QUERIES: Record<string, string[]> = {
+  gestorias: ["asesoría", "asesoria"],
+  reformas: ["reforma"],
+  academias: ["academia"],
+  inmobiliarias: ["inmobiliaria", "agencia inmobiliaria"],
+  estetica: ["centro de estética", "estética"],
+  fisios: ["fisioterapeuta"],
+};
+
 async function searchPhoton(
   zone: RadarZone,
   nicho: string,
@@ -216,42 +264,40 @@ async function searchPhoton(
 ): Promise<RadarBusiness[]> {
   const category = findCategory(nicho);
   const tags = category?.osm ?? [];
-  const q = keyword || category?.photonQuery || category?.label || nicho;
+  const baseQuery = keyword || category?.photonQuery || category?.label || nicho;
+  const queries = [baseQuery, ...(keyword ? [] : EXTRA_QUERIES[nicho] ?? [])].slice(0, 2);
 
-  const requests: PhotonFeature[][] = [];
+  const combos: Array<{ q: string; tag?: string }> = [];
+  for (const q of queries) {
+    if (tags.length === 0) combos.push({ q });
+    else for (const [k, v] of tags) combos.push({ q, tag: `${k}:${v}` });
+  }
+
+  const features: PhotonFeature[] = [];
   let anyOk = false;
 
   // En serie y espaciadas: Photon limita las ráfagas en paralelo.
-  for (let i = 0; i < (tags.length || 1); i++) {
-    const tag = tags.length ? `${tags[i][0]}:${tags[i][1]}` : undefined;
+  for (let i = 0; i < Math.min(combos.length, 4); i++) {
     try {
-      const features = await photonRequest(q, zone, tag);
+      const found = await photonRequest(combos[i].q, zone, combos[i].tag);
       anyOk = true;
-      requests.push(features);
+      features.push(...found);
     } catch {
-      // seguimos con el siguiente filtro
+      // seguimos con la siguiente combinación
     }
-    if (i < (tags.length || 1) - 1) await new Promise((r) => setTimeout(r, 400));
+    if (i < Math.min(combos.length, 4) - 1) await new Promise((r) => setTimeout(r, 350));
   }
 
   if (!anyOk) throw new RadarUpstreamError("No se pudo consultar el buscador de OpenStreetMap.");
-  const features: PhotonFeature[] = requests.flat();
 
-  // Deduplicar por osm id y limitar a la zona
-  const [s, w, n, e] = zone.bbox;
-  const spanOk = n - s < 1.5 && e - w < 1.5;
-  const inZone = (lat: number, lng: number) =>
-    spanOk
-      ? lat >= s && lat <= n && lng >= w && lng <= e
-      : distanceKm(zone.lat, zone.lng, lat, lng) <= 25;
-
+  // Deduplicar por osm id y limitar al contorno real de la zona
   const unique = new Map<string, PhotonFeature>();
   for (const f of features) {
     const props = f.properties ?? {};
     if (!props.osm_type || !props.osm_id) continue;
 
     const coords = f.geometry?.coordinates;
-    if (coords && !inZone(coords[1], coords[0])) continue;
+    if (coords && !isInsideZone(zone, coords[1], coords[0])) continue;
 
     const key = `${normalizeOsmType(props.osm_type)}${props.osm_id}`;
     if (!unique.has(key)) unique.set(key, f);

@@ -34,6 +34,8 @@ export interface RadarZone {
   lat: number;
   lng: number;
   bbox: [number, number, number, number]; // south, west, north, east
+  /** Contorno real del municipio/barrio: [polígono][anillo][punto][lng, lat] */
+  polygons?: number[][][][];
 }
 
 export interface RadarFilters {
