@@ -182,3 +182,20 @@ export const LEAD_STATUSES: Array<{ value: RadarLeadStatus; label: string }> = [
   { value: "CLIENTE", label: "Cliente" },
   { value: "DESCARTADO", label: "Descartado" },
 ];
+const AUDIT_KEY = "radar.audits.v1";
+
+export function saveAudit(businessId: string, report: unknown): void {
+  const map = readMap<unknown>(AUDIT_KEY);
+  map[businessId] = report;
+  writeMap(AUDIT_KEY, map);
+}
+
+export function getAudit<T = unknown>(businessId: string): T | null {
+  return (readMap<T>(AUDIT_KEY)[businessId] as T) ?? null;
+}
+
+export function removeAudit(businessId: string): void {
+  const map = readMap<unknown>(AUDIT_KEY);
+  delete map[businessId];
+  writeMap(AUDIT_KEY, map);
+}

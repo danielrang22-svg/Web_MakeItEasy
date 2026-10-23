@@ -19,6 +19,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import RadarNav from "@/components/radar/RadarNav";
+import AuditPanel from "@/components/radar/AuditPanel";
 import {
   getAnalysis,
   getBusinessSnapshot,
@@ -464,6 +465,7 @@ function BusinessContent() {
               </div>
             )}
           </div>
+          <AuditPanel business={business} />
         </div>
 
         <div className="space-y-4">
