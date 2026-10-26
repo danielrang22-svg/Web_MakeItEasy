@@ -63,7 +63,8 @@ Nunca subas `.env` al repositorio.
 - Puntuación de oportunidad explicada (web propia, red social, sin web, teléfono, dirección, horario).
 - Ficha con PageSpeed opcional, auditoría SEO de 38 comprobaciones y análisis con IA.
 - Borradores de llamada, WhatsApp y correo con tres tonos.
-- Mis leads en `localStorage` y envío al CRM con deduplicación por `radarPlaceId`.
+- Mis leads en el servidor (por usuario, con estado, notas y próxima acción) y envío al CRM con deduplicación por `radarPlaceId`.
+- Cada usuario ve solo sus leads; un administrador puede consultar todos con `?scope=all`.
 
 ### Configurar IA y PageSpeed
 
@@ -76,7 +77,7 @@ Nunca subas `.env` al repositorio.
 - OpenStreetMap no tiene reseñas ni valoraciones: los filtros de rating no aplican.
 - "Sin web" proviene de OSM y conviene verificarlo antes de contactar.
 - Photon tiene menos cobertura que Google Places en municipios pequeños.
-- Los leads del Radar viven en el navegador hasta que se envían al CRM.
+- Los análisis, fichas y ajustes de vendedor se guardan en el navegador; los leads son multiusuario.
 - La captura de PageSpeed no se persiste en `localStorage` para no agotar la cuota.
 
 ## Base de datos
@@ -97,7 +98,8 @@ Nunca subas `.env` al repositorio.
 
 ```bash
 npm run lint
+npm test
 npx tsc --noEmit
 ```
 
-No hay suite de tests automatizada todavía.
+Tests del Radar con `node:test` + `tsx` (puntuación, clasificación de webs, estados y cuota de `localStorage`).

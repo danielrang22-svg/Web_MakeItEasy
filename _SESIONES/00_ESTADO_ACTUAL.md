@@ -5,19 +5,21 @@ Actualizado: 2026-10-26 09:59 | Sesión: 2026-10-26_0959_radar-fase1.md
 Sitio público de Make It Easy y CRM interno (leads, cotizaciones, proyectos y Radar de prospección).
 
 ## Hecho (verificado)
-- [x] Radar desplegado en producción (`crm.makeiteasycol.com`, PM2 `mie-crm` en 127.0.0.1:3011) con build del 2026-10-26 16:42 UTC.
+- [x] Radar desplegado en producción (`crm.makeiteasycol.com`, PM2 `mie-crm` en 127.0.0.1:3011) con build del 2026-10-26 16:59 UTC.
 - [x] Geocodificación corregida a Colombia (PR #2, commit `712a547`): "Chía" y "Bogotá" resuelven en Colombia; Bogotá devuelve 38 talleres.
 - [x] Cuota de `localStorage` corregida y desplegada (PR #3, commit `81ceea9`): análisis sin captura, tope de 50 y escrituras tolerantes a cuota.
+- [x] Workflow de deploy corregido (PR #4, commit `677642a`): el CRM vuelve a sincronizarse al webroot.
 - [x] Migraciones de SQLite aplicadas en local y producción (radarPlaceId, agents.proposito, radar_usage).
 - [x] APIs del Radar autenticadas responden: `/api/radar/config` 200 y `/radar` redirige al login.
 - [x] Búsqueda OSM validada para Colombia (Bogotá 38 talleres, Medellín 9).
-- [x] `.env.example`, `.gitignore`, `ecosystem.config.js` y README corregidos.
+- [x] `.env.example`, `.gitignore`, `ecosystem.config.js`, README y `docs/RADAR.md` corregidos.
 
 ## En curso
-- [ ] Ajuste de `.github/workflows/deploy.yml` (sincronizar el CRM) pendiente: el token de GitHub no tiene scope `workflow`.
+- [ ] PR de leads multiusuario + tests (modelo `RadarLead`, API propia y migración) pendiente de desplegar.
+- [ ] Configurar `PAGESPEED_API_KEY` en el VPS (opcional, gratis).
 
 ## Siguiente paso
-1. Completar el device flow de `gh auth refresh -s workflow` y subir el PR con `deploy.yml` y esta sesión.
+1. Subir y desplegar el PR de multiusuario; verificar aislamiento entre usuarios. Después, añadir `PAGESPEED_API_KEY`.
 
 ## Decisiones vigentes
 | Fecha | Decisión | Motivo |
