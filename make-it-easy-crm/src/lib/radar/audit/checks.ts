@@ -346,10 +346,10 @@ export function runChecks(ctx: AuditContext): { checks: AuditCheck[]; title: str
   );
 
   /* ── Local ── */
-  const phoneDigits = (text.match(/(?:\+34[\s.-]?)?(?:6|7|9)\d{2}[\s.-]?\d{2,3}[\s.-]?\d{2,3}/g) || []).length;
-  const hasStreet = /(calle|avenida|avda|c\/|plaza|camino|carretera|pol[ií]gono)/i.test(text);
-  const hasPostcode = /\b\d{5}\b/.test(text);
-  const nap = phoneDigits > 0 && hasStreet && hasPostcode;
+  const phoneDigits = (text.match(/(?:\+57[\s.-]?)?(?:3\d{2}|60\d)[\s.-]?\d{3}[\s.-]?\d{4}/g) || []).length;
+  const hasStreet = /(calle|cl\.?|carrera|cra\.?|avenida|av\.?|avda|diagonal|transversal|plaza|camino|carretera|manzana|mz\.?|kil[oó]metro|km)/i.test(text);
+  const hasPostcode = /\b\d{6}\b/.test(text);
+  const nap = phoneDigits > 0 && hasStreet;
   checks.push(
     C(
       "loc_nap",
@@ -392,7 +392,7 @@ export function runChecks(ctx: AuditContext): { checks: AuditCheck[]; title: str
   checks.push(C("conv_cta", "conversion", "Llamadas a la acción", ctaMatches.length >= 2 ? "pass" : ctaMatches.length === 1 ? "warn" : "fail", "medio", `${ctaMatches.length} CTAs detectadas`, "Coloca CTAs claros («Pedir presupuesto», «Llamar») en cada sección."));
 
   const legal = $('a[href*="privacidad"], a[href*="aviso-legal"], a[href*="aviso legal"], a[href*="politica"], a[href*="legal"]').length;
-  checks.push(C("conv_legal", "conversion", "Aviso legal y privacidad", legal >= 2 ? "pass" : legal === 1 ? "warn" : "fail", "medio", `${legal} enlaces legales`, "Publica aviso legal, privacidad y cookies (obligatorio en España)."));
+  checks.push(C("conv_legal", "conversion", "Aviso legal y privacidad", legal >= 2 ? "pass" : legal === 1 ? "warn" : "fail", "medio", `${legal} enlaces legales`, "Publica aviso legal, privacidad y tratamiento de datos (Ley 1581 de Colombia)."));
 
   const currentYear = new Date().getFullYear();
   const years = [...text.matchAll(/(20\d{2})/g)].map((m) => Number(m[1]));

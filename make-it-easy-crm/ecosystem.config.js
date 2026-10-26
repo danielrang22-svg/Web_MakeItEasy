@@ -1,24 +1,29 @@
+const fs = require("fs");
+const env = {};
+const envPath = "/var/www/apps/mie-crm/.env";
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+    if (!m) continue;
+    let v = m[2].trim();
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+    env[m[1]] = v;
+  }
+}
+
 module.exports = {
   apps: [
     {
       name: "mie-crm",
-      script: "node_modules/.bin/next",
-      args: "start -p 3005",
-      cwd: "/var/www/html/makeiteasy/make-it-easy-crm",
+      script: ".next/standalone/server.js",
+      cwd: "/var/www/apps/mie-crm",
       instances: 1,
       exec_mode: "fork",
-      autorestart: true,
-      watch: false,
-      max_memory_restart: "512M",
-      env: {
-        PORT: 3005,
-      },
-      env_production: {
-        NODE_ENV: "production",
-        PORT: 3005,
-        HOSTNAME: "0.0.0.0",
-        NEXT_PUBLIC_APP_URL: "https://crm.makeiteasycol.com",
-      },
+      max_memory_restart: "600M",
+      env: { NODE_ENV: "production", HOSTNAME: "127.0.0.1", PORT: "3011", ...env },
+      error_file: "/var/log/mie-crm-error.log",
+      out_file: "/var/log/mie-crm-out.log",
+      time: true,
     },
   ],
 };
