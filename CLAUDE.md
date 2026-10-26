@@ -95,4 +95,5 @@
 - Seguridad: security-audit, top-web-vulnerabilities. SEO: seo-audit. Sitios: clone-website.
 
 ## CONTEXT-MODE (obligatorio)
+- Si la herramienta no tiene `ctx_*` (ChatGPT / Claude web), aplicar **modo ahorro** (guía §0.15): no leer archivos gigantes ni pegar logs/HTML.
 Usar `ctx_execute`, `ctx_execute_file`, `ctx_search`, `ctx_batch_execute`, `ctx_fetch_and_index` e `ctx_index` para no quemar tokens. Reglas completas: `~/.agents/reglas/GLOBAL.md`.
