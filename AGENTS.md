@@ -1,5 +1,5 @@
 # AGENTS.md — Web_MakeItEasy
-# Make It Easy | Vibe Forge V1.5 | Tool-agnostic
+# Make It Easy | Vibe Forge V1.6 | Tool-agnostic
 <!-- GENERADO el 2026-10-26 a partir del stack detectado (package.json / prisma / docs).
      REVISAR: si el stack o el deploy cambian, actualizar este archivo y volver a correr
      sync-reglas-proyecto.ps1 -Opcionales para regenerar los espejos. -->
@@ -42,6 +42,16 @@
 - El sitio estático y el CRM son artefactos distintos: `make-it-easy-crm/` NO se publica en el webroot público.
 - SQLite: no usar features exclusivas de Postgres. Cambios de schema con migración versionada.
 - Radar usa APIs externas gratuitas (Photon/Nominatim/Overpass/PageSpeed): manejar rate limits y caché.
+
+## ARRANQUE
+- Estructura creada con `~/.agents/bin/bootstrap-proyecto.ps1`; espejos regenerados con `sync-reglas-proyecto.ps1 -Opcionales`.
+
+## NULCLAW / NULLHUB (INTEGRACIÓN DE AGENTES)
+- Si el proyecto integra agentes, bots, automatizaciones, NullHub, n8n o el CRM: ANTES de diseñar, leer `C:\Users\USUARIO\OneDrive\Documentos\nulclaw\README.md` y la guía que aplique.
+- Guías: `NullHub_Setup_Guide.md`, `NullHub_Agency_Guide.md`, `Guia_Agente_Web_Sitio.md`, `Make_It_Easy_N8N_Guide.md`, `guia_integracion_vibrand_crm.md`, `NullHub_Monitoreo_Alertas.md`.
+- Una carpeta/instancia por cliente; no mezclar credenciales ni `memory.db`.
+- PROHIBIDO `pkill nullclaw` o borrar `memory.db`. Reiniciar con `nullhub api POST /api/instances/nullclaw/<instancia>/restart`.
+- Credenciales solo en NullHub/.env o gestor de secretos; nunca en el repo ni en `_SESIONES`.
 
 ## SESIONES (OBLIGATORIO — guía §0.12)
 - Al iniciar: leer `_SESIONES/00_ESTADO_ACTUAL.md` y la última entrada de `_SESIONES/_INDICE.md`.
