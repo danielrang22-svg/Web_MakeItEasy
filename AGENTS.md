@@ -1,5 +1,5 @@
 # AGENTS.md — Web_MakeItEasy
-# Make It Easy | Vibe Forge V1.6 | Tool-agnostic
+# Make It Easy | Vibe Forge V1.7 | Tool-agnostic
 <!-- GENERADO el 2026-10-26 a partir del stack detectado (package.json / prisma / docs).
      REVISAR: si el stack o el deploy cambian, actualizar este archivo y volver a correr
      sync-reglas-proyecto.ps1 -Opcionales para regenerar los espejos. -->
