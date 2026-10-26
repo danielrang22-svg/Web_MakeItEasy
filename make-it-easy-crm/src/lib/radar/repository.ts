@@ -30,7 +30,11 @@ function read(): RadarLead[] {
 
 function write(leads: RadarLead[]): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(KEY, JSON.stringify(leads));
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(leads));
+  } catch {
+    return;
+  }
 }
 
 export const radarRepository: RadarRepository = {
@@ -125,9 +129,14 @@ function readMap<T>(key: string): Record<string, T> {
   }
 }
 
-function writeMap<T>(key: string, value: Record<string, T>): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(key, JSON.stringify(value));
+function writeMap<T>(key: string, value: Record<string, T>): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function saveBusinessSnapshot(business: RadarBusiness): void {
@@ -140,10 +149,34 @@ export function getBusinessSnapshot(id: string): RadarBusiness | null {
   return readMap<RadarBusiness>(BIZ_KEY)[id] ?? null;
 }
 
+const MAX_ANALYSES = 50;
+
+function trimAnalyses(
+  map: Record<string, RadarAnalysisRecord>
+): Record<string, RadarAnalysisRecord> {
+  return Object.fromEntries(
+    Object.entries(map)
+      .sort((a, b) => b[1].analyzedAt.localeCompare(a[1].analyzedAt))
+      .slice(0, MAX_ANALYSES)
+  );
+}
+
 export function saveAnalysis(record: RadarAnalysisRecord): void {
   const map = readMap<RadarAnalysisRecord>(ANALYSIS_KEY);
-  map[record.businessId] = record;
-  writeMap(ANALYSIS_KEY, map);
+  map[record.businessId] = {
+    ...record,
+    pagespeed: record.pagespeed
+      ? { ...record.pagespeed, screenshot: null }
+      : null,
+  };
+  const trimmed = trimAnalyses(map);
+  if (!writeMap(ANALYSIS_KEY, trimmed)) {
+    const keys = Object.keys(trimmed);
+    const reduced = Object.fromEntries(
+      keys.slice(0, Math.max(1, Math.ceil(keys.length / 2))).map((key) => [key, trimmed[key]])
+    );
+    writeMap(ANALYSIS_KEY, reduced);
+  }
 }
 
 export function getAnalysis(businessId: string): RadarAnalysisRecord | null {
@@ -170,7 +203,11 @@ export function getSettings(): RadarSettings {
 
 export function saveSettings(settings: RadarSettings): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  try {
+    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    return;
+  }
 }
 
 export const LEAD_STATUSES: Array<{ value: RadarLeadStatus; label: string }> = [
