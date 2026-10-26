@@ -48,7 +48,16 @@ function RadarPageContent() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   useEffect(() => {
-    setSavedCount(radarRepository.list().length);
+    let alive = true;
+    radarRepository
+      .load()
+      .then((list) => {
+        if (alive) setSavedCount(list.length);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -70,7 +79,7 @@ function RadarPageContent() {
 
   async function runSearch(zone: string, category: string, kw = "", ex = false) {
     if (!zone.trim()) {
-      setError("Escribe una zona: ciudad, barrio o código postal.");
+      setError("Escribe una zona: ciudad, barrio o cÃ³digo postal.");
       return;
     }
     setLoading(true);
@@ -91,7 +100,7 @@ function RadarPageContent() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "No se pudo completar la búsqueda");
+      if (!res.ok) throw new Error(data.error || "No se pudo completar la bÃºsqueda");
       setResult(data as RadarSearchResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error buscando negocios");
@@ -105,10 +114,17 @@ function RadarPageContent() {
     return runSearch(zona, libre ? "" : nicho, libre ? keyword.trim() : "", exhaustive);
   }
 
-  function openFicha(b: RadarBusiness) {
+  async function openFicha(b: RadarBusiness) {
     saveBusinessSnapshot(b);
-    radarRepository.upsert([b]);
-    setSavedCount(radarRepository.list().length);
+    try {
+      const leads = await radarRepository.upsert([b]);
+      setSavedCount(leads.length);
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : "No se pudo guardar el negocio",
+        type: "error",
+      });
+    }
     router.push(`/radar/negocio?id=${encodeURIComponent(b.id)}`);
   }
 
@@ -144,16 +160,23 @@ function RadarPageContent() {
     });
   }
 
-  function saveSelected() {
+  async function saveSelected() {
     const businesses = filtered.filter((b) => selected.has(b.id));
     if (businesses.length === 0) return;
-    const leads = radarRepository.upsert(businesses);
-    setSavedCount(leads.length);
-    setSelected(new Set());
-    setToast({
-      message: `${businesses.length} negocio(s) guardados en Mis leads`,
-      type: "success",
-    });
+    try {
+      const leads = await radarRepository.upsert(businesses);
+      setSavedCount(leads.length);
+      setSelected(new Set());
+      setToast({
+        message: `${businesses.length} negocio(s) guardados en Mis leads`,
+        type: "success",
+      });
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : "No se pudieron guardar los negocios",
+        type: "error",
+      });
+    }
   }
 
   function exportCsv() {
@@ -194,12 +217,12 @@ function RadarPageContent() {
             Radar de Clientes
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Encuentra negocios locales, detecta quién no tiene web propia y prepara el primer contacto.
+            Encuentra negocios locales, detecta quiÃ©n no tiene web propia y prepara el primer contacto.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
           <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30 font-semibold">
-            Gratis · OpenStreetMap
+            Gratis Â· OpenStreetMap
           </span>
           <span className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground ring-1 ring-border flex items-center gap-1">
             <Users size={12} /> {savedCount} en Mis leads
@@ -219,7 +242,7 @@ function RadarPageContent() {
               <input
                 value={zona}
                 onChange={(e) => setZona(e.target.value)}
-                placeholder="Dos Hermanas, Sevilla · 41701 · Triana"
+                placeholder="Dos Hermanas, Sevilla Â· 41701 Â· Triana"
                 className="w-full pl-9 pr-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-cyan-500 outline-none text-sm"
               />
             </div>
@@ -244,7 +267,7 @@ function RadarPageContent() {
               {RADAR_CATEGORIES.map((c) => (
                 <option key={c.id} value={c.id}>{c.label}</option>
               ))}
-              <option value="__libre">Búsqueda libre por palabra…</option>
+              <option value="__libre">BÃºsqueda libre por palabraâ€¦</option>
             </select>
           </div>
 
@@ -255,7 +278,7 @@ function RadarPageContent() {
               className="w-full py-2.5 px-4 rounded-xl bg-cyan-500 text-slate-950 font-bold text-sm hover:bg-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-              {loading ? "Buscando…" : "Buscar negocios"}
+              {loading ? "Buscandoâ€¦" : "Buscar negocios"}
             </button>
           </div>
 
@@ -267,7 +290,7 @@ function RadarPageContent() {
               <input
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                placeholder="Ej: taller, dental, peluquería…"
+                placeholder="Ej: taller, dental, peluquerÃ­aâ€¦"
                 className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-cyan-500 outline-none text-sm"
               />
             </div>
@@ -281,15 +304,15 @@ function RadarPageContent() {
           </label>
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={onlyWithPhone} onChange={(e) => setOnlyWithPhone(e.target.checked)} className="accent-cyan-500" />
-            Solo con teléfono
+            Solo con telÃ©fono
           </label>
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={hideUnnamed} onChange={(e) => setHideUnnamed(e.target.checked)} className="accent-cyan-500" />
             Ocultar fichas sin nombre
           </label>
-          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" title="Usa Overpass: puede tardar hasta 60 s, pero encuentra muchos más negocios">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" title="Usa Overpass: puede tardar hasta 60 s, pero encuentra muchos mÃ¡s negocios">
             <input type="checkbox" checked={exhaustive} onChange={(e) => setExhaustive(e.target.checked)} className="accent-cyan-500" />
-            Búsqueda exhaustiva (lenta)
+            BÃºsqueda exhaustiva (lenta)
           </label>
           {filtered.length > 0 && (
             <button
@@ -307,7 +330,7 @@ function RadarPageContent() {
         <div className="mt-4 flex items-start gap-3 p-3 rounded-xl bg-red-500/10 ring-1 ring-red-500/30 text-xs text-red-300">
           <AlertCircle size={15} className="shrink-0 mt-0.5" />
           <div className="flex-1">
-            <strong className="block">No se pudo completar la búsqueda</strong>
+            <strong className="block">No se pudo completar la bÃºsqueda</strong>
             <span>{error}</span>
           </div>
           <button
@@ -322,7 +345,7 @@ function RadarPageContent() {
       {loading && (
         <div className="mt-4 bg-card ring-1 ring-border rounded-2xl p-8 text-center text-sm text-muted-foreground">
           <Loader2 size={22} className="animate-spin mx-auto mb-3 text-cyan-400" />
-          {exhaustive ? "Búsqueda exhaustiva en Overpass… puede tardar hasta 60 segundos." : "Consultando OpenStreetMap… suele tardar 1-3 segundos."}
+          {exhaustive ? "BÃºsqueda exhaustiva en Overpassâ€¦ puede tardar hasta 60 segundos." : "Consultando OpenStreetMapâ€¦ suele tardar 1-3 segundos."}
         </div>
       )}
 
@@ -332,7 +355,7 @@ function RadarPageContent() {
             <div className="text-xs text-muted-foreground">
               <span className="text-foreground font-semibold">{filtered.length}</span> negocios en{" "}
               <span className="text-foreground">{result.zone.displayName}</span>
-              {result.cached && <span className="ml-2 px-2 py-0.5 rounded bg-muted text-[10px]">caché</span>}
+              {result.cached && <span className="ml-2 px-2 py-0.5 rounded bg-muted text-[10px]">cachÃ©</span>}
             </div>
             <div className="text-[10px] text-muted-foreground max-w-xl text-right">{result.warnings[0]}</div>
           </div>
@@ -342,7 +365,7 @@ function RadarPageContent() {
               <Search size={26} className="mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm font-semibold">Sin resultados con esos filtros</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Prueba a quitar filtros, ampliar la zona o usar otra categoría.
+                Prueba a quitar filtros, ampliar la zona o usar otra categorÃ­a.
               </p>
             </div>
           )}
@@ -379,14 +402,14 @@ function RadarPageContent() {
                         expanded={expanded === b.id}
                         onToggle={() => toggleSelected(b.id)}
                         onExpand={() => setExpanded(expanded === b.id ? null : b.id)}
-                        onOpen={() => openFicha(b)}
+                        onOpen={() => void openFicha(b)}
                       />
                     ))}
                   </tbody>
                 </table>
               </div>
 
-              {/* Tarjetas móvil */}
+              {/* Tarjetas mÃ³vil */}
               <div className="md:hidden mt-3 space-y-3">
                 {shown.map((b) => (
                   <div key={b.id} className="bg-card ring-1 ring-border rounded-2xl p-4">
@@ -420,7 +443,7 @@ function RadarPageContent() {
                               <Globe size={12} /> {b.websiteKind === "own" ? "Web" : "Ficha externa"}
                             </a>
                           ) : (
-                            <span className="text-xs text-amber-300 flex items-center gap-1" title="OpenStreetMap no registra web para este negocio; confírmalo antes de contactar">
+                            <span className="text-xs text-amber-300 flex items-center gap-1" title="OpenStreetMap no registra web para este negocio; confÃ­rmalo antes de contactar">
                               <Globe size={12} /> Sin web (OSM)
                             </span>
                           )}
@@ -430,7 +453,7 @@ function RadarPageContent() {
                             {expanded === b.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Desglose
                           </button>
                           <div className="flex items-center gap-3">
-                            <button onClick={() => openFicha(b)} className="text-[11px] font-semibold text-cyan-400">Ficha</button>
+                            <button onClick={() => void openFicha(b)} className="text-[11px] font-semibold text-cyan-400">Ficha</button>
                             <a href={b.mapsUrl} target="_blank" rel="noopener" className="text-[11px] text-muted-foreground flex items-center gap-1">
                               Ver mapa <ExternalLink size={11} />
                             </a>
@@ -460,7 +483,7 @@ function RadarPageContent() {
                     onClick={() => setVisible((v) => v + PAGE_SIZE)}
                     className="px-5 py-2.5 rounded-xl ring-1 ring-border text-sm font-semibold hover:bg-muted"
                   >
-                    Mostrar más ({filtered.length - visible} restantes)
+                    Mostrar mÃ¡s ({filtered.length - visible} restantes)
                   </button>
                 </div>
               )}
@@ -469,12 +492,12 @@ function RadarPageContent() {
         </>
       )}
 
-      {/* Barra de selección */}
+      {/* Barra de selecciÃ³n */}
       {selected.size > 0 && (
         <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-3 rounded-2xl bg-surface-container-high ring-1 ring-border shadow-2xl">
           <span className="text-xs font-semibold">{selected.size} seleccionado(s)</span>
           <button
-            onClick={saveSelected}
+            onClick={() => void saveSelected()}
             className="px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 flex items-center gap-1.5"
           >
             <Check size={13} /> Guardar en Mis leads
@@ -504,7 +527,7 @@ function RadarPageContent() {
 
 export default function RadarPage() {
   return (
-    <Suspense fallback={<div className="px-6 py-10 text-sm text-muted-foreground">Cargando Radar…</div>}>
+    <Suspense fallback={<div className="px-6 py-10 text-sm text-muted-foreground">Cargando Radarâ€¦</div>}>
       <RadarPageContent />
     </Suspense>
   );
@@ -542,7 +565,7 @@ function BusinessRows({
               <Phone size={12} /> {business.phone}
             </a>
           ) : (
-            <span className="text-[11px] text-muted-foreground">Sin teléfono</span>
+            <span className="text-[11px] text-muted-foreground">Sin telÃ©fono</span>
           )}
         </td>
         <td className="px-3 py-3">
@@ -560,7 +583,7 @@ function BusinessRows({
               {business.websiteKind === "own" ? business.website.replace(/^https?:\/\//, "") : "Ficha externa"}
             </a>
           ) : (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30" title="OpenStreetMap no registra web para este negocio; confírmalo antes de contactar">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30" title="OpenStreetMap no registra web para este negocio; confÃ­rmalo antes de contactar">
               Sin web (OSM)
             </span>
           )}
@@ -606,3 +629,4 @@ function BusinessRows({
     </>
   );
 }
+

@@ -68,28 +68,37 @@ function BusinessContent() {
   const [nextAction, setNextAction] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     if (!id) return;
+    let alive = true;
     const snap = getBusinessSnapshot(id);
     setBusiness(snap);
-    const saved = getAnalysis(id);
-    if (saved) setRecord(saved);
-    const lead = radarRepository.list().find((l) => l.businessId === id);
-    if (lead) {
-      setNotes(lead.notes);
-      setStatus(lead.status);
-      setNextAction(lead.nextActionAt ? lead.nextActionAt.slice(0, 10) : "");
-    }
+    const savedAnalysis = getAnalysis(id);
+    if (savedAnalysis) setRecord(savedAnalysis);
     const settings = getSettings();
     setTone(settings.tone);
+
+    radarRepository
+      .load()
+      .then((list) => {
+        if (!alive) return;
+        const lead = list.find((l) => l.businessId === id);
+        if (!lead) return;
+        setNotes(lead.notes);
+        setStatus(lead.status);
+        setNextAction(lead.nextActionAt ? lead.nextActionAt.slice(0, 10) : "");
+        setIsSaved(true);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      alive = false;
+    };
   }, [id]);
 
   const seller = useMemo(() => getSettings(), []);
-  const saved = useMemo(
-    () => (business ? radarRepository.list().some((l) => l.businessId === business.id) : false),
-    [business]
-  );
 
   if (!business) {
     return (
@@ -175,8 +184,8 @@ function BusinessContent() {
       setRecord(next);
       saveAnalysis(next);
 
-      if (saved) {
-        radarRepository.update(business.id, { status: "ANALIZADO" });
+      if (isSaved) {
+        await radarRepository.update(business.id, { status: "ANALIZADO" }).catch(() => undefined);
         setStatus("ANALIZADO");
       }
     } catch (err) {
@@ -216,15 +225,20 @@ function BusinessContent() {
     }
   }
 
-  function saveLead() {
+  async function saveLead() {
     if (!business) return;
-    radarRepository.upsert([business]);
-    radarRepository.update(business.id, {
-      status,
-      notes,
-      nextActionAt: nextAction ? new Date(nextAction).toISOString() : null,
-    });
-    setNotice("Guardado en Mis leads.");
+    try {
+      await radarRepository.upsert([business]);
+      await radarRepository.update(business.id, {
+        status,
+        notes,
+        nextActionAt: nextAction ? new Date(nextAction).toISOString() : null,
+      });
+      setIsSaved(true);
+      setNotice("Guardado en Mis leads.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar en Mis leads");
+    }
   }
 
   async function importToCrm() {
@@ -238,7 +252,10 @@ function BusinessContent() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo importar");
-      radarRepository.upsert([business]);
+      await radarRepository
+        .upsert([business])
+        .then(() => setIsSaved(true))
+        .catch(() => undefined);
       router.push(`/leads`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo importar al CRM");
@@ -481,7 +498,7 @@ function BusinessContent() {
             <input type="date" value={nextAction} onChange={(e) => setNextAction(e.target.value)} className="w-full mt-1 mb-3 px-2 py-2 bg-muted rounded-lg text-xs ring-1 ring-border outline-none" />
             <label className="text-[10px] uppercase font-bold text-muted-foreground">Notas</label>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} className="w-full mt-1 mb-3 px-2 py-2 bg-muted rounded-lg text-xs ring-1 ring-border outline-none resize-none" placeholder="Qué le dijiste, cuándo volver a llamar…" />
-            <button onClick={saveLead} className="w-full py-2 rounded-lg bg-muted text-xs font-bold hover:bg-muted/70">
+            <button onClick={() => void saveLead()} className="w-full py-2 rounded-lg bg-muted text-xs font-bold hover:bg-muted/70">
               Guardar en Mis leads
             </button>
           </div>

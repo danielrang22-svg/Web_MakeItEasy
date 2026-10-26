@@ -533,3 +533,22 @@ model RadarUsage {
 
   @@map("radar_usage")
 }
+
+model RadarLead {
+  id                 String    @id @default(uuid())
+  businessId         String
+  ownerEmail         String
+  ownerName          String    @default("")
+  status             String    @default("NUEVO")
+  notes              String    @default("")
+  nextActionAt       DateTime?
+  business           String
+  fechaCreacion      DateTime  @default(now())
+  fechaActualizacion DateTime  @updatedAt
+
+  @@unique([ownerEmail, businessId])
+  @@index([ownerEmail])
+  @@index([businessId])
+  @@index([fechaActualizacion])
+  @@map("radar_leads")
+}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AlertCircle, Check, Save, Trash2 } from "lucide-react";
 import RadarNav from "@/components/radar/RadarNav";
-import { getSettings, saveSettings, type RadarSettings } from "@/lib/radar/repository";
+import { getSettings, radarRepository, saveSettings, type RadarSettings } from "@/lib/radar/repository";
 
 interface AgentOption {
   id: string;
@@ -44,7 +44,7 @@ export default function RadarSettingsPage() {
   }
 
   function clearLocal() {
-    if (!window.confirm("¿Borrar los leads, análisis y ajustes guardados en este navegador?")) return;
+    if (!window.confirm("¿Borrar los análisis, fichas y ajustes guardados en este navegador?")) return;
     window.localStorage.removeItem("radar.leads.v1");
     window.localStorage.removeItem("radar.analyses.v1");
     window.localStorage.removeItem("radar.businesses.v1");
@@ -52,6 +52,17 @@ export default function RadarSettingsPage() {
     setSettings(getSettings());
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  async function clearLeads() {
+    if (!window.confirm("¿Borrar todos tus leads guardados en el servidor? No se puede deshacer.")) return;
+    try {
+      await radarRepository.clear();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudieron borrar los leads");
+    }
   }
 
   return (
@@ -171,14 +182,20 @@ export default function RadarSettingsPage() {
           </div>
 
           <div className="bg-card ring-1 ring-border rounded-2xl p-5">
-            <h2 className="text-sm font-bold flex items-center gap-2"><AlertCircle size={14} className="text-amber-400" /> Datos locales</h2>
+            <h2 className="text-sm font-bold flex items-center gap-2"><AlertCircle size={14} className="text-amber-400" /> Datos de Radar</h2>
             <p className="text-xs text-muted-foreground mt-2">
-              Los leads, análisis y ajustes de Radar se guardan solo en este navegador. Los leads que envíes al CRM
-              quedan guardados en el servidor.
+              Tus leads se guardan en el servidor y solo los ve tu usuario. Los análisis, fichas y ajustes de vendedor
+              se guardan en este navegador.
             </p>
-            <button onClick={clearLocal} className="mt-3 px-3 py-2 rounded-lg bg-red-500/10 text-red-300 ring-1 ring-red-500/30 text-xs font-bold hover:bg-red-500/20 flex items-center gap-1.5">
-              <Trash2 size={13} /> Borrar datos locales de Radar
-            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button onClick={clearLocal} className="px-3 py-2 rounded-lg bg-red-500/10 text-red-300 ring-1 ring-red-500/30 text-xs font-bold hover:bg-red-500/20 flex items-center gap-1.5">
+                <Trash2 size={13} /> Borrar datos locales
+              </button>
+              <button onClick={() => void clearLeads()} className="px-3 py-2 rounded-lg bg-red-500/10 text-red-300 ring-1 ring-red-500/30 text-xs font-bold hover:bg-red-500/20 flex items-center gap-1.5">
+                <Trash2 size={13} /> Borrar mis leads del servidor
+              </button>
+            </div>
+            {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
           </div>
         </div>
       </div>

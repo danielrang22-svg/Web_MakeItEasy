@@ -15,9 +15,25 @@ export default function RadarLeadsPage() {
   const [view, setView] = useState<"table" | "board">("table");
   const [importing, setImporting] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLeads(radarRepository.list());
+    let alive = true;
+    setLoading(true);
+    radarRepository
+      .load()
+      .then((list) => {
+        if (alive) setLeads(list);
+      })
+      .catch((err) => {
+        if (alive) setToast(err instanceof Error ? err.message : "No se pudieron cargar los leads");
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -41,14 +57,21 @@ export default function RadarLeadsPage() {
     });
   }, [leads, status, query]);
 
-  function setLeadStatus(id: string, next: RadarLeadStatus) {
-    radarRepository.update(id, { status: next });
-    setLeads(radarRepository.list());
+  async function setLeadStatus(id: string, next: RadarLeadStatus) {
+    try {
+      setLeads(await radarRepository.update(id, { status: next }));
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "No se pudo actualizar el estado");
+    }
   }
 
-  function remove(id: string) {
-    radarRepository.remove(id);
-    setLeads(radarRepository.list());
+  async function remove(id: string) {
+    if (!window.confirm("¿Eliminar este lead de Mis leads?")) return;
+    try {
+      setLeads(await radarRepository.remove(id));
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "No se pudo eliminar el lead");
+    }
   }
 
   function openFicha(lead: RadarLead) {
@@ -132,7 +155,14 @@ export default function RadarLeadsPage() {
         </select>
       </div>
 
-      {filtered.length === 0 && (
+      {loading && (
+        <div className="mt-6 bg-card ring-1 ring-border rounded-2xl p-10 text-center text-sm text-muted-foreground">
+          <Loader2 size={18} className="animate-spin mx-auto mb-2" />
+          Cargando leads…
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && (
         <div className="mt-6 bg-card ring-1 ring-border rounded-2xl p-10 text-center text-sm text-muted-foreground">
           No hay leads guardados todavía. Guarda negocios desde la búsqueda o pulsa «Ficha».
         </div>
@@ -169,7 +199,7 @@ export default function RadarLeadsPage() {
                     <span className={`text-xs font-bold px-2 py-1 rounded-lg ring-1 ${scoreClasses(l.business.score)}`}>{l.business.score}</span>
                   </td>
                   <td className="px-3 py-3">
-                    <select value={l.status} onChange={(e) => setLeadStatus(l.businessId, e.target.value as RadarLeadStatus)} className="px-2 py-1 bg-muted rounded-lg text-[11px] ring-1 ring-border outline-none">
+                    <select value={l.status} onChange={(e) => void setLeadStatus(l.businessId, e.target.value as RadarLeadStatus)} className="px-2 py-1 bg-muted rounded-lg text-[11px] ring-1 ring-border outline-none">
                       {LEAD_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
                   </td>
@@ -179,7 +209,7 @@ export default function RadarLeadsPage() {
                       <button onClick={() => importLead(l)} disabled={importing === l.businessId} className="text-[11px] text-muted-foreground hover:text-foreground" title="Enviar al CRM">
                         {importing === l.businessId ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                       </button>
-                      <button onClick={() => remove(l.businessId)} className="text-red-400" title="Eliminar">
+                      <button onClick={() => void remove(l.businessId)} className="text-red-400" title="Eliminar">
                         <Trash2 size={13} />
                       </button>
                     </div>

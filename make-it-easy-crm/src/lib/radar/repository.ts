@@ -1,88 +1,131 @@
 "use client";
 
-import type { RadarBusiness, RadarLead, RadarLeadStatus } from "./types";
+import { isRadarLeadStatus, RADAR_LEAD_STATUSES } from "./statuses";
+import type { RadarBusiness, RadarLead } from "./types";
 
-const KEY = "radar.leads.v1";
+export { RADAR_LEAD_STATUSES as LEAD_STATUSES };
 
-/**
- * Capa de datos del radar. Hoy usa localStorage; el día que pasemos a
- * IndexedDB o Firebase solo se sustituye este módulo.
- */
-export interface RadarRepository {
-  list(): RadarLead[];
-  upsert(businesses: RadarBusiness[]): RadarLead[];
-  update(businessId: string, patch: Partial<Pick<RadarLead, "status" | "notes" | "nextActionAt">>): RadarLead[];
-  remove(businessId: string): RadarLead[];
-  clear(): void;
+interface LeadsResponse {
+  leads?: RadarLead[];
+  error?: string;
 }
 
-function read(): RadarLead[] {
+interface LegacyLead {
+  business?: RadarBusiness;
+  status?: string;
+  notes?: string;
+  nextActionAt?: string | null;
+}
+
+const LEGACY_KEY = "radar.leads.v1";
+
+let leadsCache: RadarLead[] = [];
+
+async function leadsRequest(init?: RequestInit): Promise<RadarLead[]> {
+  const res = await fetch("/api/radar/leads", {
+    method: init?.method ?? "GET",
+    headers: { "Content-Type": "application/json" },
+    body: init?.body,
+  });
+  const data = (await res.json().catch(() => null)) as LeadsResponse | null;
+  if (!res.ok) throw new Error(data?.error || "No se pudieron cargar los leads");
+  leadsCache = Array.isArray(data?.leads) ? data.leads : [];
+  return leadsCache;
+}
+
+function readLegacyLeads(): LegacyLead[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = window.localStorage.getItem(LEGACY_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as RadarLead[]) : [];
+    return Array.isArray(parsed) ? (parsed as LegacyLead[]) : [];
   } catch {
     return [];
   }
 }
 
-function write(leads: RadarLead[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(leads));
-  } catch {
-    return;
+async function migrateLegacyLeads(): Promise<RadarLead[]> {
+  if (typeof window === "undefined") return leadsCache;
+  const legacy = readLegacyLeads();
+  if (legacy.length === 0) return leadsCache;
+
+  const businesses = legacy
+    .map((lead) => lead.business)
+    .filter(
+      (business): business is RadarBusiness =>
+        !!business && typeof business.id === "string" && typeof business.name === "string"
+    );
+  if (businesses.length === 0) {
+    window.localStorage.removeItem(LEGACY_KEY);
+    return leadsCache;
   }
+
+  try {
+    await leadsRequest({ method: "POST", body: JSON.stringify({ businesses }) });
+    let failed = false;
+    for (const lead of legacy) {
+      if (!lead.business?.id) continue;
+      const patch: Record<string, unknown> = { businessId: lead.business.id };
+      if (isRadarLeadStatus(lead.status)) patch.status = lead.status;
+      if (lead.notes) patch.notes = lead.notes;
+      if (lead.nextActionAt !== undefined) patch.nextActionAt = lead.nextActionAt;
+      if (Object.keys(patch).length > 1) {
+        await leadsRequest({ method: "PATCH", body: JSON.stringify(patch) }).catch(() => {
+          failed = true;
+          return leadsCache;
+        });
+      }
+    }
+    if (!failed) window.localStorage.removeItem(LEGACY_KEY);
+  } catch {
+    return leadsCache;
+  }
+
+  return leadsCache;
+}
+
+export interface RadarRepository {
+  list(): RadarLead[];
+  load(): Promise<RadarLead[]>;
+  upsert(businesses: RadarBusiness[]): Promise<RadarLead[]>;
+  update(
+    businessId: string,
+    patch: Partial<Pick<RadarLead, "status" | "notes" | "nextActionAt">>
+  ): Promise<RadarLead[]>;
+  remove(businessId: string): Promise<RadarLead[]>;
+  clear(): Promise<void>;
 }
 
 export const radarRepository: RadarRepository = {
   list() {
-    return read().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return leadsCache;
+  },
+
+  load() {
+    return leadsRequest().then(() => migrateLegacyLeads());
   },
 
   upsert(businesses) {
-    const current = read();
-    const now = new Date().toISOString();
-    const map = new Map(current.map((l) => [l.businessId, l]));
-
-    for (const business of businesses) {
-      const existing = map.get(business.id);
-      map.set(business.id, {
-        businessId: business.id,
-        status: existing?.status ?? ("NUEVO" as RadarLeadStatus),
-        notes: existing?.notes ?? "",
-        nextActionAt: existing?.nextActionAt ?? null,
-        createdAt: existing?.createdAt ?? now,
-        updatedAt: now,
-        business,
-      });
-    }
-
-    const next = [...map.values()];
-    write(next);
-    return next;
+    return leadsRequest({ method: "POST", body: JSON.stringify({ businesses }) });
   },
 
   update(businessId, patch) {
-    const next = read().map((l) =>
-      l.businessId === businessId
-        ? { ...l, ...patch, updatedAt: new Date().toISOString() }
-        : l
-    );
-    write(next);
-    return next;
+    return leadsRequest({
+      method: "PATCH",
+      body: JSON.stringify({ businessId, ...patch }),
+    });
   },
 
   remove(businessId) {
-    const next = read().filter((l) => l.businessId !== businessId);
-    write(next);
-    return next;
+    return leadsRequest({
+      method: "DELETE",
+      body: JSON.stringify({ businessId }),
+    });
   },
 
-  clear() {
-    write([]);
+  async clear() {
+    await leadsRequest({ method: "DELETE", body: JSON.stringify({ all: true }) });
   },
 };
 
@@ -210,15 +253,6 @@ export function saveSettings(settings: RadarSettings): void {
   }
 }
 
-export const LEAD_STATUSES: Array<{ value: RadarLeadStatus; label: string }> = [
-  { value: "NUEVO", label: "Nuevo" },
-  { value: "ANALIZADO", label: "Analizado" },
-  { value: "CONTACTADO", label: "Contactado" },
-  { value: "RESPONDIO", label: "Respondió" },
-  { value: "REUNION", label: "Reunión" },
-  { value: "CLIENTE", label: "Cliente" },
-  { value: "DESCARTADO", label: "Descartado" },
-];
 const AUDIT_KEY = "radar.audits.v1";
 
 export function saveAudit(businessId: string, report: unknown): void {
