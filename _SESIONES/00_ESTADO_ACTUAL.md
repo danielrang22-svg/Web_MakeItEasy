@@ -5,19 +5,19 @@ Actualizado: 2026-10-26 09:59 | Sesión: 2026-10-26_0959_radar-fase1.md
 Sitio público de Make It Easy y CRM interno (leads, cotizaciones, proyectos y Radar de prospección).
 
 ## Hecho (verificado)
-- [x] Radar desplegado en producción (`crm.makeiteasycol.com`, PM2 `mie-crm` en 127.0.0.1:3011) con build del 2026-10-26 16:07 UTC.
+- [x] Radar desplegado en producción (`crm.makeiteasycol.com`, PM2 `mie-crm` en 127.0.0.1:3011) con build del 2026-10-26 16:42 UTC.
 - [x] Geocodificación corregida a Colombia (PR #2, commit `712a547`): "Chía" y "Bogotá" resuelven en Colombia; Bogotá devuelve 38 talleres.
+- [x] Cuota de `localStorage` corregida y desplegada (PR #3, commit `81ceea9`): análisis sin captura, tope de 50 y escrituras tolerantes a cuota.
 - [x] Migraciones de SQLite aplicadas en local y producción (radarPlaceId, agents.proposito, radar_usage).
 - [x] APIs del Radar autenticadas responden: `/api/radar/config` 200 y `/radar` redirige al login.
 - [x] Búsqueda OSM validada para Colombia (Bogotá 38 talleres, Medellín 9).
-- [x] `.env.example`, `.gitignore` y `ecosystem.config.js` corregidos.
+- [x] `.env.example`, `.gitignore`, `ecosystem.config.js` y README corregidos.
 
 ## En curso
-- [ ] PR con la cuota de `localStorage` (análisis sin captura y tope de 50) y la documentación corregida.
 - [ ] Ajuste de `.github/workflows/deploy.yml` (sincronizar el CRM) pendiente: el token de GitHub no tiene scope `workflow`.
 
 ## Siguiente paso
-1. Completar el device flow de `gh auth refresh -s workflow` y subir el PR con cuota, docs y `deploy.yml`.
+1. Completar el device flow de `gh auth refresh -s workflow` y subir el PR con `deploy.yml` y esta sesión.
 
 ## Decisiones vigentes
 | Fecha | Decisión | Motivo |
