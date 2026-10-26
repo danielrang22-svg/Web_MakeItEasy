@@ -40,10 +40,12 @@ jobs:
           TARGET: "/var/www/html/makeiteasy"
           EXCLUDE: >-
             /.git/, /.github/, /.agents/, /.claude/, /.neovate/, /.windsurf/,
-            /stitch/, /skills/, /skills-lock.json, /SRS_MakeItEasy_Website.md,
-            /.gitignore, /README.md,
-            **/.env, **/.env.production, /make-it-easy-crm/.env,
-            **/node_modules/, **/.next/
+            /docs/, /deploy/, /stitch/, /skills/, /scratch/, /skills-lock.json,
+            /stitch_extracted_text_from_https_makeiteasycol.com/,
+            /.gitignore, /*.md, /*.log, /*.zip, /*.docx, /*.bat, /deploy.js, /VPS.md,
+            /original_index.html, /hero-prueba.html, /test.html, /downloaded_main.js,
+            /logo-original.svg, /recovered_agent_*, /scratch_*,
+            **/.env, **/.env.production, **/node_modules/, **/.next/
 
       # ── Paso 2: notificar al VPS para que haga build + restart ────────────
       - name: Trigger build & restart via webhook
