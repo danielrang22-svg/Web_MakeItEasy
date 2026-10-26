@@ -39,7 +39,7 @@ interface Analysis {
   recommendedService: { type: string; reason: string };
 }
 
-const SYSTEM = `Eres un consultor de ventas de servicios digitales para negocios locales en España.
+const SYSTEM = `Eres un consultor de ventas de servicios digitales para negocios locales en Colombia.
 Analizas la web de un negocio y devuelves SOLO un objeto JSON con este esquema exacto:
 {
   "summary": "string (2 frases, qué hace el negocio y cómo se ve su presencia digital)",
@@ -56,7 +56,7 @@ Analizas la web de un negocio y devuelves SOLO un objeto JSON con este esquema e
   "recommendedService": { "type": "web_nueva | agente_whatsapp | sistema_citas", "reason": "string" }
 }
 Reglas:
-- Español de España, tono profesional y directo.
+- Español de Colombia, tono profesional y directo.
 - Entre 3 y 5 problemas, concretos y en lenguaje llano (sin jerga técnica).
 - No inventes datos que no aparezcan en el contenido o en el snapshot.
 - El servicio recomendado debe ser uno de los tres tipos indicados.`;

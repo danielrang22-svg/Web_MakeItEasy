@@ -6,6 +6,7 @@ import { findCategory, RADAR_CATEGORIES } from "./categories";
 const UA = "MakeItEasy-Radar/1.0 (contacto: daniel.makeiteasy@gmail.com)";
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 const PHOTON = "https://photon.komoot.io/api/";
+const COUNTRY = (process.env.RADAR_COUNTRY || "co").trim().toLowerCase();
 const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
@@ -57,7 +58,7 @@ export async function geocodeZone(zona: string): Promise<RadarZone> {
   const hit = zoneCache.get(key);
   if (hit && Date.now() - hit.at < ZONE_TTL) return hit.zone;
 
-  const url = `${NOMINATIM}/search?format=jsonv2&limit=1&countrycodes=es&polygon_geojson=1&q=${encodeURIComponent(zona)}`;
+  const url = `${NOMINATIM}/search?format=jsonv2&limit=1&countrycodes=${COUNTRY}&polygon_geojson=1&q=${encodeURIComponent(zona)}`;
   const res = await nominatimFetch(url);
 
   if (!res.ok) {
