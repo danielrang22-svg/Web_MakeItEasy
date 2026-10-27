@@ -1,7 +1,7 @@
-<!-- GENERADO desde AGENTS.md | Vibe Forge V1.5 | No editar a mano -->
+<!-- GENERADO desde AGENTS.md | Vibe Forge V1.7 | No editar a mano -->
 # Reglas — Web_MakeItEasy
 > Claude Code. Lee este archivo como memoria del proyecto.
-> Fuente: `AGENTS.md` en la raíz. Guía maestra V1.5: `C:\Users\USUARIO\OneDrive\Documentos\PROYECTOS\Guia Programacion de Proyectos.md`.
+> Fuente: `AGENTS.md` en la raíz. Guía maestra V1.7: `C:\Users\USUARIO\OneDrive\Documentos\PROYECTOS\Guia Programacion de Proyectos.md`.
 
 ---
 
