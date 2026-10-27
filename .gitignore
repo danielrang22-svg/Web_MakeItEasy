@@ -12,6 +12,8 @@ package-lock.json
 .claude/
 .neovate/
 .windsurf/
+!.windsurf/rules/
+!.windsurf/rules/**
 scratch/
 
 # Documentación y material de trabajo (no va a producción)
