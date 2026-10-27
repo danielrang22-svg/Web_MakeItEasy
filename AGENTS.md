@@ -12,7 +12,7 @@
 - Stack: HTML/CSS/JS estático + Tailwind (raíz) · CRM: Next.js 16 + React 19 + TypeScript + Prisma 5.11 + SQLite + Tailwind
 
 ## ORDEN DE LECTURA
-1. Guía maestra V1.5 §0.11 (perfil) y §0.12 (sesiones).
+1. Guía maestra V1.7 §0.11 (perfil) y §0.12 (sesiones).
 2. `_SESIONES/00_ESTADO_ACTUAL.md` + última sesión de `_SESIONES/_INDICE.md`.
 3. `_BLUEPRINT/PLAN_DE_TRABAJO.md` (pendientes) y el blueprint que aplique.
 4. `_CONTEXTO/CONVENCIONES.md` si existe.
