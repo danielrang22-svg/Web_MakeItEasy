@@ -552,3 +552,18 @@ model RadarLead {
   @@index([fechaActualizacion])
   @@map("radar_leads")
 }
+model RadarAudit {
+  id             String   @id @default(uuid())
+  radarPlaceId   String
+  businessName   String
+  url            String?
+  globalScore    Int
+  potentialScore Int
+  areaScores     String
+  checksJson     String
+  createdAt      DateTime @default(now())
+
+  @@index([radarPlaceId])
+  @@index([createdAt])
+  @@map("radar_audits")
+}

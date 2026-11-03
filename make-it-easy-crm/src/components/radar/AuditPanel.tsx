@@ -1,10 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AlertCircle, ChevronDown, Clipboard, Loader2, Play } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AlertCircle, ChevronDown, Clipboard, FileText, Loader2, Play, Receipt } from "lucide-react";
 import type { AuditReport } from "@/lib/radar/audit/types";
-import { getAudit, saveAudit } from "@/lib/radar/repository";
+import { getAudit, getSettings, saveAudit } from "@/lib/radar/repository";
+import { addOnsFor, formatEur, recommendPackage } from "@/lib/radar/packages";
+import { printAuditReport } from "@/lib/radar/report";
 import type { RadarBusiness } from "@/lib/radar/types";
+
+interface HistoryRow {
+  id: string;
+  createdAt: string;
+  globalScore: number;
+  potentialScore: number;
+  url?: string | null;
+}
 
 function tone(score: number | null): string {
   if (score == null) return "text-muted-foreground";
@@ -28,16 +39,31 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function AuditPanel({ business }: { business: RadarBusiness }) {
+  const router = useRouter();
   const [report, setReport] = useState<AuditReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [openArea, setOpenArea] = useState<string | null>("indexacion");
   const [copied, setCopied] = useState(false);
+  const [history, setHistory] = useState<HistoryRow[]>([]);
+  const [quoting, setQuoting] = useState(false);
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/radar/audits?businessId=${encodeURIComponent(business.id)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setHistory(data.audits ?? []);
+    } catch {
+      // sin historial
+    }
+  }, [business.id]);
 
   useEffect(() => {
     const saved = getAudit<AuditReport>(business.id);
     if (saved) setReport(saved);
-  }, [business.id]);
+    void loadHistory();
+  }, [business.id, loadHistory]);
 
   async function audit() {
     if (!business.website) return;
@@ -51,8 +77,20 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo auditar la web");
+
       setReport(data as AuditReport);
       saveAudit(business.id, data);
+
+      void fetch("/api/radar/audits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessId: business.id,
+          businessName: business.name,
+          url: business.website,
+          report: data,
+        }),
+      }).then(() => loadHistory()).catch(() => undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error auditando la web");
     } finally {
@@ -77,6 +115,57 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
     setTimeout(() => setCopied(false), 1800);
   }
 
+  async function createQuote() {
+    if (!report) return;
+    setQuoting(true);
+    setError("");
+    try {
+      const pkg = recommendPackage(report);
+      const addOns = addOnsFor(report);
+      const total = pkg.fromEur + addOns.reduce((sum, a) => sum + a.fromEur, 0);
+
+      const impRes = await fetch("/api/radar/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ business }),
+      });
+      const imp = await impRes.json();
+      if (!impRes.ok) throw new Error(imp.error || "No se pudo crear el lead");
+
+      const desafio = report.critical.length
+        ? `Fallos críticos detectados: ${report.critical.join(", ")}.`
+        : `Nota SEO actual ${report.globalScore}/100; potencial ${report.potentialScore}/100.`;
+
+      const res = await fetch("/api/cotizaciones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          empresaNombre: business.name,
+          contactoNombre: business.name,
+          leadId: imp.leadId ?? null,
+          tituloPropuesta: `${pkg.label} para ${business.name}`,
+          desafioNegocio: `${desafio} ${pkg.pitch}`,
+          totalProyectoCore: total,
+          moduloOpcionalFee: 0,
+          feeMensual: pkg.recurring?.fromEur ?? 0,
+          feeMensualIncluye: pkg.recurring?.label ?? "",
+          moneda: "EUR",
+          estado: "BORRADOR",
+          observaciones: `Auditoría SEO ${report.globalScore}/100 (potencial ${report.potentialScore}). ${report.url}`,
+          validez: "30 días",
+        }),
+      });
+      const quote = await res.json();
+      if (!res.ok) throw new Error(quote.error || "No se pudo crear la cotización");
+
+      router.push("/cotizaciones");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo crear la cotización");
+    } finally {
+      setQuoting(false);
+    }
+  }
+
   if (business.websiteKind !== "own" || !business.website) {
     return (
       <div className="bg-card ring-1 ring-border rounded-2xl p-5">
@@ -92,6 +181,10 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
       </div>
     );
   }
+
+  const pkg = report ? recommendPackage(report) : null;
+  const addOns = report ? addOnsFor(report) : [];
+  const previous = history.length > 0 ? history[0] : null;
 
   return (
     <div className="bg-card ring-1 ring-border rounded-2xl p-5">
@@ -145,6 +238,26 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
             </div>
           </div>
 
+          {history.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+              <span className="font-bold uppercase tracking-wider">Historial</span>
+              {history.slice(0, 4).map((h, i) => {
+                const next = history[i + 1];
+                const delta = next ? h.globalScore - next.globalScore : 0;
+                return (
+                  <span key={h.id} className="px-2 py-0.5 rounded bg-muted">
+                    {new Date(h.createdAt).toLocaleDateString("es-ES")} · {h.globalScore}
+                    {delta !== 0 && (
+                      <span className={delta > 0 ? " text-emerald-400" : " text-red-400"}>
+                        {delta > 0 ? ` +${delta}` : ` ${delta}`}
+                      </span>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
           <div className="space-y-2">
             {report.areas.map((a) => (
               <div key={a.area}>
@@ -176,6 +289,47 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {pkg && (
+            <div className="p-3 rounded-xl bg-cyan-500/10 ring-1 ring-cyan-500/30">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-cyan-300">Propuesta recomendada</p>
+                  <p className="text-sm font-bold mt-0.5">{pkg.label} · desde {formatEur(pkg.fromEur)}</p>
+                  <p className="text-[11px] text-muted-foreground">{pkg.pitch}</p>
+                  {addOns.length > 0 && (
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Opcional: {addOns.map((a) => `${a.label} (${formatEur(a.fromEur)})`).join(" · ")}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-3">
+                <button
+                  onClick={() =>
+                    printAuditReport({
+                      business,
+                      report,
+                      pkg,
+                      addOns,
+                      sellerName: getSettings().sellerName,
+                    })
+                  }
+                  className="px-2.5 py-1.5 rounded-lg bg-muted text-[11px] font-semibold hover:bg-muted/70 flex items-center gap-1"
+                >
+                  <FileText size={12} /> Informe PDF
+                </button>
+                <button
+                  onClick={createQuote}
+                  disabled={quoting}
+                  className="px-2.5 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-[11px] font-bold hover:bg-cyan-400 disabled:opacity-40 flex items-center gap-1"
+                >
+                  {quoting ? <Loader2 size={12} className="animate-spin" /> : <Receipt size={12} />}
+                  {quoting ? "Creando…" : "Crear cotización"}
+                </button>
+              </div>
             </div>
           )}
 

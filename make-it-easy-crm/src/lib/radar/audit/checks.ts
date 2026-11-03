@@ -388,7 +388,7 @@ export function runChecks(ctx: AuditContext): { checks: AuditCheck[]; title: str
 
   const ctaMatches = [...html.matchAll(/<(a|button)[^>]*>([\s\S]{0,120}?)<\/\1>/gi)]
     .map((m) => m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
-    .filter((t) => /presupuesto|contactar|llamar|reservar|cita|solicitar|comprar|escr[ií]benos/i.test(t));
+    .filter((t) => /presupuesto|contactar|llamar|reservar|reserva|cita|solicitar|solicita|comprar|escr[ií]benos|agenda|diagn[oó]stico|cotiza|empezar|hablar|descubrir|pide/i.test(t));
   checks.push(C("conv_cta", "conversion", "Llamadas a la acción", ctaMatches.length >= 2 ? "pass" : ctaMatches.length === 1 ? "warn" : "fail", "medio", `${ctaMatches.length} CTAs detectadas`, "Coloca CTAs claros («Pedir presupuesto», «Llamar») en cada sección."));
 
   const legal = $('a[href*="privacidad"], a[href*="aviso-legal"], a[href*="aviso legal"], a[href*="politica"], a[href*="legal"]').length;
