@@ -53,7 +53,7 @@ export async function runAudit(rawUrl: string): Promise<AuditReport> {
     ? Math.round(evaluable.reduce((sum, a) => sum + (a.score as number) * a.weight, 0) / weightSum)
     : 0;
 
-  const potentialScore = Math.min(98, Math.round(globalScore + (100 - globalScore) * 0.55));
+  const potentialScore = Math.max(globalScore, Math.min(99, Math.round(globalScore + (100 - globalScore) * 0.55)));
 
   const quickWins = unique(
     checks
