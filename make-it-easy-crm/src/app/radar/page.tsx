@@ -25,6 +25,13 @@ import type { RadarBusiness, RadarSearchResult } from "@/lib/radar/types";
 
 const PAGE_SIZE = 20;
 
+interface RadarUsageInfo {
+  used: number;
+  exhaustiveUsed: number;
+  limits: { dailySearches: number; dailyExhaustive: number; maxResults: number };
+  resetsAt: string;
+}
+
 function RadarPageContent() {
   const [zona, setZona] = useState("");
   const [nicho, setNicho] = useState("talleres");
@@ -35,6 +42,8 @@ function RadarPageContent() {
   const [onlyWithPhone, setOnlyWithPhone] = useState(false);
   const [hideUnnamed, setHideUnnamed] = useState(true);
   const [exhaustive, setExhaustive] = useState(false);
+  const [onlyNew, setOnlyNew] = useState(true);
+  const [usage, setUsage] = useState<RadarUsageInfo | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -61,6 +70,19 @@ function RadarPageContent() {
   }, []);
 
   useEffect(() => {
+    let alive = true;
+    fetch("/api/radar/config")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (alive && data?.usage) setUsage(data.usage);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(t);
@@ -79,7 +101,7 @@ function RadarPageContent() {
 
   async function runSearch(zone: string, category: string, kw = "", ex = false) {
     if (!zone.trim()) {
-      setError("Escribe una zona: ciudad, barrio o cÃ³digo postal.");
+      setError("Escribe una zona: ciudad, barrio o código postal.");
       return;
     }
     setLoading(true);
@@ -97,10 +119,12 @@ function RadarPageContent() {
           nicho: category,
           keyword: kw,
           mode: ex ? "exhaustive" : "fast",
+          onlyNew,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "No se pudo completar la bÃºsqueda");
+      if (data?.usage) setUsage(data.usage);
+      if (!res.ok) throw new Error(data.error || "No se pudo completar la búsqueda");
       setResult(data as RadarSearchResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error buscando negocios");
@@ -134,9 +158,10 @@ function RadarPageContent() {
       if (onlyNoWebsite && b.websiteKind === "own") return false;
       if (onlyWithPhone && !b.phone) return false;
       if (hideUnnamed && b.name === "(sin nombre)") return false;
+      if (onlyNew && b.saved) return false;
       return true;
     });
-  }, [result, onlyNoWebsite, onlyWithPhone, hideUnnamed]);
+  }, [result, onlyNoWebsite, onlyWithPhone, hideUnnamed, onlyNew]);
 
   const shown = filtered.slice(0, visible);
 
@@ -217,16 +242,28 @@ function RadarPageContent() {
             Radar de Clientes
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Encuentra negocios locales, detecta quiÃ©n no tiene web propia y prepara el primer contacto.
+            Encuentra negocios locales, detecta quién no tiene web propia y prepara el primer contacto.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
           <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30 font-semibold">
-            Gratis Â· OpenStreetMap
+            Gratis · OpenStreetMap
           </span>
           <span className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground ring-1 ring-border flex items-center gap-1">
             <Users size={12} /> {savedCount} en Mis leads
           </span>
+          {usage && (
+            <span
+              className={`px-2.5 py-1 rounded-full ring-1 flex items-center gap-1 ${
+                usage.used >= usage.limits.dailySearches
+                  ? "bg-red-500/15 text-red-300 ring-red-500/30"
+                  : "bg-muted text-muted-foreground ring-border"
+              }`}
+              title="Se reinicia a las 00:00, hora Colombia"
+            >
+              Hoy: {usage.used}/{usage.limits.dailySearches} · exh. {usage.exhaustiveUsed}/{usage.limits.dailyExhaustive}
+            </span>
+          )}
         </div>
       </div>
 
@@ -242,7 +279,7 @@ function RadarPageContent() {
               <input
                 value={zona}
                 onChange={(e) => setZona(e.target.value)}
-                placeholder="Dos Hermanas, Sevilla Â· 41701 Â· Triana"
+                placeholder="Dos Hermanas, Sevilla · 41701 · Triana"
                 className="w-full pl-9 pr-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-cyan-500 outline-none text-sm"
               />
             </div>
@@ -267,7 +304,7 @@ function RadarPageContent() {
               {RADAR_CATEGORIES.map((c) => (
                 <option key={c.id} value={c.id}>{c.label}</option>
               ))}
-              <option value="__libre">BÃºsqueda libre por palabraâ€¦</option>
+              <option value="__libre">Búsqueda libre por palabra…</option>
             </select>
           </div>
 
@@ -278,7 +315,7 @@ function RadarPageContent() {
               className="w-full py-2.5 px-4 rounded-xl bg-cyan-500 text-slate-950 font-bold text-sm hover:bg-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-              {loading ? "Buscandoâ€¦" : "Buscar negocios"}
+              {loading ? "Buscando…" : "Buscar negocios"}
             </button>
           </div>
 
@@ -290,7 +327,7 @@ function RadarPageContent() {
               <input
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                placeholder="Ej: taller, dental, peluquerÃ­aâ€¦"
+                placeholder="Ej: taller, dental, peluquería…"
                 className="w-full px-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-cyan-500 outline-none text-sm"
               />
             </div>
@@ -298,21 +335,25 @@ function RadarPageContent() {
         </div>
 
         <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-border">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" title="Oculta los negocios que ya tienes en Mis leads">
+            <input type="checkbox" checked={onlyNew} onChange={(e) => setOnlyNew(e.target.checked)} className="accent-cyan-500" />
+            Solo nuevos
+          </label>
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={onlyNoWebsite} onChange={(e) => setOnlyNoWebsite(e.target.checked)} className="accent-cyan-500" />
             Solo sin web registrada
           </label>
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={onlyWithPhone} onChange={(e) => setOnlyWithPhone(e.target.checked)} className="accent-cyan-500" />
-            Solo con telÃ©fono
+            Solo con teléfono
           </label>
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={hideUnnamed} onChange={(e) => setHideUnnamed(e.target.checked)} className="accent-cyan-500" />
             Ocultar fichas sin nombre
           </label>
-          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" title="Usa Overpass: puede tardar hasta 60 s, pero encuentra muchos mÃ¡s negocios">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" title="Usa Overpass: puede tardar hasta 60 s, pero encuentra muchos más negocios">
             <input type="checkbox" checked={exhaustive} onChange={(e) => setExhaustive(e.target.checked)} className="accent-cyan-500" />
-            BÃºsqueda exhaustiva (lenta)
+            Búsqueda exhaustiva (lenta)
           </label>
           {filtered.length > 0 && (
             <button
@@ -330,7 +371,7 @@ function RadarPageContent() {
         <div className="mt-4 flex items-start gap-3 p-3 rounded-xl bg-red-500/10 ring-1 ring-red-500/30 text-xs text-red-300">
           <AlertCircle size={15} className="shrink-0 mt-0.5" />
           <div className="flex-1">
-            <strong className="block">No se pudo completar la bÃºsqueda</strong>
+            <strong className="block">No se pudo completar la búsqueda</strong>
             <span>{error}</span>
           </div>
           <button
@@ -345,7 +386,7 @@ function RadarPageContent() {
       {loading && (
         <div className="mt-4 bg-card ring-1 ring-border rounded-2xl p-8 text-center text-sm text-muted-foreground">
           <Loader2 size={22} className="animate-spin mx-auto mb-3 text-cyan-400" />
-          {exhaustive ? "BÃºsqueda exhaustiva en Overpassâ€¦ puede tardar hasta 60 segundos." : "Consultando OpenStreetMapâ€¦ suele tardar 1-3 segundos."}
+          {exhaustive ? "Búsqueda exhaustiva en Overpass… puede tardar hasta 60 segundos." : "Consultando OpenStreetMap… suele tardar 1-3 segundos."}
         </div>
       )}
 
@@ -355,7 +396,13 @@ function RadarPageContent() {
             <div className="text-xs text-muted-foreground">
               <span className="text-foreground font-semibold">{filtered.length}</span> negocios en{" "}
               <span className="text-foreground">{result.zone.displayName}</span>
-              {result.cached && <span className="ml-2 px-2 py-0.5 rounded bg-muted text-[10px]">cachÃ©</span>}
+              {typeof result.newCount === "number" && (
+                <span className="ml-2 text-[10px] text-emerald-400">{result.newCount} nuevos</span>
+              )}
+              {(result.savedCount ?? 0) > 0 && (
+                <span className="ml-1 text-[10px] text-muted-foreground">{result.savedCount} ya guardados</span>
+              )}
+              {result.cached && <span className="ml-2 px-2 py-0.5 rounded bg-muted text-[10px]">caché</span>}
             </div>
             <div className="text-[10px] text-muted-foreground max-w-xl text-right">{result.warnings[0]}</div>
           </div>
@@ -365,7 +412,7 @@ function RadarPageContent() {
               <Search size={26} className="mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm font-semibold">Sin resultados con esos filtros</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Prueba a quitar filtros, ampliar la zona o usar otra categorÃ­a.
+                Prueba a quitar filtros, ampliar la zona o usar otra categoría.
               </p>
             </div>
           )}
@@ -409,7 +456,7 @@ function RadarPageContent() {
                 </table>
               </div>
 
-              {/* Tarjetas mÃ³vil */}
+              {/* Tarjetas móvil */}
               <div className="md:hidden mt-3 space-y-3">
                 {shown.map((b) => (
                   <div key={b.id} className="bg-card ring-1 ring-border rounded-2xl p-4">
@@ -426,6 +473,11 @@ function RadarPageContent() {
                           <div>
                             <p className="font-semibold text-sm leading-tight">{b.name}</p>
                             <p className="text-[11px] text-muted-foreground">{b.category}</p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {b.saved && <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30">Guardado</span>}
+                              {b.audited && <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/30">Auditado</span>}
+                              {b.isNew && <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground ring-1 ring-border">Nuevo</span>}
+                            </div>
                           </div>
                           <span className={`text-xs font-bold px-2 py-1 rounded-lg ring-1 ${scoreClasses(b.score)}`}>
                             {b.score}
@@ -443,7 +495,7 @@ function RadarPageContent() {
                               <Globe size={12} /> {b.websiteKind === "own" ? "Web" : "Ficha externa"}
                             </a>
                           ) : (
-                            <span className="text-xs text-amber-300 flex items-center gap-1" title="OpenStreetMap no registra web para este negocio; confÃ­rmalo antes de contactar">
+                            <span className="text-xs text-amber-300 flex items-center gap-1" title="OpenStreetMap no registra web para este negocio; confírmalo antes de contactar">
                               <Globe size={12} /> Sin web (OSM)
                             </span>
                           )}
@@ -483,7 +535,7 @@ function RadarPageContent() {
                     onClick={() => setVisible((v) => v + PAGE_SIZE)}
                     className="px-5 py-2.5 rounded-xl ring-1 ring-border text-sm font-semibold hover:bg-muted"
                   >
-                    Mostrar mÃ¡s ({filtered.length - visible} restantes)
+                    Mostrar más ({filtered.length - visible} restantes)
                   </button>
                 </div>
               )}
@@ -492,7 +544,7 @@ function RadarPageContent() {
         </>
       )}
 
-      {/* Barra de selecciÃ³n */}
+      {/* Barra de selección */}
       {selected.size > 0 && (
         <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-3 rounded-2xl bg-surface-container-high ring-1 ring-border shadow-2xl">
           <span className="text-xs font-semibold">{selected.size} seleccionado(s)</span>
@@ -527,7 +579,7 @@ function RadarPageContent() {
 
 export default function RadarPage() {
   return (
-    <Suspense fallback={<div className="px-6 py-10 text-sm text-muted-foreground">Cargando Radarâ€¦</div>}>
+    <Suspense fallback={<div className="px-6 py-10 text-sm text-muted-foreground">Cargando Radar…</div>}>
       <RadarPageContent />
     </Suspense>
   );
@@ -558,6 +610,11 @@ function BusinessRows({
           <p className="font-semibold text-sm leading-tight">{business.name}</p>
           <p className="text-[11px] text-muted-foreground">{business.category}</p>
           {business.address && <p className="text-[11px] text-muted-foreground mt-0.5">{business.address}</p>}
+          <div className="flex flex-wrap gap-1 mt-1">
+            {business.saved && <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30">Guardado</span>}
+            {business.audited && <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/30">Auditado</span>}
+            {business.isNew && <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground ring-1 ring-border">Nuevo</span>}
+          </div>
         </td>
         <td className="px-3 py-3">
           {business.phone ? (
@@ -565,7 +622,7 @@ function BusinessRows({
               <Phone size={12} /> {business.phone}
             </a>
           ) : (
-            <span className="text-[11px] text-muted-foreground">Sin telÃ©fono</span>
+            <span className="text-[11px] text-muted-foreground">Sin teléfono</span>
           )}
         </td>
         <td className="px-3 py-3">
@@ -583,7 +640,7 @@ function BusinessRows({
               {business.websiteKind === "own" ? business.website.replace(/^https?:\/\//, "") : "Ficha externa"}
             </a>
           ) : (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30" title="OpenStreetMap no registra web para este negocio; confÃ­rmalo antes de contactar">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30" title="OpenStreetMap no registra web para este negocio; confírmalo antes de contactar">
               Sin web (OSM)
             </span>
           )}

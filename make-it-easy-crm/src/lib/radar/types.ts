@@ -27,6 +27,10 @@ export interface RadarBusiness {
   tags: Record<string, string>;
   score: number;
   breakdown: ScoreBreakdown[];
+  /** Marcas que añade el servidor al buscar (no vienen de OSM) */
+  isNew?: boolean;
+  saved?: boolean;
+  audited?: boolean;
 }
 
 export interface RadarZone {
@@ -46,14 +50,25 @@ export interface RadarFilters {
   minReviews: number | null;
 }
 
+export interface RadarUsage {
+  used: number;
+  exhaustiveUsed: number;
+  limits: { dailySearches: number; dailyExhaustive: number; maxResults: number };
+  resetsAt: string;
+  timezone: string;
+}
+
 export interface RadarSearchResult {
   zone: RadarZone;
   businesses: RadarBusiness[];
   source: RadarSource;
   provider?: 'photon' | 'overpass';
   total: number;
+  newCount?: number;
+  savedCount?: number;
   warnings: string[];
   cached: boolean;
+  usage?: RadarUsage;
 }
 
 export type RadarLeadStatus =

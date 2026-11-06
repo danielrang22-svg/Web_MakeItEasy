@@ -63,7 +63,7 @@ test("isRadarLeadStatus valida los estados del Radar", () => {
   assert.equal(isRadarLeadStatus(null), false);
 });
 
-test("saveAnalysis no persiste capturas y mantiene como mÃ¡ximo 50 anÃ¡lisis", () => {
+test("saveAnalysis no persiste capturas y mantiene como máximo 50 análisis", () => {
   const store = new Map<string, string>();
   const fakeWindow = {
     localStorage: {

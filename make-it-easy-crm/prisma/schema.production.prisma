@@ -567,3 +567,51 @@ model RadarAudit {
   @@index([createdAt])
   @@map("radar_audits")
 }
+model RadarBusiness {
+  id          String   @id @default(uuid())
+  externalId  String   @unique
+  name        String
+  category    String
+  address     String   @default("")
+  phone       String   @default("")
+  website     String   @default("")
+  websiteKind String   @default("none")
+  source      String   @default("osm")
+  score       Int      @default(0)
+  payload     String
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @updatedAt
+  seenCount   Int      @default(1)
+
+  @@index([category])
+  @@index([lastSeenAt])
+  @@map("radar_businesses")
+}
+
+model RadarSearchLog {
+  id          String   @id @default(uuid())
+  zoneKey     String
+  niche       String
+  mode        String
+  provider    String
+  resultCount Int
+  newCount    Int
+  cached      Boolean  @default(false)
+  userEmail   String
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userEmail, createdAt])
+  @@map("radar_searches")
+}
+
+model RadarSearchCache {
+  key       String   @id
+  payload   String
+  provider  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("radar_search_cache")
+}

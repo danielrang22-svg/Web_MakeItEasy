@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuthRole } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { getUsage, RADAR_LIMITS } from '@/lib/radar/quota';
 
 /** Configuración que necesita el módulo Radar (cualquier rol autenticado). */
 export async function GET(request: NextRequest) {
@@ -13,8 +14,12 @@ export async function GET(request: NextRequest) {
     orderBy: [{ activo: 'desc' }, { fechaCreacion: 'desc' }],
   });
 
+  const usage = await getUsage(auth.email);
+
   return NextResponse.json({
     agents,
     pagespeedConfigured: !!process.env.PAGESPEED_API_KEY?.trim(),
+    limits: RADAR_LIMITS,
+    usage,
   });
 }
