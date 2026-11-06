@@ -178,11 +178,15 @@ function BusinessContent() {
         businessId: business.id,
         analyzedAt: new Date().toISOString(),
         pagespeed,
-        analysis: data.analysis,
+        analysis: data.analysis ?? null,
         meta: data.meta,
       };
       setRecord(next);
       saveAnalysis(next);
+
+      if (data.aiError) {
+        setNotice(`Análisis IA no disponible: ${data.aiError}`);
+      }
 
       if (isSaved) {
         await radarRepository.update(business.id, { status: "ANALIZADO" }).catch(() => undefined);

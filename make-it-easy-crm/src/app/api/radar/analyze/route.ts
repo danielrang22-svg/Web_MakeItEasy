@@ -140,20 +140,34 @@ export async function POST(request: NextRequest) {
         : `NO SE PUDO LEER LA WEB: ${snapshot.error ?? 'error desconocido'}`,
     ].join('\n\n');
 
-    const { data, meta } = await chatJSON<Analysis>({
-      system: SYSTEM,
-      user: `Analiza este negocio y su web:\n\n${context}`,
-      proposito: 'radar',
-      agentId: body.agentId,
-      temperature: 0.3,
-      maxTokens: 1400,
-      timeoutMs: 60000,
-    });
+    let analysis: Analysis | null = null;
+    let aiError: string | null = null;
+    let meta: { provider: string; model: string; latencyMs: number } | null = null;
+
+    try {
+      const result = await chatJSON<Analysis>({
+        system: SYSTEM,
+        user: `Analiza este negocio y su web:\n\n${context}`,
+        proposito: 'radar',
+        agentId: body.agentId,
+        temperature: 0.3,
+        maxTokens: 1400,
+        timeoutMs: 60000,
+      });
+      analysis = normalizeAnalysis(result.data);
+      meta = result.meta;
+    } catch (aiErr) {
+      aiError =
+        aiErr instanceof AiConfigError || aiErr instanceof AiRequestError
+          ? aiErr.message
+          : 'La IA no está disponible en este momento';
+    }
 
     return NextResponse.json({
-      analysis: normalizeAnalysis(data),
+      analysis,
+      aiError,
       meta: {
-        ai: true,
+        ai: analysis !== null,
         website: {
           ok: snapshot.ok,
           finalUrl: snapshot.finalUrl ?? snapshot.url,
@@ -168,9 +182,9 @@ export async function POST(request: NextRequest) {
           https: snapshot.https,
           copyrightYear: snapshot.copyrightYear,
         },
-        provider: meta.provider,
-        model: meta.model,
-        latencyMs: meta.latencyMs,
+        provider: meta?.provider ?? null,
+        model: meta?.model ?? null,
+        latencyMs: meta?.latencyMs ?? null,
       },
     });
   } catch (error) {
