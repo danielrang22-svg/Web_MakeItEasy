@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, ChevronDown, Clipboard, FileText, Loader2, Play, Receipt } from "lucide-react";
 import type { AuditReport } from "@/lib/radar/audit/types";
 import { getAudit, getSettings, saveAudit } from "@/lib/radar/repository";
@@ -40,6 +40,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default function AuditPanel({ business }: { business: RadarBusiness }) {
   const router = useRouter();
+  const params = useSearchParams();
   const [report, setReport] = useState<AuditReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -64,6 +65,13 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
     if (saved) setReport(saved);
     void loadHistory();
   }, [business.id, loadHistory]);
+
+  useEffect(() => {
+    if (params.get("audit") === "1" && business.websiteKind === "own" && business.website) {
+      void audit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [business.id]);
 
   async function audit() {
     if (!business.website) return;

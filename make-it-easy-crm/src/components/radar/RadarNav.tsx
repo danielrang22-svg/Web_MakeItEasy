@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Radar, Search, Users, Layers, Settings } from "lucide-react";
+import { Radar, Search, Users, Layers, Settings, CalendarDays } from "lucide-react";
 
 const ITEMS = [
   { href: "/radar", label: "Buscar", icon: Search },
   { href: "/radar/leads", label: "Mis leads", icon: Users },
+  { href: "/radar/agenda", label: "Plan", icon: CalendarDays },
   { href: "/radar/nichos", label: "Radar de nichos", icon: Layers },
   { href: "/radar/ajustes", label: "Ajustes", icon: Settings },
 ];

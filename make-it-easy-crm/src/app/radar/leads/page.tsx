@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, ExternalLink, Loader2, Search, Trash2, Upload } from "lucide-react";
+import { Download, ExternalLink, Loader2, MessageCircle, Navigation, Printer, Search, Trash2, Upload } from "lucide-react";
 import RadarNav from "@/components/radar/RadarNav";
-import { LEAD_STATUSES, radarRepository, saveBusinessSnapshot } from "@/lib/radar/repository";
+import { getSettings, LEAD_STATUSES, radarRepository, saveBusinessSnapshot } from "@/lib/radar/repository";
+import { buildIntroMessage, mapsRouteUrl, printVisitSheet, whatsappUrl } from "@/lib/radar/outreach";
 import { scoreClasses } from "@/lib/radar/score";
 import type { RadarLead, RadarLeadStatus } from "@/lib/radar/types";
 export default function RadarLeadsPage() {
@@ -16,8 +17,11 @@ export default function RadarLeadsPage() {
   const [importing, setImporting] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [seller, setSeller] = useState("");
 
   useEffect(() => {
+    setSeller(getSettings().sellerName);
     let alive = true;
     setLoading(true);
     radarRepository
@@ -74,9 +78,34 @@ export default function RadarLeadsPage() {
     }
   }
 
-  function openFicha(lead: RadarLead) {
+  function openFicha(lead: RadarLead, audit = false) {
     saveBusinessSnapshot(lead.business);
-    router.push(`/radar/negocio?id=${encodeURIComponent(lead.businessId)}`);
+    router.push(`/radar/negocio?id=${encodeURIComponent(lead.businessId)}${audit ? "&audit=1" : ""}`);
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectedLeads() {
+    return filtered.filter((l) => selected.has(l.businessId));
+  }
+
+  function openRoute() {
+    const url = mapsRouteUrl(selectedLeads().map((l) => l.business.address));
+    if (url) window.open(url, "_blank", "noopener");
+    else setToast("Los leads seleccionados no tienen dirección");
+  }
+
+  function visitSheet() {
+    const items = selectedLeads();
+    if (items.length === 0) return;
+    printVisitSheet(items, seller);
   }
 
   async function importLead(lead: RadarLead) {
@@ -173,6 +202,7 @@ export default function RadarLeadsPage() {
           <table className="w-full text-left">
             <thead className="bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
               <tr>
+                <th className="px-3 py-2.5 w-8"></th>
                 <th className="px-3 py-2.5">Negocio</th>
                 <th className="px-3 py-2.5">Contacto</th>
                 <th className="px-3 py-2.5">Score</th>
@@ -183,6 +213,9 @@ export default function RadarLeadsPage() {
             <tbody className="divide-y divide-border">
               {filtered.map((l) => (
                 <tr key={l.businessId} className="hover:bg-muted/20">
+                  <td className="px-3 py-3">
+                    <input type="checkbox" checked={selected.has(l.businessId)} onChange={() => toggleSelect(l.businessId)} className="accent-cyan-500" aria-label={`Seleccionar ${l.business.name}`} />
+                  </td>
                   <td className="px-3 py-3">
                     <p className="text-sm font-semibold">{l.business.name}</p>
                     <p className="text-[11px] text-muted-foreground">{l.business.category} · {l.business.address || "sin dirección"}</p>
@@ -206,6 +239,17 @@ export default function RadarLeadsPage() {
                   <td className="px-3 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => openFicha(l)} className="text-[11px] text-cyan-400 font-semibold">Ficha</button>
+                      {l.business.website && (
+                        <button onClick={() => openFicha(l, true)} className="text-[11px] text-cyan-300 font-semibold" title="Revisar su web">Web</button>
+                      )}
+                      {l.business.phone && (() => {
+                        const wa = whatsappUrl(l.business.phone, buildIntroMessage(l.business, seller));
+                        return wa ? (
+                          <a href={wa} target="_blank" rel="noopener" className="text-emerald-400" title="WhatsApp">
+                            <MessageCircle size={13} />
+                          </a>
+                        ) : null;
+                      })()}
                       <button onClick={() => importLead(l)} disabled={importing === l.businessId} className="text-[11px] text-muted-foreground hover:text-foreground" title="Enviar al CRM">
                         {importing === l.businessId ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                       </button>
@@ -249,6 +293,19 @@ export default function RadarLeadsPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {selected.size > 0 && (
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-3 rounded-2xl bg-surface-container-high ring-1 ring-border shadow-2xl">
+          <span className="text-xs font-semibold">{selected.size} seleccionado(s)</span>
+          <button onClick={openRoute} className="px-2.5 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 flex items-center gap-1">
+            <Navigation size={12} /> Ruta
+          </button>
+          <button onClick={visitSheet} className="px-2.5 py-1.5 rounded-lg bg-muted text-xs font-bold hover:bg-muted/70 flex items-center gap-1">
+            <Printer size={12} /> Hoja de visitas
+          </button>
+          <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground">Limpiar</button>
         </div>
       )}
 
