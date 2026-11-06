@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es-CO" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automatización con n8n para pymes | Make it Easy</title>
+  <meta name="description" content="Qué es n8n, cuándo conviene frente a Make o Zapier y qué procesos automatizar primero en una pyme colombiana. Guía práctica con costos y errores comunes." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://makeiteasycol.com/guias/automatizacion-n8n-pymes" />
+  <meta property="og:title" content="Automatización con n8n para pymes: qué automatizar primero" />
+  <meta property="og:description" content="Guía práctica para automatizar una pyme con n8n: procesos, costos y errores comunes." />
+  <meta property="og:image" content="https://makeiteasycol.com/public/og-image.jpg" />
+  <meta property="og:url" content="https://makeiteasycol.com/guias/automatizacion-n8n-pymes" />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="es_CO" />
+  <meta property="og:site_name" content="Make it Easy" />
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg" />
+  <link rel="apple-touch-icon" href="/public/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles/globals.css?v=1.2" />
+  <link rel="stylesheet" href="/styles/components.css?v=1.2" />
+
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"Article",
+    "headline":"Automatización con n8n para pymes: qué automatizar primero",
+    "description":"Qué es n8n, cuándo conviene frente a Make o Zapier y qué procesos automatizar primero en una pyme colombiana.",
+    "author":{"@type":"Organization","name":"Make it Easy","url":"https://makeiteasycol.com"},
+    "publisher":{"@type":"Organization","name":"Make it Easy","logo":{"@type":"ImageObject","url":"https://makeiteasycol.com/public/logo.svg"}},
+    "datePublished":"2026-11-06",
+    "dateModified":"2026-11-06",
+    "mainEntityOfPage":"https://makeiteasycol.com/guias/automatizacion-n8n-pymes",
+    "inLanguage":"es-CO"
+  }
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Inicio","item":"https://makeiteasycol.com/"},
+    {"@type":"ListItem","position":2,"name":"Guías","item":"https://makeiteasycol.com/guias"},
+    {"@type":"ListItem","position":3,"name":"Automatización con n8n","item":"https://makeiteasycol.com/guias/automatizacion-n8n-pymes"}
+  ]}
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"FAQPage",
+    "mainEntity":[
+      {"@type":"Question","name":"¿n8n es gratis?","acceptedAnswer":{"@type":"Answer","text":"n8n tiene una versión autoalojada con licencia de uso comunitario y una versión en la nube con planes de pago. Autoalojado evita el costo por operación, pero requiere un servidor y mantenimiento."}},
+      {"@type":"Question","name":"¿n8n o Make para una pyme?","acceptedAnswer":{"@type":"Answer","text":"Make es más rápido de montar si haces pocas ejecuciones. n8n conviene cuando el volumen crece, necesitas lógica propia o quieres controlar los datos en tu servidor."}},
+      {"@type":"Question","name":"¿Necesito saber programar?","acceptedAnswer":{"@type":"Answer","text":"No para flujos básicos: n8n es visual. Para integraciones con APIs propias o transformaciones complejas sí ayuda tener a alguien técnico."}},
+      {"@type":"Question","name":"¿Cuánto tarda una automatización?","acceptedAnswer":{"@type":"Answer","text":"Un flujo sencillo puede quedar en días. Un proceso con varias herramientas y manejo de errores suele tomar entre una y tres semanas."}},
+      {"@type":"Question","name":"¿Qué pasa si una integración falla?","acceptedAnswer":{"@type":"Answer","text":"El flujo debe registrar el error, reintentar y avisar a una persona. Sin alertas, una automatización rota puede pasar días sin que nadie lo note."}}
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Organization","name":"Make it Easy","url":"https://makeiteasycol.com","logo":"https://makeiteasycol.com/public/logo.svg","telephone":"+573181154477","email":"daniel.makeiteasy@gmail.com","address":{"@type":"PostalAddress","addressLocality":"Bogotá","addressCountry":"CO"}}
+  </script>
+
+  <style>
+    .pnav { position:sticky; top:0; z-index:50; backdrop-filter:blur(14px); background:rgba(10,14,22,.82); border-bottom:1px solid var(--outline-variant); }
+    .pnav-inner { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.85rem 0; }
+    .pnav img { height:30px; width:auto; }
+    .pnav-links { display:flex; gap:1.4rem; list-style:none; align-items:center; }
+    .pnav-links a { color:var(--on-surface-variant); font-size:.9rem; font-weight:600; text-decoration:none; }
+    .pnav-links a:hover { color:var(--primary); }
+    @media (max-width:760px){ .pnav-links{display:none} }
+    .article { max-width:780px; margin:0 auto; padding:3.5rem 0 2rem; }
+    .breadcrumbs { font-size:.75rem; color:var(--on-surface-variant); margin-bottom:1rem; }
+    .breadcrumbs a { color:var(--on-surface-variant); text-decoration:none; }
+    .article .overline { color:var(--primary); font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; font-weight:700; }
+    .article h1 { font-size:clamp(1.9rem,4.5vw,2.9rem); line-height:1.1; letter-spacing:-.02em; margin:.6rem 0 .8rem; }
+    .article .meta { color:var(--on-surface-variant); font-size:.8rem; margin-bottom:1.8rem; }
+    .article h2 { font-size:1.4rem; margin:2.2rem 0 .7rem; letter-spacing:-.01em; }
+    .article h3 { font-size:1.08rem; margin:1.5rem 0 .4rem; }
+    .article p, .article li { color:var(--on-surface-variant); line-height:1.75; font-size:.96rem; }
+    .article p { margin-bottom:.9rem; }
+    .article ul, .article ol { margin:.4rem 0 1rem 1.2rem; }
+    .article li { margin-bottom:.4rem; }
+    .article a { color:var(--primary); }
+    .article table { width:100%; border-collapse:collapse; font-size:.86rem; margin:1rem 0 1.5rem; }
+    .article th, .article td { border-bottom:1px solid var(--outline-variant); padding:.65rem .6rem; text-align:left; }
+    .article th { font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--on-surface-variant); }
+    .callout { padding:1rem 1.2rem; border-left:3px solid var(--primary); background:var(--surface-container-low); border-radius:var(--radius-md); margin:1.2rem 0; }
+    .callout p { margin:0; }
+    .faq-list { display:flex; flex-direction:column; gap:.6rem; margin:1rem 0 0; }
+    .faq-list details { border:1px solid var(--outline-variant); border-radius:var(--radius-md); padding:.9rem 1.1rem; background:var(--surface-container-low); }
+    .faq-list summary { cursor:pointer; font-weight:700; list-style:none; }
+    .faq-list summary::-webkit-details-marker { display:none; }
+    .faq-list summary::after { content:"+"; float:right; color:var(--primary); font-weight:800; }
+    .faq-list details[open] summary::after { content:"–"; }
+    .lead-box { display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start; padding:2rem; border:1px solid var(--outline-variant); border-radius:var(--radius-xl); background:var(--surface-container-low); margin:2.5rem 0; }
+    @media (max-width:820px){ .lead-box{grid-template-columns:1fr} }
+    .lead-box h2 { margin-top:0; }
+    .lead-form { display:flex; flex-direction:column; gap:.75rem; }
+    .lead-form label { font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--on-surface-variant); font-weight:700; }
+    .lead-form input, .lead-form textarea { width:100%; margin-top:.3rem; padding:.7rem .85rem; border-radius:var(--radius-md); border:1px solid var(--outline-variant); background:var(--surface-container); color:var(--on-surface); font-family:inherit; font-size:.9rem; }
+    .lead-form input:focus, .lead-form textarea:focus { outline:2px solid var(--primary); border-color:transparent; }
+    .lead-form .small { font-size:.72rem; color:var(--on-surface-variant); }
+  </style>
+</head>
+<body>
+<header class="pnav">
+  <div class="container pnav-inner">
+    <a href="/" aria-label="Make it Easy — inicio"><img src="/make-it-easy-logo-transparent-fixed.svg" alt="Make it Easy" width="888" height="608" decoding="async" /></a>
+    <nav aria-label="Principal">
+      <ul class="pnav-links">
+        <li><a href="/">Inicio</a></li>
+        <li><a href="/precios">Precios</a></li>
+        <li><a href="/casos">Casos</a></li>
+        <li><a href="/guias">Guías</a></li>
+        <li><a href="/herramientas">Herramientas IA</a></li>
+        <li><a href="https://wa.me/573181154477?text=Hola%2C%20quiero%20un%20diagn%C3%B3stico%20gratuito" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Diagnóstico gratis</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <article class="article">
+    <nav class="breadcrumbs" aria-label="Migas de pan">
+      <a href="/">Inicio</a> › <a href="/guias">Guías</a> › <span>Automatización con n8n</span>
+    </nav>
+    <p class="overline">Automatización</p>
+    <h1>Automatización con n8n para pymes: qué automatizar primero</h1>
+    <p class="meta">Por el equipo de Make it Easy · 6 de noviembre de 2026 · 7 minutos de lectura</p>
+
+    <p>Si tu equipo copia datos entre WhatsApp, Excel y el sistema de facturación, ya tienes el primer candidato a automatizar. n8n permite conectar esas herramientas sin escribir todo desde cero y sin pagar por cada pequeña ejecución.</p>
+    <p>Esta guía explica qué es, cuándo conviene frente a otras herramientas y qué procesos dan resultado rápido en una pyme colombiana.</p>
+
+    <h2>Qué es n8n y por qué encaja en una pyme</h2>
+    <p>n8n es una plataforma de automatización visual. Armas un flujo con nodos: un disparador (un formulario, un correo, una venta) y una serie de acciones (crear un contacto, enviar un mensaje, registrar una factura).</p>
+    <p>Su diferencia principal es que puedes instalarlo en tu propio servidor. Eso importa cuando manejas datos de clientes y no quieres que todo pase por un tercero, o cuando el volumen de ejecuciones empieza a encarecer otras plataformas.</p>
+    <div class="callout"><p><strong>Regla práctica:</strong> automatiza primero lo que se repite todos los días y sigue las mismas reglas. Lo creativo o lo que cambia cada vez déjalo en manos de una persona.</p></div>
+
+    <h2>n8n, Make o Zapier: cuál elegir</h2>
+    <table>
+      <thead><tr><th>Criterio</th><th>n8n</th><th>Make</th><th>Zapier</th></tr></thead>
+      <tbody>
+        <tr><td>Costo con volumen alto</td><td>Fijo si lo autoalojas</td><td>Sube por operación</td><td>Sube por tarea</td></tr>
+        <tr><td>Facilidad inicial</td><td>Media</td><td>Alta</td><td>Alta</td></tr>
+        <tr><td>Control de datos</td><td>Total en tu servidor</td><td>En la nube</td><td>En la nube</td></tr>
+        <tr><td>Lógica compleja</td><td>Muy buena</td><td>Buena</td><td>Limitada</td></tr>
+        <tr><td>Mantenimiento</td><td>Lo asumes tú</td><td>Lo asume el proveedor</td><td>Lo asume el proveedor</td></tr>
+      </tbody>
+    </table>
+    <p>Si haces pocas ejecuciones al mes, Make puede ser suficiente. Si el proceso corre cientos de veces al día o necesitas controlar los datos, n8n suele salir mejor.</p>
+
+    <h2>Seis procesos que puedes automatizar esta semana</h2>
+    <ol>
+      <li><strong>Del formulario al CRM.</strong> Un envío crea el contacto, avisa al comercial, envía el correo de bienvenida y programa el seguimiento.</li>
+      <li><strong>Cotizaciones sin copiar y pegar.</strong> El brief entra por un formulario y genera una propuesta con tus plantillas y precios.</li>
+      <li><strong>Recordatorios de cobro.</strong> Cuando una factura se acerca a su vencimiento, se envía un recordatorio por correo o WhatsApp y queda registrado.</li>
+      <li><strong>Inventario sincronizado.</strong> Si vendes en tienda física y online, evita vender lo que ya no tienes.</li>
+      <li><strong>Reportes que llegan solos.</strong> El resumen semanal de ventas o de leads llega al correo cada lunes, sin que nadie lo prepare.</li>
+      <li><strong>Alertas operativas.</strong> Aviso cuando baja el stock, cuando un pago no entró o cuando un indicador se sale del rango.</li>
+    </ol>
+
+    <h2>Cómo empezar en cinco pasos</h2>
+    <ol>
+      <li><strong>Mide el proceso actual.</strong> Cuántas veces ocurre al mes y cuántos minutos consume cada vez. Sin ese dato no sabrás si funcionó.</li>
+      <li><strong>Elige uno solo.</strong> El de mayor volumen y reglas más claras. No empieces por el más complejo.</li>
+      <li><strong>Dibuja el flujo.</strong> Disparador, pasos, datos que entran y salen, y en qué punto decide una persona.</li>
+      <li><strong>Haz un piloto.</strong> Conéctalo con datos reales durante una semana y compara con la línea base.</li>
+      <li><strong>Documenta y alerta.</strong> Deja escrito qué hace el flujo y configura avisos cuando falle.</li>
+    </ol>
+
+    <h2>Cuánto cuesta automatizar una pyme</h2>
+    <p>En Make it Easy una automatización de procesos empieza en <strong>$800.000 COP</strong> y una integración entre sistemas en <strong>$500.000 COP</strong>. El valor final depende de cuántas herramientas haya que conectar y del manejo de errores.</p>
+    <p>Puedes ver el detalle en <a href="/precios">nuestra página de precios</a> o revisar <a href="/casos">proyectos reales</a>.</p>
+
+    <h2>Tres errores que cuestan caro</h2>
+    <ul>
+      <li><strong>Automatizar un proceso que nadie entiende.</strong> Primero se ordena el proceso, después se automatiza.</li>
+      <li><strong>No manejar los errores.</strong> Un flujo sin alertas puede fallar en silencio durante días.</li>
+      <li><strong>Olvidar al humano.</strong> Define qué pasa cuando el sistema no sabe qué hacer y a quién avisa.</li>
+    </ul>
+
+    <h2>Preguntas frecuentes</h2>
+    <div class="faq-list">
+      <details><summary>¿n8n es gratis?</summary><p>n8n tiene una versión autoalojada con licencia de uso comunitario y una versión en la nube con planes de pago. Autoalojado evita el costo por operación, pero requiere un servidor y mantenimiento.</p></details>
+      <details><summary>¿n8n o Make para una pyme?</summary><p>Make es más rápido de montar si haces pocas ejecuciones. n8n conviene cuando el volumen crece, necesitas lógica propia o quieres controlar los datos en tu servidor.</p></details>
+      <details><summary>¿Necesito saber programar?</summary><p>No para flujos básicos: n8n es visual. Para integraciones con APIs propias o transformaciones complejas sí ayuda tener a alguien técnico.</p></details>
+      <details><summary>¿Cuánto tarda una automatización?</summary><p>Un flujo sencillo puede quedar en días. Un proceso con varias herramientas y manejo de errores suele tomar entre una y tres semanas.</p></details>
+      <details><summary>¿Qué pasa si una integración falla?</summary><p>El flujo debe registrar el error, reintentar y avisar a una persona. Sin alertas, una automatización rota puede pasar días sin que nadie lo note.</p></details>
+    </div>
+
+    <div class="lead-box">
+      <div>
+        <h2>¿Quieres que lo revisemos contigo?</h2>
+        <p>Cuéntanos qué proceso te quita más tiempo y te decimos si se puede automatizar, con qué herramienta y cuánto costaría.</p>
+        <p style="margin-top:.8rem;font-size:.82rem">También por <a href="https://wa.me/573181154477?text=Hola%2C%20le%C3%AD%20la%20gu%C3%ADa%20de%20n8n" target="_blank" rel="noopener">WhatsApp</a> o al <a href="tel:+573181154477">+57 318 115 4477</a>.</p>
+      </div>
+      <form class="lead-form" action="https://formspree.io/f/xrerqkkn" method="POST">
+        <input type="hidden" name="_subject" value="Diagnóstico desde la guía de n8n" />
+        <label>Nombre<input type="text" name="nombre" required autocomplete="name" /></label>
+        <label>Teléfono o email<input type="text" name="contacto" required /></label>
+        <label>Proceso que quieres automatizar<textarea name="mensaje" rows="3"></textarea></label>
+        <button class="btn btn-primary" type="submit">Pedir diagnóstico gratis</button>
+        <p class="small">Al enviar aceptas nuestra <a href="/privacidad">política de privacidad</a>.</p>
+      </form>
+    </div>
+
+    <p><a href="/guias/agente-whatsapp-pymes">Siguiente guía: agente de WhatsApp con IA →</a></p>
+  </article>
+</main>
+
+<footer class="site-footer" role="contentinfo">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo">MakeItEasy</div>
+      <p class="body-muted">Intelligent Automation</p>
+      <p class="body-muted" style="font-size:0.85rem;margin-top:0.5rem">Bogotá, Colombia</p>
+    </div>
+    <div class="footer-col">
+      <h4>Empresa</h4>
+      <ul>
+        <li><a href="/#nosotros">Nosotros</a></li>
+        <li><a href="/#servicios">Servicios</a></li>
+        <li><a href="/precios">Precios</a></li>
+        <li><a href="/casos">Casos</a></li>
+        <li><a href="/guias">Guías</a></li>
+        <li><a href="/herramientas">Herramientas IA</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Contacto</h4>
+      <ul>
+        <li><a href="mailto:daniel.makeiteasy@gmail.com">daniel.makeiteasy@gmail.com</a></li>
+        <li><a href="tel:+573181154477">+57 318 115 4477</a></li>
+        <li><a href="https://wa.me/573181154477" target="_blank" rel="noopener">WhatsApp</a></li>
+        <li>Horario: lunes a viernes, 8:00 a 18:00 (COT)</li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="/privacidad">Política de Privacidad</a></li>
+        <li><a href="/terminos">Términos de Uso</a></li>
+        <li><a href="/terminos#legal">Aviso legal</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="container"><p>© 2025–2026 Make it Easy — Intelligent Automation. Bogotá, Colombia.</p></div>
+  </div>
+</footer>
+</body>
+</html>
