@@ -13,6 +13,18 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://makeiteasycol.com/precios</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://makeiteasycol.com/casos</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://makeiteasycol.com/privacidad</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>yearly</changefreq>
