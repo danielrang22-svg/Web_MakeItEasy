@@ -1,6 +1,6 @@
 import type { AuditReport } from "./audit/types";
 import type { RadarPackage } from "./packages";
-import { formatEur } from "./packages";
+import { formatCop } from "./packages";
 import type { RadarBusiness } from "./types";
 
 function esc(value: string): string {
@@ -24,10 +24,10 @@ export interface ReportOptions {
 }
 
 export function buildAuditReportHtml({ business, report, pkg, addOns, sellerName }: ReportOptions): string {
-  const today = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+  const today = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "long", year: "numeric" });
   const fails = report.checks.filter((c) => c.status === "fail").slice(0, 10);
   const warns = report.checks.filter((c) => c.status === "warn").slice(0, 6);
-  const addOnTotal = addOns.reduce((sum, p) => sum + p.fromEur, 0);
+  const addOnTotal = addOns.reduce((sum, p) => sum + p.fromCop, 0);
 
   const areaRows = report.areas
     .map(
@@ -141,9 +141,9 @@ export function buildAuditReportHtml({ business, report, pkg, addOns, sellerName
   <div class="box">
     <span class="pill">${esc(pkg.label)}</span>
     <p class="lead" style="margin-top:8px">${esc(pkg.pitch)}</p>
-    <ul>${pkg.services.map((s) => `<li>${esc(s.name)} — desde ${formatEur(s.fromEur)}</li>`).join("")}</ul>
-    ${addOns.length ? `<p class="lead" style="margin-top:8px"><strong>Opcional:</strong> ${addOns.map((a) => `${esc(a.label)} (desde ${formatEur(a.fromEur)})`).join(" · ")}</p>` : ""}
-    <p style="margin-top:10px"><span class="price">Desde ${formatEur(pkg.fromEur + addOnTotal)}</span> <span class="muted">+ IVA · presupuesto cerrado tras diagnóstico</span></p>
+    <ul>${pkg.services.map((s) => `<li>${esc(s.name)} — desde ${formatCop(s.fromCop)}</li>`).join("")}</ul>
+    ${addOns.length ? `<p class="lead" style="margin-top:8px"><strong>Opcional:</strong> ${addOns.map((a) => `${esc(a.label)} (desde ${formatCop(a.fromCop)})`).join(" · ")}</p>` : ""}
+    <p style="margin-top:10px"><span class="price">Desde ${formatCop(pkg.fromCop + addOnTotal)}</span> <span class="muted">+ IVA · presupuesto cerrado tras diagnóstico</span></p>
   </div>
 
   <div class="foot">

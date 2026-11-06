@@ -1,75 +1,75 @@
 import type { AuditReport } from "./audit/types";
 
-/** Precios «desde» publicados en makeiteasycol.com (locale EUR). */
+/** Precios «desde» publicados en makeiteasycol.com (locale Colombia, COP). */
 export const PAGE_PRICES = {
-  agenteIA: 65,
-  web: 105,
-  automatizacion: 170,
-  crm: 130,
-  integraciones: 105,
-  dashboards: 150,
-  capacitacion: 85,
-  sistemas: 220,
-  auditoria: 155,
+  agenteIA: 300_000,
+  web: 500_000,
+  automatizacion: 800_000,
+  crm: 600_000,
+  integraciones: 500_000,
+  dashboards: 700_000,
+  capacitacion: 400_000,
+  sistemas: 1_000_000,
+  auditoria: 700_000,
 } as const;
 
 export interface RadarPackage {
   id: string;
   label: string;
-  fromEur: number;
-  services: Array<{ name: string; fromEur: number }>;
+  fromCop: number;
+  services: Array<{ name: string; fromCop: number }>;
   pitch: string;
-  recurring?: { fromEur: number; label: string };
+  recurring?: { fromCop: number; label: string };
 }
 
 export const RADAR_PACKAGES: RadarPackage[] = [
   {
     id: "web",
     label: "Web nueva",
-    fromEur: PAGE_PRICES.web,
-    services: [{ name: "Página web", fromEur: PAGE_PRICES.web }],
+    fromCop: PAGE_PRICES.web,
+    services: [{ name: "Página web", fromCop: PAGE_PRICES.web }],
     pitch: "Una web rápida, adaptada a móvil y preparada para captar contactos desde el primer día.",
   },
   {
     id: "whatsapp",
     label: "Agente WhatsApp",
-    fromEur: PAGE_PRICES.agenteIA,
-    services: [{ name: "Agente de IA", fromEur: PAGE_PRICES.agenteIA }],
+    fromCop: PAGE_PRICES.agenteIA,
+    services: [{ name: "Agente de IA", fromCop: PAGE_PRICES.agenteIA }],
     pitch: "Atiende, cualifica y agenda por WhatsApp 24/7 sin que tu equipo repita respuestas.",
   },
   {
     id: "citas",
     label: "Sistema de citas",
-    fromEur: PAGE_PRICES.sistemas,
-    services: [{ name: "Sistema a medida", fromEur: PAGE_PRICES.sistemas }],
+    fromCop: PAGE_PRICES.sistemas,
+    services: [{ name: "Sistema a medida", fromCop: PAGE_PRICES.sistemas }],
     pitch: "Reservas online conectadas a tu agenda, con recordatorios automáticos.",
   },
   {
     id: "rediseno_seo",
     label: "Rediseño + SEO",
-    fromEur: PAGE_PRICES.web + PAGE_PRICES.auditoria,
+    fromCop: PAGE_PRICES.web + PAGE_PRICES.auditoria,
     services: [
-      { name: "Página web", fromEur: PAGE_PRICES.web },
-      { name: "Auditoría y diseño de procesos", fromEur: PAGE_PRICES.auditoria },
+      { name: "Página web", fromCop: PAGE_PRICES.web },
+      { name: "Auditoría y diseño de procesos", fromCop: PAGE_PRICES.auditoria },
     ],
     pitch: "Arregla lo que frena el posicionamiento y reconstruye la web sobre una base técnica sana.",
   },
   {
     id: "captacion",
     label: "Captación local",
-    fromEur: PAGE_PRICES.web + PAGE_PRICES.agenteIA + PAGE_PRICES.sistemas,
+    fromCop: PAGE_PRICES.web + PAGE_PRICES.agenteIA + PAGE_PRICES.sistemas,
     services: [
-      { name: "Página web", fromEur: PAGE_PRICES.web },
-      { name: "Agente de IA", fromEur: PAGE_PRICES.agenteIA },
-      { name: "Sistema a medida", fromEur: PAGE_PRICES.sistemas },
+      { name: "Página web", fromCop: PAGE_PRICES.web },
+      { name: "Agente de IA", fromCop: PAGE_PRICES.agenteIA },
+      { name: "Sistema a medida", fromCop: PAGE_PRICES.sistemas },
     ],
     pitch: "Web + WhatsApp + citas: el circuito completo desde que te encuentran hasta que reservan.",
   },
   {
     id: "auditoria",
     label: "Auditoría SEO",
-    fromEur: PAGE_PRICES.auditoria,
-    services: [{ name: "Auditoría y diseño de procesos", fromEur: PAGE_PRICES.auditoria }],
+    fromCop: PAGE_PRICES.auditoria,
+    services: [{ name: "Auditoría y diseño de procesos", fromCop: PAGE_PRICES.auditoria }],
     pitch: "Diagnóstico completo con plan de acción priorizado.",
   },
 ];
@@ -104,10 +104,10 @@ export function addOnsFor(report: AuditReport): RadarPackage[] {
   return addOns.filter((p) => p.id !== recommendPackage(report).id).slice(0, 2);
 }
 
-export function formatEur(value: number): string {
-  return new Intl.NumberFormat("es-ES", {
+export function formatCop(value: number): string {
+  return new Intl.NumberFormat("es-CO", {
     style: "currency",
-    currency: "EUR",
+    currency: "COP",
     maximumFractionDigits: 0,
   }).format(value);
 }

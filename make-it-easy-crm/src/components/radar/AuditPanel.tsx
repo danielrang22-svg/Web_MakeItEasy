@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, ChevronDown, Clipboard, FileText, Loader2, Play, Receipt } from "lucide-react";
 import type { AuditReport } from "@/lib/radar/audit/types";
 import { getAudit, getSettings, saveAudit } from "@/lib/radar/repository";
-import { addOnsFor, formatEur, recommendPackage } from "@/lib/radar/packages";
+import { addOnsFor, formatCop, recommendPackage } from "@/lib/radar/packages";
 import { printAuditReport } from "@/lib/radar/report";
 import type { RadarBusiness } from "@/lib/radar/types";
 
@@ -122,7 +122,7 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
     try {
       const pkg = recommendPackage(report);
       const addOns = addOnsFor(report);
-      const total = pkg.fromEur + addOns.reduce((sum, a) => sum + a.fromEur, 0);
+      const total = pkg.fromCop + addOns.reduce((sum, a) => sum + a.fromCop, 0);
 
       const impRes = await fetch("/api/radar/import", {
         method: "POST",
@@ -147,9 +147,9 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
           desafioNegocio: `${desafio} ${pkg.pitch}`,
           totalProyectoCore: total,
           moduloOpcionalFee: 0,
-          feeMensual: pkg.recurring?.fromEur ?? 0,
+          feeMensual: pkg.recurring?.fromCop ?? 0,
           feeMensualIncluye: pkg.recurring?.label ?? "",
-          moneda: "EUR",
+          moneda: "COP",
           estado: "BORRADOR",
           observaciones: `Auditoría SEO ${report.globalScore}/100 (potencial ${report.potentialScore}). ${report.url}`,
           validez: "30 días",
@@ -297,11 +297,11 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-[10px] uppercase font-bold text-cyan-300">Propuesta recomendada</p>
-                  <p className="text-sm font-bold mt-0.5">{pkg.label} · desde {formatEur(pkg.fromEur)}</p>
+                  <p className="text-sm font-bold mt-0.5">{pkg.label} · desde {formatCop(pkg.fromCop)}</p>
                   <p className="text-[11px] text-muted-foreground">{pkg.pitch}</p>
                   {addOns.length > 0 && (
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      Opcional: {addOns.map((a) => `${a.label} (${formatEur(a.fromEur)})`).join(" · ")}
+                      Opcional: {addOns.map((a) => `${a.label} (${formatCop(a.fromCop)})`).join(" · ")}
                     </p>
                   )}
                 </div>
