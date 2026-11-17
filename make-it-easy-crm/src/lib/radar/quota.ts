@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 export const RADAR_LIMITS = {
   dailySearches: Number(process.env.RADAR_DAILY_SEARCHES ?? 20),
   dailyExhaustive: Number(process.env.RADAR_DAILY_EXHAUSTIVE ?? 3),
+  dailySiteScans: Number(process.env.RADAR_DAILY_SITE_SCANS ?? 200),
   maxResults: Number(process.env.RADAR_MAX_RESULTS ?? 60),
 };
 
@@ -12,6 +13,7 @@ const BOGOTA_OFFSET_MS = 5 * 60 * 60 * 1000;
 export interface UsageInfo {
   used: number;
   exhaustiveUsed: number;
+  siteScansUsed: number;
   limits: typeof RADAR_LIMITS;
   resetsAt: string;
   timezone: "America/Bogota";
@@ -32,14 +34,18 @@ export async function getUsage(email: string): Promise<UsageInfo> {
   const { start, end, resetsAt } = bogotaDayRange();
   const where = { userEmail: email, createdAt: { gte: start, lt: end } };
 
-  const [used, exhaustiveUsed] = await Promise.all([
+  const [used, exhaustiveUsed, siteScansUsed] = await Promise.all([
     prisma.radarSearchLog.count({ where }),
     prisma.radarSearchLog.count({ where: { ...where, mode: "exhaustive" } }),
+    prisma.radarSiteScan.count({
+      where: { userEmail: email, createdAt: { gte: start, lt: end } },
+    }),
   ]);
 
   return {
     used,
     exhaustiveUsed,
+    siteScansUsed,
     limits: RADAR_LIMITS,
     resetsAt: resetsAt.toISOString(),
     timezone: "America/Bogota",
@@ -70,6 +76,22 @@ export async function assertQuota(email: string, mode: "fast" | "exhaustive"): P
   if (mode === "exhaustive" && usage.exhaustiveUsed >= usage.limits.dailyExhaustive) {
     throw new RadarQuotaError(
       `Límite diario de ${usage.limits.dailyExhaustive} búsquedas exhaustivas alcanzado. Se reinicia a las 00:00 (hora Colombia).`,
+      usage
+    );
+  }
+
+  return usage;
+}
+
+export async function assertSiteScanQuota(email: string, count: number): Promise<UsageInfo> {
+  const usage = await getUsage(email);
+  const remaining = Math.max(0, usage.limits.dailySiteScans - usage.siteScansUsed);
+
+  if (count > remaining) {
+    throw new RadarQuotaError(
+      remaining === 0
+        ? `Límite diario de ${usage.limits.dailySiteScans} webs analizadas alcanzado. Se reinicia a las 00:00 (hora Colombia).`
+        : `Solo quedan ${remaining} análisis de web hoy. Reduce la selección a ${remaining} o espera al reinicio (00:00, hora Colombia).`,
       usage
     );
   }

@@ -7,7 +7,7 @@
         "build": "next build",
         "start": "next start -p 3005",
         "lint": "eslint",
-        "test": "tsx --test src/lib/radar/__tests__/radar.test.ts",
+        "test": "tsx --test src/lib/radar/__tests__/radar.test.ts src/lib/radar/__tests__/siteScan.test.ts src/lib/radar/__tests__/osm.test.ts",
         "seed": "dotenv -e .env -- tsx prisma/seed.ts"
     },
     "dependencies": {

@@ -12,6 +12,8 @@ export function scoreFromOsm(input: {
   housenumber?: string;
   openingHours?: string;
   brand?: string;
+  siteQuality?: RadarBusiness["siteQuality"];
+  siteGrade?: number;
 }): { score: number; breakdown: ScoreBreakdown[] } {
   const breakdown: ScoreBreakdown[] = [];
   let score = 45;
@@ -34,7 +36,18 @@ export function scoreFromOsm(input: {
       score -= 5;
       breakdown.push({ label: "Ya tiene web propia", points: -5 });
   }
-
+  if (input.websiteKind === "own" && input.siteQuality) {
+    if (input.siteQuality === "broken") {
+      score += 25;
+      breakdown.push({ label: "Web rota o caída", points: 25 });
+    } else if (input.siteQuality === "bad") {
+      score += 15;
+      breakdown.push({ label: "Web deficiente", points: 15 });
+    } else if (input.siteQuality === "weak") {
+      score += 8;
+      breakdown.push({ label: "Web mejorable", points: 8 });
+    }
+  }
   if (input.phone) {
     score += 8;
     breakdown.push({ label: "Teléfono publicado", points: 8 });

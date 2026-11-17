@@ -570,24 +570,58 @@ model RadarAudit {
   @@map("radar_audits")
 }
 model RadarBusiness {
-  id          String   @id @default(uuid())
-  externalId  String   @unique
-  name        String
-  category    String
-  address     String   @default("")
-  phone       String   @default("")
-  website     String   @default("")
-  websiteKind String   @default("none")
-  source      String   @default("osm")
-  score       Int      @default(0)
-  payload     String
-  firstSeenAt DateTime @default(now())
-  lastSeenAt  DateTime @updatedAt
-  seenCount   Int      @default(1)
+  id            String    @id @default(uuid())
+  externalId    String    @unique
+  name          String
+  category      String
+  address       String    @default("")
+  phone         String    @default("")
+  website       String    @default("")
+  websiteKind   String    @default("none")
+  source        String    @default("osm")
+  score         Int       @default(0)
+  payload       String
+  firstSeenAt   DateTime  @default(now())
+  lastSeenAt    DateTime  @updatedAt
+  seenCount     Int       @default(1)
+  siteQuality   String    @default("unknown")
+  siteGrade     Int       @default(0)
+  siteCheckedAt DateTime?
+  email         String    @default("")
+  emailStatus   String    @default("")
+  contactName   String    @default("")
+  contactRole   String    @default("")
+  enrichedAt    DateTime?
 
   @@index([category])
   @@index([lastSeenAt])
+  @@index([siteQuality])
   @@map("radar_businesses")
+}
+
+model RadarSiteScan {
+  id              String   @id @default(uuid())
+  radarPlaceId    String
+  userEmail       String
+  url             String
+  finalUrl        String?
+  status          Int?
+  ms              Int      @default(0)
+  bytes           Int      @default(0)
+  quality         String   @default("unknown")
+  grade           Int      @default(0)
+  signalsJson     String
+  contactsJson    String
+  emailChecksJson String
+  placeholder     Boolean  @default(false)
+  freeHosting     Boolean  @default(false)
+  error           String?
+  createdAt       DateTime @default(now())
+
+  @@index([radarPlaceId, createdAt])
+  @@index([userEmail, createdAt])
+  @@index([createdAt])
+  @@map("radar_site_scans")
 }
 
 model RadarSearchLog {

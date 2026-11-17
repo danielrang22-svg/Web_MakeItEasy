@@ -4,6 +4,8 @@ import prisma from '@/lib/prisma';
 import { searchOsm, RadarUpstreamError } from '@/lib/radar/osm';
 import { assertQuota, getUsage, recordSearch, RadarQuotaError, RADAR_LIMITS } from '@/lib/radar/quota';
 import { readSearchCache, searchCacheKey, writeSearchCache } from '@/lib/radar/searchCache';
+import { applyScanToBusiness, getFreshScans } from '@/lib/radar/siteScanStore';
+import { isDeficientQuality } from '@/lib/radar/siteQuality';
 import type { RadarBusiness, RadarZone } from '@/lib/radar/types';
 
 export const maxDuration = 90;
@@ -18,7 +20,15 @@ interface SearchBody {
     onlyNoWebsite?: boolean;
     onlyWithPhone?: boolean;
     hideUnnamed?: boolean;
+    objective?: 'sin_web' | 'web_deficiente' | 'ambos';
+    maxSiteGrade?: number | null;
+    requireEmail?: boolean;
   };
+}
+
+function isDeficientCandidate(business: RadarBusiness): boolean {
+  if (business.websiteKind !== 'own') return false;
+  return isDeficientQuality(business.siteQuality) || !business.siteQuality || business.siteQuality === 'unknown';
 }
 
 function applyFilters(items: RadarBusiness[], body: SearchBody): RadarBusiness[] {
@@ -27,6 +37,12 @@ function applyFilters(items: RadarBusiness[], body: SearchBody): RadarBusiness[]
     if (f.onlyNoWebsite && b.websiteKind === 'own') return false;
     if (f.onlyWithPhone && !b.phone) return false;
     if (f.hideUnnamed && b.name === '(sin nombre)') return false;
+    if (f.objective === 'sin_web' && b.websiteKind === 'own') return false;
+    if (f.objective === 'web_deficiente' && !isDeficientCandidate(b)) return false;
+    if (typeof f.maxSiteGrade === 'number' && (b.siteGrade == null || b.siteQuality === 'unknown' || b.siteGrade > f.maxSiteGrade)) {
+      return false;
+    }
+    if (f.requireEmail && !b.email) return false;
     return true;
   });
 }
@@ -56,6 +72,7 @@ export async function POST(request: NextRequest) {
     let zone: RadarZone;
     let provider: string;
     let cached = false;
+    let searchNote = "";
     let usage = await getUsage(auth.email);
 
     if (cachedRow) {
@@ -63,12 +80,14 @@ export async function POST(request: NextRequest) {
       zone = cachedRow.zone;
       provider = cachedRow.provider;
       cached = true;
+      searchNote = zone.note ?? "";
     } else {
       usage = await assertQuota(auth.email, mode);
       const outcome = await searchOsm(zona, nicho, keyword, mode);
       rawBusinesses = outcome.businesses;
       zone = outcome.zone;
       provider = outcome.provider;
+      searchNote = outcome.note ?? zone.note ?? "";
       await writeSearchCache(key, zone, rawBusinesses, provider).catch(() => undefined);
     }
 
@@ -83,9 +102,10 @@ export async function POST(request: NextRequest) {
       : [];
     const existingSet = new Set(existing.map((e) => e.externalId));
 
-    if (!cached && trimmed.length > 0) {
+    const missing = trimmed.filter((b) => !existingSet.has(b.id));
+    if (missing.length > 0) {
       await prisma.$transaction(
-        trimmed.map((b) =>
+        missing.map((b) =>
           prisma.radarBusiness.upsert({
             where: { externalId: b.id },
             create: {
@@ -109,7 +129,6 @@ export async function POST(request: NextRequest) {
               websiteKind: b.websiteKind,
               score: b.score,
               payload: JSON.stringify(b),
-              seenCount: { increment: 1 },
             },
           })
         )
@@ -136,12 +155,18 @@ export async function POST(request: NextRequest) {
     const savedSet = new Set(savedRows.map((r) => r.businessId));
     const auditSet = new Set(auditRows.map((r) => r.radarPlaceId));
 
-    let enriched: RadarBusiness[] = trimmed.map((b) => ({
-      ...b,
-      isNew: !existingSet.has(b.id),
-      saved: savedSet.has(b.id),
-      audited: auditSet.has(b.id),
-    }));
+    const scans = await getFreshScans(ids);
+    let enriched: RadarBusiness[] = trimmed.map((b) =>
+      applyScanToBusiness(
+        {
+          ...b,
+          isNew: !existingSet.has(b.id),
+          saved: savedSet.has(b.id),
+          audited: auditSet.has(b.id),
+        },
+        scans.get(b.id)
+      )
+    );
 
     const newCount = enriched.filter((b) => b.isNew).length;
 
@@ -162,6 +187,14 @@ export async function POST(request: NextRequest) {
     enriched = applyFilters(enriched, body);
     if (body.onlyNew) enriched = enriched.filter((b) => !b.saved);
 
+    const siteScannedCount = enriched.filter(
+      (b) => b.websiteKind === 'own' && b.siteQuality && b.siteQuality !== 'unknown'
+    ).length;
+    const siteDeficientCount = enriched.filter((b) => isDeficientQuality(b.siteQuality)).length;
+    const unknownSites = enriched.filter(
+      (b) => b.websiteKind === 'own' && (!b.siteQuality || b.siteQuality === 'unknown')
+    ).length;
+
     return NextResponse.json({
       zone,
       businesses: enriched,
@@ -170,11 +203,17 @@ export async function POST(request: NextRequest) {
       total: enriched.length,
       newCount,
       savedCount: enriched.filter((b) => b.saved).length,
+      siteScannedCount,
+      siteDeficientCount,
       cached,
       usage,
       warnings: [
         'Fuente gratuita: OpenStreetMap. No incluye reseñas ni valoraciones de Google.',
+        ...(searchNote ? [searchNote] : []),
         ...(cached ? ['Resultado desde caché: no consume búsqueda.'] : []),
+        ...(unknownSites > 0 && body.filtros?.objective === 'web_deficiente'
+          ? [`${unknownSites} web(s) aún sin analizar. Pulsa «Analizar webs» para confirmar su calidad.`]
+          : []),
       ],
     });
   } catch (error) {

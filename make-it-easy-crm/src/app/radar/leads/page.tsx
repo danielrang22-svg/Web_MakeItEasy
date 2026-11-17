@@ -2,16 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, ExternalLink, Loader2, MessageCircle, Navigation, Printer, Search, Trash2, Upload } from "lucide-react";
+import { Download, ExternalLink, Loader2, Mail, MessageCircle, Navigation, Printer, Search, Trash2, Upload } from "lucide-react";
 import RadarNav from "@/components/radar/RadarNav";
 import { getSettings, LEAD_STATUSES, radarRepository, saveBusinessSnapshot } from "@/lib/radar/repository";
-import { buildIntroMessage, mapsRouteUrl, printVisitSheet, whatsappUrl } from "@/lib/radar/outreach";
+import { buildIntroMessage, mailtoUrl, mapsRouteUrl, printVisitSheet, whatsappUrl } from "@/lib/radar/outreach";
 import { scoreClasses } from "@/lib/radar/score";
+import { isDeficientQuality, qualityClasses, qualityLabel } from "@/lib/radar/siteQuality";
 import type { RadarLead, RadarLeadStatus } from "@/lib/radar/types";
 export default function RadarLeadsPage() {
   const router = useRouter();
   const [leads, setLeads] = useState<RadarLead[]>([]);
   const [status, setStatus] = useState<string>("TODOS");
+  const [webFilter, setWebFilter] = useState<string>("todas");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<"table" | "board">("table");
   const [importing, setImporting] = useState<string | null>(null);
@@ -49,6 +51,9 @@ export default function RadarLeadsPage() {
   const filtered = useMemo(() => {
     return leads.filter((l) => {
       if (status !== "TODOS" && l.status !== status) return false;
+      if (webFilter === "mala" && !isDeficientQuality(l.business.siteQuality)) return false;
+      if (webFilter === "sin_web" && l.business.websiteKind === "own") return false;
+      if (webFilter === "con_email" && !l.business.email) return false;
       if (query.trim()) {
         const q = query.toLowerCase();
         return (
@@ -59,7 +64,7 @@ export default function RadarLeadsPage() {
       }
       return true;
     });
-  }, [leads, status, query]);
+  }, [leads, status, webFilter, query]);
 
   async function setLeadStatus(id: string, next: RadarLeadStatus) {
     try {
@@ -128,13 +133,35 @@ export default function RadarLeadsPage() {
 
   function exportCsv() {
     const rows = [
-      ["Nombre", "Categoria", "Direccion", "Telefono", "Web", "Score", "Estado", "Notas", "Proxima accion"],
+      [
+        "Nombre",
+        "Categoria",
+        "Direccion",
+        "Telefono",
+        "Web",
+        "Calidad web",
+        "Nota web",
+        "Email",
+        "Estado email",
+        "Contacto",
+        "Cargo",
+        "Score",
+        "Estado",
+        "Notas",
+        "Proxima accion",
+      ],
       ...filtered.map((l) => [
         l.business.name,
         l.business.category,
         l.business.address,
         l.business.phone,
         l.business.website,
+        qualityLabel(l.business.siteQuality, l.business.siteGrade),
+        l.business.siteGrade == null ? "" : String(l.business.siteGrade),
+        l.business.email ?? "",
+        l.business.emailStatus ?? "",
+        l.business.contactName ?? "",
+        l.business.contactRole ?? "",
         String(l.business.score),
         l.status,
         l.notes,
@@ -182,6 +209,12 @@ export default function RadarLeadsPage() {
           <option value="TODOS">Todos los estados</option>
           {LEAD_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
+        <select value={webFilter} onChange={(e) => setWebFilter(e.target.value)} className="px-3 py-2 bg-muted rounded-xl text-xs ring-1 ring-border outline-none">
+          <option value="todas">Cualquier web</option>
+          <option value="mala">Web mala o mejorable</option>
+          <option value="sin_web">Sin web propia</option>
+          <option value="con_email">Con email</option>
+        </select>
       </div>
 
       {loading && (
@@ -219,9 +252,30 @@ export default function RadarLeadsPage() {
                   <td className="px-3 py-3">
                     <p className="text-sm font-semibold">{l.business.name}</p>
                     <p className="text-[11px] text-muted-foreground">{l.business.category} · {l.business.address || "sin dirección"}</p>
+                    {l.business.websiteKind === "own" && (
+                      <span className={`inline-flex mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ring-1 ${qualityClasses(l.business.siteQuality)}`}>
+                        {qualityLabel(l.business.siteQuality, l.business.siteGrade)}
+                      </span>
+                    )}
+                    {l.business.websiteKind !== "own" && (
+                      <span className="inline-flex mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30">
+                        Sin web propia
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-3 text-[11px] text-muted-foreground">
                     {l.business.phone ? <a href={`tel:${l.business.phone}`} className="text-cyan-400">{l.business.phone}</a> : "—"}
+                    {l.business.email && (
+                      <a href={`mailto:${l.business.email}`} className="block text-cyan-400 truncate max-w-[180px]">
+                        {l.business.email}
+                      </a>
+                    )}
+                    {l.business.contactName && (
+                      <span className="block text-[10px]">
+                        {l.business.contactName}
+                        {l.business.contactRole ? ` · ${l.business.contactRole}` : ""}
+                      </span>
+                    )}
                     {l.business.website && (
                       <a href={l.business.website} target="_blank" rel="noopener" className="block text-cyan-400 truncate max-w-[180px]">
                         {l.business.website.replace(/^https?:\/\//, "")}
@@ -247,6 +301,18 @@ export default function RadarLeadsPage() {
                         return wa ? (
                           <a href={wa} target="_blank" rel="noopener" className="text-emerald-400" title="WhatsApp">
                             <MessageCircle size={13} />
+                          </a>
+                        ) : null;
+                      })()}
+                      {l.business.email && (() => {
+                        const mail = mailtoUrl(
+                          l.business.email,
+                          `Sobre la web de ${l.business.name}`,
+                          buildIntroMessage(l.business, seller)
+                        );
+                        return mail ? (
+                          <a href={mail} className="text-cyan-400" title="Enviar email">
+                            <Mail size={13} />
                           </a>
                         ) : null;
                       })()}
@@ -280,6 +346,11 @@ export default function RadarLeadsPage() {
                     <div key={l.businessId} className="bg-muted/40 rounded-xl p-2.5">
                       <p className="text-xs font-semibold leading-tight">{l.business.name}</p>
                       <p className="text-[10px] text-muted-foreground">{l.business.category}</p>
+                      {l.business.websiteKind === "own" && (
+                        <span className={`inline-flex mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ring-1 ${qualityClasses(l.business.siteQuality)}`}>
+                          {qualityLabel(l.business.siteQuality, l.business.siteGrade)}
+                        </span>
+                      )}
                       <div className="flex items-center justify-between mt-2">
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ring-1 ${scoreClasses(l.business.score)}`}>{l.business.score}</span>
                         <div className="flex gap-2">

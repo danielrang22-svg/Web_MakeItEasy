@@ -26,10 +26,12 @@ import {
   getSettings,
   radarRepository,
   saveAnalysis,
+  saveBusinessSnapshot,
   type RadarAnalysisRecord,
 } from "@/lib/radar/repository";
 import { scoreClasses } from "@/lib/radar/score";
-import type { RadarBusiness, RadarLeadStatus } from "@/lib/radar/types";
+import { applyScanSummary, qualityClasses, qualityLabel } from "@/lib/radar/siteQuality";
+import type { RadarBusiness, RadarLeadStatus, SiteScan } from "@/lib/radar/types";
 
 const TONES = [
   { value: "cercano", label: "Cercano" },
@@ -69,6 +71,7 @@ function BusinessContent() {
   const [copied, setCopied] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [siteScanning, setSiteScanning] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -196,6 +199,34 @@ function BusinessContent() {
       setError(err instanceof Error ? err.message : "No se pudo analizar el negocio");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function scanSiteQuality() {
+    if (!business) return;
+    setSiteScanning(true);
+    setError("");
+    try {
+      const res = await fetch("/api/radar/site-scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessIds: [business.id] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo analizar la web");
+      const scan = (data.scans as Record<string, SiteScan> | undefined)?.[business.id];
+      if (!scan) {
+        setNotice("Esta ficha no tiene una web propia que analizar.");
+        return;
+      }
+      const next = applyScanSummary(business, scan);
+      setBusiness(next);
+      saveBusinessSnapshot(next);
+      setNotice("Web analizada y clasificada.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo analizar la web");
+    } finally {
+      setSiteScanning(false);
     }
   }
 
@@ -404,6 +435,91 @@ function BusinessContent() {
               </ul>
             </details>
           </div>
+
+          {business.websiteKind === "own" && (
+            <div className="bg-card ring-1 ring-border rounded-2xl p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-sm font-bold flex items-center gap-2">
+                  <Globe size={15} className="text-cyan-400" /> Salud de la web
+                </h2>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ring-1 ${qualityClasses(
+                      business.siteQuality
+                    )}`}
+                  >
+                    {qualityLabel(business.siteQuality, business.siteGrade)}
+                  </span>
+                  <button
+                    onClick={() => void scanSiteQuality()}
+                    disabled={siteScanning}
+                    className="px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {siteScanning ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                    {siteScanning ? "Analizando…" : "Analizar web"}
+                  </button>
+                </div>
+              </div>
+
+              {business.siteQuality && business.siteQuality !== "unknown" ? (
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {(business.siteSignals ?? []).map((signal) => (
+                    <div key={signal.id} className="flex items-start justify-between gap-2 text-[11px] bg-muted/40 rounded-lg px-2.5 py-2">
+                      <span className="text-muted-foreground">{signal.label}</span>
+                      <span
+                        className={`text-right ${
+                          signal.status === "pass"
+                            ? "text-emerald-400"
+                            : signal.status === "warn"
+                            ? "text-amber-300"
+                            : signal.status === "fail"
+                            ? "text-red-400"
+                            : "text-muted-foreground"
+                        }`}
+                        title={signal.evidence}
+                      >
+                        {signal.evidence}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Analiza la web para saber si está bien hecha: HTTPS, móvil, contenido, WhatsApp, formulario, reservas y frescura.
+                </p>
+              )}
+
+              {(business.email || business.contactName) && (
+                <div className="mt-3 p-3 rounded-xl bg-muted/40">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Contacto enriquecido
+                  </p>
+                  {business.email && (
+                    <p className="text-xs mt-1">
+                      <a href={`mailto:${business.email}`} className="text-cyan-400 hover:underline">
+                        {business.email}
+                      </a>
+                      {business.emailStatus && (
+                        <span className="text-[10px] text-muted-foreground ml-2">
+                          {business.emailStatus === "verified"
+                            ? "verificado"
+                            : business.emailStatus === "risky"
+                            ? "buzón genérico"
+                            : "inválido"}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  {business.contactName && (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {business.contactName}
+                      {business.contactRole ? ` · ${business.contactRole}` : ""}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="bg-card ring-1 ring-border rounded-2xl p-5">
             <div className="flex items-center justify-between gap-3">

@@ -16,10 +16,22 @@ export function whatsappUrl(phone: string | null | undefined, message: string): 
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 }
 
+export function mailtoUrl(email: string | null | undefined, subject: string, body: string): string | null {
+  const clean = (email || "").trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) return null;
+  return `mailto:${clean}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 export function buildIntroMessage(business: RadarBusiness, sellerName?: string): string {
   const who = sellerName?.trim() || "el equipo de Make it Easy";
   const city = business.address.split("·").pop()?.trim() || "";
   const place = city ? ` en ${city}` : "";
+  const deficient =
+    business.websiteKind === "own" &&
+    (business.siteQuality === "bad" || business.siteQuality === "weak" || business.siteQuality === "broken");
+  if (deficient) {
+    return `Hola, soy ${who}. Vi ${business.name}${place} y revisé su web: hay un par de cosas que están frenando que más clientes los encuentren y les escriban. ¿Te va bien si te cuento en 2 minutos?`;
+  }
   return `Hola, soy ${who}. Vi ${business.name}${place} y quería comentarte algo sobre su presencia online. ¿Te va bien si te cuento en 2 minutos?`;
 }
 
@@ -70,7 +82,16 @@ export function buildVisitSheetHtml(items: VisitSheetItem[], sellerName?: string
           <span class="score">${business.score}/100</span>
         </div>
         <p class="line"><strong>Teléfono:</strong> ${esc(business.phone || "no disponible")}</p>
+        ${business.email ? `<p class="line"><strong>Email:</strong> ${esc(business.email)}</p>` : ""}
         <p class="line"><strong>Web:</strong> ${esc(business.website || "sin web propia")}</p>
+        ${
+          business.websiteKind === "own"
+            ? `<p class="line"><strong>Salud web:</strong> ${
+                business.siteGrade == null ? "sin analizar" : `${business.siteGrade}/100 (${esc(business.siteQuality || "sin analizar")})`
+              }</p>`
+            : ""
+        }
+        ${business.contactName ? `<p class="line"><strong>Contacto:</strong> ${esc(business.contactName)}${business.contactRole ? ` · ${esc(business.contactRole)}` : ""}</p>` : ""}
         ${lead.notes ? `<p class="line"><strong>Notas:</strong> ${esc(lead.notes)}</p>` : ""}
         <div class="check">
           <span>☐ Llamar</span><span>☐ Visitar</span><span>☐ Revisar web</span><span>☐ Propuesta</span><span>☐ Seguimiento</span>

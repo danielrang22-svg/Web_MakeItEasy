@@ -15,6 +15,8 @@ Devuelve SOLO un objeto JSON:
 Reglas:
 - Español de Colombia, tuteo.
 - Menciona 1 o 2 problemas concretos detectados.
+- Si el negocio ya tiene web, habla de mejorarla (velocidad, móvil, WhatsApp, reservas, SEO); nunca digas que no tiene web.
+- Si no tiene web propia, enfoca la oportunidad de tener presencia digital y captar contactos.
 - Termina con una propuesta de conversación, nunca con presión.
 - No inventes datos del negocio.`;
 
@@ -37,13 +39,29 @@ export async function POST(request: NextRequest) {
       ? analysis.problems.map((p: { title?: string; detail?: string }) => `- ${p.title}: ${p.detail}`).join('\n')
       : 'Sin problemas detectados';
 
+    const siteIssues = Array.isArray(business.siteSignals)
+      ? business.siteSignals
+          .filter((s: { status?: string; label?: string; evidence?: string }) => s.status === 'fail')
+          .map((s: { label?: string; evidence?: string }) => `- ${s.label}: ${s.evidence}`)
+          .join('\n')
+      : '';
+
     const context = [
       `NEGOCIO: ${business.name} (${business.category || 'sin categoría'})`,
       `DIRECCIÓN: ${business.address || 'no indicada'}`,
       `WEB: ${business.website || 'sin web propia'}`,
+      `SALUD DE LA WEB: ${
+        business.websiteKind === 'own'
+          ? `${business.siteGrade ?? 'sin analizar'}/100 (${business.siteQuality ?? 'sin analizar'})`
+          : 'sin web propia'
+      }`,
+      `PROBLEMAS DE LA WEB:\n${siteIssues || 'sin analizar'}`,
       `RESUMEN: ${analysis?.summary || 'no disponible'}`,
       `PROBLEMAS:\n${problems}`,
       `SERVICIO RECOMENDADO: ${analysis?.recommendedService?.type || 'web_nueva'} — ${analysis?.recommendedService?.reason || ''}`,
+      `CONTACTO: ${business.contactName || 'no identificado'}${
+        business.contactRole ? ` (${business.contactRole})` : ''
+      }`,
       `MI PERFIL: ${seller.name || 'Asesor de Make it Easy'}`,
       `QUÉ VENDO: ${seller.whatISell || 'webs, agentes de IA por WhatsApp y sistemas de citas'}`,
       `MI PROPUESTA: ${seller.proposal || 'soluciones sencillas que ahorran tiempo y captan clientes'}`,
