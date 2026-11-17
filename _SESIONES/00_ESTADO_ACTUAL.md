@@ -1,5 +1,5 @@
 # Estado actual — Web_MakeItEasy
-Actualizado: 2026-11-17 15:05 | Sesión: 2026-11-17_1426_radar-web-deficiente.md
+Actualizado: 2026-11-17 20:40 | Sesión: 2026-11-17_1426_radar-web-deficiente.md
 
 ## Objetivo del proyecto
 Sitio público de Make It Easy y CRM interno (leads, cotizaciones, proyectos y Radar de prospección).
@@ -17,20 +17,21 @@ Sitio público de Make It Easy y CRM interno (leads, cotizaciones, proyectos y R
 - [x] `.env.example`, `.gitignore`, `ecosystem.config.js`, README y `docs/RADAR.md` corregidos.
 - [x] Radar 2.0 en local: segmento «web deficiente», chequeo rápido de webs (rotas/malas/mejorables/buenas), contacto enriquecido con email verificado por MX y decisor, filtros en leads y métrica de web mala en nichos.
 - [x] Migración `20261117180000_radar_site_scan` aplicada en local (`radar_site_scans` + campos en `radar_businesses`).
-- [x] Tests del Radar 20/20, `tsc --noEmit` limpio, `npm run build` OK y escaneo real de `makeiteasycol.com` (good, 100/100, 2 emails verificados).
+- [x] Tests del Radar 26/26, `tsc --noEmit` limpio, `npm run build` OK y escaneo real de `makeiteasycol.com` (good, 100/100, 2 emails verificados).
 - [x] Corregida la geocodificación de barrios sin polígono: Nominatim limit=10, se prefiere área sobre POI, expansión a radio 2.5 km y fallback Photon→Overpass. Tests 26/26.
 - [x] Prueba real Mazurén/gimnasios: 5 en modo rápido y 35 en exhaustivo; restaurantes 200; Bodytech `weak` 60/100 y Smart Fit `good` 78/100.
 - [x] Upsert de negocios también con caché, para que `/api/radar/site-scan` no responda `skipped`.
+- [x] Radar 2.0 + fix de geocodificación desplegado a producción: PR #7, squash `f84165e`, run `44170942042` verde en 1m51s.
+- [x] Verificación de producción: `/login` 200, `/radar` 307→login, `/api/radar/site-scan` 401 (ruta nueva activa) y `/api/radar/search` 401.
 
 ## En curso
-- [ ] Desplegar Radar 2.0 + fix de geocodificación a producción y probar en `crm.makeiteasycol.com`.
 - [ ] Configurar `PAGESPEED_API_KEY` en el VPS (opcional, gratis).
+- [ ] Prueba funcional autenticada en producción (`Mazurén` + `Gimnasios`) por el usuario.
 
 ## Siguiente paso
-1. Rama `feature/radar-web-deficiente`, commit y deploy con `scripts/deploy.sh` (incluye `prisma migrate deploy`).
-2. En producción: buscar `Mazurén` + `Gimnasios`; en rápido deben salir ~5 y en exhaustivo ~35.
-3. Pulsar «Analizar webs» en fichas que tengan URL y validar badges/contacto.
-4. Ajustar `RADAR_ZONE_RADIUS_KM` o `RADAR_FAST_FALLBACK_MIN` si hace falta.
+1. Entrar a `crm.makeiteasycol.com`, buscar `Mazurén` + `Gimnasios`; en rápido deben salir ~5 y en exhaustivo ~35.
+2. Pulsar «Analizar webs» en fichas que tengan URL y validar badges/contacto.
+3. Ajustar `RADAR_ZONE_RADIUS_KM` o `RADAR_FAST_FALLBACK_MIN` si hace falta.
 
 ## Decisiones vigentes
 | Fecha | Decisión | Motivo |

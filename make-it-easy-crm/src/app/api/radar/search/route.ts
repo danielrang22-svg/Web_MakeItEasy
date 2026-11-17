@@ -16,6 +16,7 @@ interface SearchBody {
   keyword?: string;
   mode?: 'fast' | 'exhaustive';
   onlyNew?: boolean;
+  force?: boolean;
   filtros?: {
     onlyNoWebsite?: boolean;
     onlyWithPhone?: boolean;
@@ -29,6 +30,13 @@ interface SearchBody {
 function isDeficientCandidate(business: RadarBusiness): boolean {
   if (business.websiteKind !== 'own') return false;
   return isDeficientQuality(business.siteQuality) || !business.siteQuality || business.siteQuality === 'unknown';
+}
+
+function zoneIsTiny(zone: RadarZone): boolean {
+  const [s, w, n, e] = zone.bbox;
+  const latKm = Math.abs(n - s) * 111.32;
+  const lngKm = Math.abs(e - w) * 111.32 * Math.cos((((s + n) / 2) * Math.PI) / 180);
+  return latKm * lngKm < 0.3 || Math.max(latKm, lngKm) < 1;
 }
 
 function applyFilters(items: RadarBusiness[], body: SearchBody): RadarBusiness[] {
@@ -66,7 +74,11 @@ export async function POST(request: NextRequest) {
     }
 
     const key = searchCacheKey(zona, nicho, keyword, mode);
-    const cachedRow = await readSearchCache(key);
+    let cachedRow = await readSearchCache(key);
+    if (body.force) cachedRow = null;
+    if (cachedRow && cachedRow.businesses.length === 0 && zoneIsTiny(cachedRow.zone)) {
+      cachedRow = null;
+    }
 
     let rawBusinesses: RadarBusiness[];
     let zone: RadarZone;

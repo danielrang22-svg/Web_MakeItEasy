@@ -94,6 +94,18 @@ export interface RadarZone {
   note?: string;
 }
 
+export type ZoneSuggestionKind = "area" | "poi" | "address";
+
+export interface ZoneSuggestion {
+  id: string;
+  label: string;
+  displayName: string;
+  type: string;
+  kind: ZoneSuggestionKind;
+  lat: number;
+  lon: number;
+}
+
 export interface RadarFilters {
   onlyNoWebsite: boolean;
   onlyWithPhone: boolean;

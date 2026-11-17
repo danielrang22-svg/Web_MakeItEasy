@@ -65,10 +65,18 @@ Antes: `geocodeZone("Mazurén")` elegía una parada de bus con bbox de ~11 m; fa
 - Persistencia: fila temporal de Bodytech con `siteQuality=weak`, `siteGrade=60`; borrada después.
 - Limitación: los gimnasios de Mazurén no tienen web en OSM, así que el filtro «web mala» no aplica ahí; sí aplica cuando la ficha trae URL.
 
+## Deploy
+
+- PR #7 `feat(radar): webs deficientes y geocodificacion por area`.
+- Squash merge a `main`: `f84165e`.
+- GitHub Actions `Deploy VPS Make It Easy` run `44170942042`: verde en 1m51s.
+- Verificación pública: `/login` 200, `/radar` 307→login, `POST /api/radar/site-scan` 401 (ruta nueva activa), `POST /api/radar/search` 401.
+- `scripts/deploy.sh` ejecuta `prisma migrate deploy` antes del build; la ruta nueva activa confirma que el build nuevo está desplegado.
+
 ## Pendientes
 
-- Desplegar la migración y el código a producción (`scripts/deploy.sh` ya ejecuta `prisma migrate deploy`); el usuario confirmó que en producción seguía fallando porque esta versión no estaba desplegada.
-- Probar en `crm.makeiteasycol.com` una búsqueda real y analizar 10 webs.
+- Prueba funcional autenticada en producción (`Mazurén` + `Gimnasios`): el usuario debe entrar y confirmar 5/35.
+- Probar «Analizar webs» en una ficha con URL.
 - Configurar `PAGESPEED_API_KEY` si se quiere la captura y notas de velocidad.
 - Fase 5: cohortes guardadas (debe tener / descarta / rango) y Google Places.
 - Revisar falsos positivos del decisor en webs con cargos genéricos.

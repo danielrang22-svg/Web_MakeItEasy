@@ -12,7 +12,6 @@ import {
   Globe,
   Loader2,
   Mail,
-  MapPin,
   Phone,
   ScanSearch,
   Search,
@@ -21,6 +20,7 @@ import {
 } from "lucide-react";
 import { RADAR_CATEGORIES } from "@/lib/radar/categories";
 import RadarNav from "@/components/radar/RadarNav";
+import ZoneAutocomplete from "@/components/radar/ZoneAutocomplete";
 import { saveBusinessSnapshot } from "@/lib/radar/repository";
 import { radarRepository } from "@/lib/radar/repository";
 import { scoreClasses } from "@/lib/radar/score";
@@ -115,7 +115,7 @@ function RadarPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function runSearch(zone: string, category: string, kw = "", ex = false) {
+  async function runSearch(zone: string, category: string, kw = "", ex = false, force = false) {
     if (!zone.trim()) {
       setError("Escribe una zona: ciudad, barrio o código postal.");
       return;
@@ -138,6 +138,7 @@ function RadarPageContent() {
           keyword: kw,
           mode: ex ? "exhaustive" : "fast",
           onlyNew,
+          force: force || undefined,
           filtros: {
             objective,
             onlyWithPhone,
@@ -395,15 +396,11 @@ function RadarPageContent() {
             <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
               Zona
             </label>
-            <div className="relative">
-              <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={zona}
-                onChange={(e) => setZona(e.target.value)}
-                placeholder="Dos Hermanas, Sevilla · 41701 · Triana"
-                className="w-full pl-9 pr-3 py-2.5 bg-muted rounded-xl ring-1 ring-border focus:ring-2 focus:ring-cyan-500 outline-none text-sm"
-              />
-            </div>
+            <ZoneAutocomplete
+              value={zona}
+              onChange={setZona}
+              placeholder="Mazurén, Suba, Bogotá · 41701 · Triana"
+            />
           </div>
 
           <div className="md:col-span-4">
@@ -618,6 +615,28 @@ function RadarPageContent() {
               <p className="text-xs text-muted-foreground mt-1">
                 Prueba a quitar filtros, ampliar la zona o usar otra categoría.
               </p>
+              {result.cached && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void runSearch(
+                        zona,
+                        libre ? "" : nicho,
+                        libre ? keyword.trim() : "",
+                        exhaustive,
+                        true
+                      )
+                    }
+                    className="mt-3 px-3 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/40 text-xs font-bold hover:bg-cyan-500/25"
+                  >
+                    Reintentar sin caché
+                  </button>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    Si la zona se guardó mal en caché, este botón vuelve a geocodificarla.
+                  </p>
+                </>
+              )}
             </div>
           )}
 
