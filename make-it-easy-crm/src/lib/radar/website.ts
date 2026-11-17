@@ -76,6 +76,12 @@ export function normalizeUrl(url: string): string {
   return `https://${trimmed}`;
 }
 
+export function isFreeHosting(url: string | null | undefined): boolean {
+  const host = hostOf(url || "");
+  if (!host) return false;
+  return FREE_SUBDOMAINS.some((h) => host === h || host.endsWith(`.${h}`) || host.includes(h));
+}
+
 export function classifyWebsite(url: string | null | undefined): WebsiteKind {
   const raw = (url || "").trim();
   if (!raw) return "none";
@@ -85,8 +91,7 @@ export function classifyWebsite(url: string | null | undefined): WebsiteKind {
 
   if (SOCIAL_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))) return "social";
   if (DIRECTORY_HOSTS.some((h) => host.includes(h))) return "directory";
-  if (FREE_SUBDOMAINS.some((h) => host === h || host.endsWith(`.${h}`) || host.includes(h))) {
-    // Un WordPress/Blogspot propio sigue siendo web, pero limitada: lo tratamos como web propia.
+  if (isFreeHosting(raw)) {
     return "own";
   }
   return "own";

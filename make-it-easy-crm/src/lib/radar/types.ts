@@ -1,6 +1,46 @@
 export type WebsiteKind = "own" | "social" | "directory" | "none";
 export type RadarSource = "osm" | "google";
 
+export type SiteQuality = "broken" | "bad" | "weak" | "good" | "unknown";
+export type SiteSignalStatus = "pass" | "warn" | "fail" | "na";
+export type EmailStatus = "verified" | "risky" | "invalid";
+
+export interface SiteSignal {
+  id: string;
+  label: string;
+  status: SiteSignalStatus;
+  points: number;
+  max: number;
+  evidence: string;
+}
+
+export interface EmailCheck {
+  email: string;
+  status: EmailStatus;
+  reason: string;
+}
+
+export interface SiteScan {
+  url: string;
+  finalUrl: string | null;
+  status: number | null;
+  ms: number;
+  bytes: number;
+  quality: SiteQuality;
+  grade: number;
+  signals: SiteSignal[];
+  emails: string[];
+  phones: string[];
+  socials: string[];
+  contactName: string | null;
+  contactRole: string | null;
+  emailChecks: EmailCheck[];
+  freeHosting: boolean;
+  placeholder: boolean;
+  error?: string;
+  scannedAt: string;
+}
+
 export interface ScoreBreakdown {
   label: string;
   points: number;
@@ -31,6 +71,16 @@ export interface RadarBusiness {
   isNew?: boolean;
   saved?: boolean;
   audited?: boolean;
+  /** Salud de la web y contacto enriquecido (Fase Radar 2.0) */
+  siteQuality?: SiteQuality;
+  siteGrade?: number;
+  siteCheckedAt?: string;
+  siteSignals?: SiteSignal[];
+  email?: string;
+  emailStatus?: EmailStatus;
+  contactName?: string;
+  contactRole?: string;
+  enrichedAt?: string;
 }
 
 export interface RadarZone {
@@ -40,6 +90,8 @@ export interface RadarZone {
   bbox: [number, number, number, number]; // south, west, north, east
   /** Contorno real del municipio/barrio: [polígono][anillo][punto][lng, lat] */
   polygons?: number[][][][];
+  /** Aviso cuando la zona se interpretó como punto y se amplió a un radio */
+  note?: string;
 }
 
 export interface RadarFilters {
@@ -48,6 +100,9 @@ export interface RadarFilters {
   hideClosed: boolean;
   minRating: number | null;
   minReviews: number | null;
+  objective?: "sin_web" | "web_deficiente" | "ambos";
+  maxSiteGrade?: number | null;
+  requireEmail?: boolean;
 }
 
 export interface RadarUsage {
@@ -66,6 +121,8 @@ export interface RadarSearchResult {
   total: number;
   newCount?: number;
   savedCount?: number;
+  siteScannedCount?: number;
+  siteDeficientCount?: number;
   warnings: string[];
   cached: boolean;
   usage?: RadarUsage;

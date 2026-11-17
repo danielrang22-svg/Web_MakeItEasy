@@ -7,13 +7,17 @@ const UA = "MakeItEasy-Radar/1.0 (contacto: daniel.makeiteasy@gmail.com)";
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 const PHOTON = "https://photon.komoot.io/api/";
 const COUNTRY = (process.env.RADAR_COUNTRY || "co").trim().toLowerCase();
+const ZONE_RADIUS_KM = Number(process.env.RADAR_ZONE_RADIUS_KM ?? 2.5);
+const ZONE_MIN_AREA_KM2 = Number(process.env.RADAR_ZONE_MIN_AREA_KM2 ?? 0.3);
+const FAST_FALLBACK_MIN = Number(process.env.RADAR_FAST_FALLBACK_MIN ?? 3);
 const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
 ];
 
 const zoneCache = new Map<string, { at: number; zone: RadarZone }>();
-const searchCache = new Map<string, { at: number; data: RadarBusiness[]; provider: RadarProvider }>();
+const searchCache = new Map<string, { at: number; data: RadarBusiness[]; provider: RadarProvider; note?: string }>();
 const inFlight = new Map<string, Promise<SearchOutcome>>();
 
 let nominatimChain: Promise<unknown> = Promise.resolve();
@@ -42,6 +46,7 @@ export interface SearchOutcome {
   businesses: RadarBusiness[];
   cached: boolean;
   provider: RadarProvider;
+  note?: string;
 }
 
 export class RadarUpstreamError extends Error {
@@ -53,12 +58,107 @@ export class RadarUpstreamError extends Error {
   }
 }
 
+export interface NominatimZoneResult {
+  display_name?: string;
+  lat?: string;
+  lon?: string;
+  boundingbox?: [string, string, string, string];
+  geojson?: { type?: string; coordinates?: unknown };
+  class?: string;
+  type?: string;
+  addresstype?: string;
+}
+
+const AREA_TYPES = new Set([
+  "administrative",
+  "boundary",
+  "city",
+  "town",
+  "village",
+  "municipality",
+  "hamlet",
+  "suburb",
+  "neighbourhood",
+  "neighborhood",
+  "quarter",
+  "city_district",
+  "borough",
+  "locality",
+  "residential",
+]);
+
+const POI_TYPES = new Set([
+  "bus_station",
+  "bus_stop",
+  "mall",
+  "shop",
+  "building",
+  "house",
+  "apartments",
+  "commercial",
+  "amenity",
+]);
+
+export function zonePriority(item: NominatimZoneResult): number {
+  const type = (item.type || "").toLowerCase();
+  const addresstype = (item.addresstype || "").toLowerCase();
+  const cls = (item.class || "").toLowerCase();
+  if (cls === "boundary" || AREA_TYPES.has(type) || AREA_TYPES.has(addresstype)) return 0;
+  if (POI_TYPES.has(type) || POI_TYPES.has(addresstype)) return 5;
+  return 3;
+}
+
+export function bboxAreaKm2(bbox: [number, number, number, number]): number {
+  const [s, w, n, e] = bbox;
+  const midLat = (((s + n) / 2) * Math.PI) / 180;
+  const height = Math.abs(n - s) * 111.32;
+  const width = Math.abs(e - w) * 111.32 * Math.cos(midLat);
+  return height * width;
+}
+
+function nominatimArea(box: string[] | undefined): number {
+  if (!box || box.length < 4) return 0;
+  const [s, n, w, e] = box.map(Number) as [number, number, number, number];
+  return bboxAreaKm2([s, w, n, e]);
+}
+
+export function pickZoneResult(list: NominatimZoneResult[]): NominatimZoneResult | undefined {
+  const valid = list.filter((item) => item.lat && item.lon && item.boundingbox);
+  return [...valid].sort((a, b) => {
+    const priority = zonePriority(a) - zonePriority(b);
+    if (priority !== 0) return priority;
+    return nominatimArea(b.boundingbox) - nominatimArea(a.boundingbox);
+  })[0];
+}
+
+export function expandTinyZone(zone: RadarZone, label: string): RadarZone {
+  const [s, w, n, e] = zone.bbox;
+  const area = bboxAreaKm2(zone.bbox);
+  const spans = Math.max(Math.abs(n - s), Math.abs(e - w));
+  if (area >= ZONE_MIN_AREA_KM2 && spans >= 0.01) return zone;
+
+  const latDelta = ZONE_RADIUS_KM / 111.32;
+  const lngDelta = ZONE_RADIUS_KM / (111.32 * Math.cos((zone.lat * Math.PI) / 180));
+  const radiusLabel = Number.isInteger(ZONE_RADIUS_KM) ? String(ZONE_RADIUS_KM) : ZONE_RADIUS_KM.toFixed(1);
+  return {
+    ...zone,
+    displayName: `${label.trim()} · radio ${radiusLabel} km`,
+    bbox: [zone.lat - latDelta, zone.lng - lngDelta, zone.lat + latDelta, zone.lng + lngDelta],
+    polygons: undefined,
+    note: `"${label.trim()}" no tiene un polígono de barrio en OpenStreetMap; se buscó en un radio de ${radiusLabel} km.`,
+  };
+}
+
+export function needsOverpassFallback(count: number): boolean {
+  return count < FAST_FALLBACK_MIN;
+}
+
 export async function geocodeZone(zona: string): Promise<RadarZone> {
   const key = zona.trim().toLowerCase();
   const hit = zoneCache.get(key);
   if (hit && Date.now() - hit.at < ZONE_TTL) return hit.zone;
 
-  const url = `${NOMINATIM}/search?format=jsonv2&limit=1&countrycodes=${COUNTRY}&polygon_geojson=1&q=${encodeURIComponent(zona)}`;
+  const url = `${NOMINATIM}/search?format=jsonv2&limit=10&countrycodes=${COUNTRY}&polygon_geojson=1&q=${encodeURIComponent(zona)}`;
   const res = await nominatimFetch(url);
 
   if (!res.ok) {
@@ -68,15 +168,9 @@ export async function geocodeZone(zona: string): Promise<RadarZone> {
     );
   }
 
-  const list = (await res.json()) as Array<{
-    display_name?: string;
-    lat?: string;
-    lon?: string;
-    boundingbox?: [string, string, string, string];
-    geojson?: { type?: string; coordinates?: unknown };
-  }>;
+  const list = (await res.json()) as NominatimZoneResult[];
 
-  const first = list[0];
+  const first = pickZoneResult(list);
   if (!first?.lat || !first?.lon || !first?.boundingbox) {
     throw new RadarUpstreamError(
       `No encuentro "${zona}". Prueba con municipio, barrio o código postal.`,
@@ -85,13 +179,16 @@ export async function geocodeZone(zona: string): Promise<RadarZone> {
   }
 
   const [s, n, w, e] = first.boundingbox.map(Number) as [number, number, number, number];
-  const zone: RadarZone = {
-    displayName: first.display_name ?? zona,
-    lat: Number(first.lat),
-    lng: Number(first.lon),
-    bbox: [s, w, n, e],
-    polygons: extractPolygons(first.geojson),
-  };
+  const zone = expandTinyZone(
+    {
+      displayName: first.display_name ?? zona,
+      lat: Number(first.lat),
+      lng: Number(first.lon),
+      bbox: [s, w, n, e],
+      polygons: extractPolygons(first.geojson),
+    },
+    zona
+  );
 
   zoneCache.set(key, { at: Date.now(), zone });
   return zone;
@@ -250,6 +347,7 @@ function isInsideZone(zone: RadarZone, lat: number, lng: number): boolean {
 }
 
 const EXTRA_QUERIES: Record<string, string[]> = {
+  gimnasios: ["gym", "fitness", "bodytech", "crossfit"],
   gestorias: ["asesoría", "asesoria"],
   reformas: ["reforma"],
   academias: ["academia"],
@@ -266,7 +364,7 @@ async function searchPhoton(
   const category = findCategory(nicho);
   const tags = category?.osm ?? [];
   const baseQuery = keyword || category?.photonQuery || category?.label || nicho;
-  const queries = [baseQuery, ...(keyword ? [] : EXTRA_QUERIES[nicho] ?? [])].slice(0, 2);
+  const queries = [baseQuery, ...(keyword ? [] : EXTRA_QUERIES[nicho] ?? [])].slice(0, 4);
 
   const combos: Array<{ q: string; tag?: string }> = [];
   for (const q of queries) {
@@ -521,7 +619,13 @@ export async function searchOsm(
   const cacheKey = `${zona}|${nicho}|${keyword}|${mode}`.toLowerCase();
   const hit = searchCache.get(cacheKey);
   if (hit && Date.now() - hit.at < SEARCH_TTL) {
-    return { zone: await geocodeZone(zona), businesses: hit.data, cached: true, provider: hit.provider };
+    return {
+      zone: await geocodeZone(zona),
+      businesses: hit.data,
+      cached: true,
+      provider: hit.provider,
+      note: hit.note,
+    };
   }
 
   const running = inFlight.get(cacheKey);
@@ -531,6 +635,7 @@ export async function searchOsm(
     const zone = await geocodeZone(zona);
     let provider: RadarProvider = "photon";
     let businesses: RadarBusiness[] = [];
+    let note: string | undefined;
 
     if (mode === "exhaustive") {
       provider = "overpass";
@@ -542,11 +647,32 @@ export async function searchOsm(
         provider = "overpass";
         businesses = await searchOverpass(zone, nicho, keyword);
       }
+
+      if (provider === "photon" && businesses.length > 0 && businesses.length < 10) {
+        note = `Photon encontró ${businesses.length}; prueba «Búsqueda exhaustiva» para ver todos los de OpenStreetMap.`;
+      }
+
+      if (provider === "photon" && needsOverpassFallback(businesses.length)) {
+        try {
+          const fallback = await searchOverpass(zone, nicho, keyword);
+          if (fallback.length > businesses.length) {
+            businesses = fallback;
+            provider = "overpass";
+            note = "Photon devolvió pocos resultados; se completó con Overpass.";
+          }
+        } catch {
+          note = note
+            ? `${note} Overpass no está disponible ahora.`
+            : "Overpass no está disponible ahora; se muestran los resultados de Photon.";
+        }
+      }
     }
 
+    if (zone.note) note = note ? `${zone.note} ${note}` : zone.note;
+
     businesses.sort((a, b) => b.score - a.score);
-    searchCache.set(cacheKey, { at: Date.now(), data: businesses, provider });
-    return { zone, businesses, cached: false, provider };
+    searchCache.set(cacheKey, { at: Date.now(), data: businesses, provider, note });
+    return { zone, businesses, cached: false, provider, note };
   })();
 
   inFlight.set(cacheKey, promise);

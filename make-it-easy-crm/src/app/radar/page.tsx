@@ -11,9 +11,12 @@ import {
   ExternalLink,
   Globe,
   Loader2,
+  Mail,
   MapPin,
   Phone,
+  ScanSearch,
   Search,
+  User,
   Users,
 } from "lucide-react";
 import { RADAR_CATEGORIES } from "@/lib/radar/categories";
@@ -21,14 +24,24 @@ import RadarNav from "@/components/radar/RadarNav";
 import { saveBusinessSnapshot } from "@/lib/radar/repository";
 import { radarRepository } from "@/lib/radar/repository";
 import { scoreClasses } from "@/lib/radar/score";
-import type { RadarBusiness, RadarSearchResult } from "@/lib/radar/types";
+import { applyScanSummary, isDeficientQuality, qualityClasses, qualityLabel } from "@/lib/radar/siteQuality";
+import type { RadarBusiness, RadarSearchResult, SiteScan } from "@/lib/radar/types";
 
 const PAGE_SIZE = 20;
+const SCAN_CHUNK = 10;
+
+type RadarObjective = "ambos" | "sin_web" | "web_deficiente";
 
 interface RadarUsageInfo {
   used: number;
   exhaustiveUsed: number;
-  limits: { dailySearches: number; dailyExhaustive: number; maxResults: number };
+  siteScansUsed: number;
+  limits: {
+    dailySearches: number;
+    dailyExhaustive: number;
+    dailySiteScans: number;
+    maxResults: number;
+  };
   resetsAt: string;
 }
 
@@ -38,12 +51,15 @@ function RadarPageContent() {
   const [keyword, setKeyword] = useState("");
   const [libre, setLibre] = useState(false);
 
-  const [onlyNoWebsite, setOnlyNoWebsite] = useState(false);
+  const [objective, setObjective] = useState<RadarObjective>("ambos");
   const [onlyWithPhone, setOnlyWithPhone] = useState(false);
   const [hideUnnamed, setHideUnnamed] = useState(true);
   const [exhaustive, setExhaustive] = useState(false);
   const [onlyNew, setOnlyNew] = useState(true);
   const [usage, setUsage] = useState<RadarUsageInfo | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState<{ done: number; total: number } | null>(null);
+  const [scanError, setScanError] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -106,6 +122,8 @@ function RadarPageContent() {
     }
     setLoading(true);
     setError("");
+    setScanError("");
+    setScanProgress(null);
     setResult(null);
     setSelected(new Set());
     setVisible(PAGE_SIZE);
@@ -120,6 +138,11 @@ function RadarPageContent() {
           keyword: kw,
           mode: ex ? "exhaustive" : "fast",
           onlyNew,
+          filtros: {
+            objective,
+            onlyWithPhone,
+            hideUnnamed,
+          },
         }),
       });
       const data = await res.json();
@@ -138,6 +161,63 @@ function RadarPageContent() {
     return runSearch(zona, libre ? "" : nicho, libre ? keyword.trim() : "", exhaustive);
   }
 
+  async function runSiteScan() {
+    const items = result?.businesses ?? [];
+    const pending = items.filter(
+      (b) => b.websiteKind === "own" && b.website && (!b.siteQuality || b.siteQuality === "unknown")
+    );
+    if (pending.length === 0) {
+      setToast({ message: "Todas las webs de esta búsqueda ya están analizadas.", type: "info" });
+      return;
+    }
+
+    setScanning(true);
+    setScanError("");
+    setScanProgress({ done: 0, total: pending.length });
+    try {
+      const collected: Record<string, SiteScan> = {};
+      let done = 0;
+      for (let i = 0; i < pending.length; i += SCAN_CHUNK) {
+        const chunk = pending.slice(i, i + SCAN_CHUNK).map((b) => b.id);
+        const res = await fetch("/api/radar/site-scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ businessIds: chunk }),
+        });
+        const data = await res.json();
+        if (data?.usage) setUsage(data.usage as RadarUsageInfo);
+        if (!res.ok) throw new Error(data.error || "No se pudieron analizar las webs");
+        Object.assign(collected, (data.scans ?? {}) as Record<string, SiteScan>);
+        done += chunk.length;
+        setScanProgress({ done, total: pending.length });
+        setResult((prev) => {
+          if (!prev) return prev;
+          const businesses = prev.businesses.map((b) =>
+            collected[b.id] ? applyScanSummary(b, collected[b.id]) : b
+          );
+          return {
+            ...prev,
+            businesses,
+            siteScannedCount: businesses.filter(
+              (b) => b.websiteKind === "own" && b.siteQuality && b.siteQuality !== "unknown"
+            ).length,
+            siteDeficientCount: businesses.filter((b) => isDeficientQuality(b.siteQuality)).length,
+          };
+        });
+      }
+      const total = Object.keys(collected).length;
+      setToast({
+        message: total > 0 ? `${total} web(s) analizadas y clasificadas.` : "No se pudo analizar ninguna web.",
+        type: total > 0 ? "success" : "info",
+      });
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : "Error analizando las webs");
+    } finally {
+      setScanning(false);
+      setScanProgress(null);
+    }
+  }
+
   async function openFicha(b: RadarBusiness) {
     saveBusinessSnapshot(b);
     try {
@@ -154,14 +234,33 @@ function RadarPageContent() {
 
   const filtered = useMemo(() => {
     const items = result?.businesses ?? [];
-    return items.filter((b) => {
-      if (onlyNoWebsite && b.websiteKind === "own") return false;
-      if (onlyWithPhone && !b.phone) return false;
-      if (hideUnnamed && b.name === "(sin nombre)") return false;
-      if (onlyNew && b.saved) return false;
-      return true;
-    });
-  }, [result, onlyNoWebsite, onlyWithPhone, hideUnnamed, onlyNew]);
+    return items
+      .filter((b) => {
+        if (objective === "sin_web" && b.websiteKind === "own") return false;
+        if (
+          objective === "web_deficiente" &&
+          !(
+            b.websiteKind === "own" &&
+            (isDeficientQuality(b.siteQuality) || !b.siteQuality || b.siteQuality === "unknown")
+          )
+        ) {
+          return false;
+        }
+        if (onlyWithPhone && !b.phone) return false;
+        if (hideUnnamed && b.name === "(sin nombre)") return false;
+        if (onlyNew && b.saved) return false;
+        return true;
+      })
+      .sort((a, b) => b.score - a.score);
+  }, [result, objective, onlyWithPhone, hideUnnamed, onlyNew]);
+
+  const pendingSites = useMemo(
+    () =>
+      filtered.filter(
+        (b) => b.websiteKind === "own" && b.website && (!b.siteQuality || b.siteQuality === "unknown")
+      ).length,
+    [filtered]
+  );
 
   const shown = filtered.slice(0, visible);
 
@@ -207,7 +306,22 @@ function RadarPageContent() {
   function exportCsv() {
     if (filtered.length === 0) return;
     const rows = [
-      ["Nombre", "Categoria", "Direccion", "Telefono", "Web", "Tipo de web", "Puntuacion", "Mapa"],
+      [
+        "Nombre",
+        "Categoria",
+        "Direccion",
+        "Telefono",
+        "Web",
+        "Tipo de web",
+        "Calidad web",
+        "Nota web",
+        "Email",
+        "Estado email",
+        "Contacto",
+        "Cargo",
+        "Puntuacion",
+        "Mapa",
+      ],
       ...filtered.map((b) => [
         b.name,
         b.category,
@@ -215,6 +329,12 @@ function RadarPageContent() {
         b.phone,
         b.website,
         b.websiteKind,
+        qualityLabel(b.siteQuality, b.siteGrade),
+        b.siteGrade == null ? "" : String(b.siteGrade),
+        b.email ?? "",
+        b.emailStatus ?? "",
+        b.contactName ?? "",
+        b.contactRole ?? "",
         String(b.score),
         b.mapsUrl,
       ]),
@@ -242,7 +362,7 @@ function RadarPageContent() {
             Radar de Clientes
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Encuentra negocios locales, detecta quién no tiene web propia y prepara el primer contacto.
+            Encuentra negocios locales sin web o con una web mal hecha, y prepara el primer contacto.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
@@ -261,7 +381,8 @@ function RadarPageContent() {
               }`}
               title="Se reinicia a las 00:00, hora Colombia"
             >
-              Hoy: {usage.used}/{usage.limits.dailySearches} · exh. {usage.exhaustiveUsed}/{usage.limits.dailyExhaustive}
+              Hoy: {usage.used}/{usage.limits.dailySearches} · exh. {usage.exhaustiveUsed}/{usage.limits.dailyExhaustive} · webs{" "}
+              {usage.siteScansUsed}/{usage.limits.dailySiteScans}
             </span>
           )}
         </div>
@@ -339,10 +460,29 @@ function RadarPageContent() {
             <input type="checkbox" checked={onlyNew} onChange={(e) => setOnlyNew(e.target.checked)} className="accent-cyan-500" />
             Solo nuevos
           </label>
-          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-            <input type="checkbox" checked={onlyNoWebsite} onChange={(e) => setOnlyNoWebsite(e.target.checked)} className="accent-cyan-500" />
-            Solo sin web registrada
-          </label>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Objetivo:</span>
+            {(
+              [
+                ["ambos", "Sin web + web mala"],
+                ["sin_web", "Sin web"],
+                ["web_deficiente", "Web mala o mejorable"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setObjective(value)}
+                className={`px-2.5 py-1 rounded-lg ring-1 font-semibold ${
+                  objective === value
+                    ? "bg-cyan-500/15 text-cyan-300 ring-cyan-500/40"
+                    : "bg-muted text-muted-foreground ring-border hover:text-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={onlyWithPhone} onChange={(e) => setOnlyWithPhone(e.target.checked)} className="accent-cyan-500" />
             Solo con teléfono
@@ -356,13 +496,28 @@ function RadarPageContent() {
             Búsqueda exhaustiva (lenta)
           </label>
           {filtered.length > 0 && (
-            <button
-              type="button"
-              onClick={exportCsv}
-              className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
-            >
-              <Download size={13} /> Exportar CSV
-            </button>
+            <div className="ml-auto flex items-center gap-3">
+              {pendingSites > 0 && (
+                <button
+                  type="button"
+                  onClick={() => void runSiteScan()}
+                  disabled={scanning}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/40 text-xs font-bold hover:bg-cyan-500/25 disabled:opacity-50"
+                >
+                  {scanning ? <Loader2 size={13} className="animate-spin" /> : <ScanSearch size={13} />}
+                  {scanning && scanProgress
+                    ? `Analizando ${scanProgress.done}/${scanProgress.total}`
+                    : `Analizar webs (${pendingSites})`}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={exportCsv}
+                className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
+              >
+                <Download size={13} /> Exportar CSV
+              </button>
+            </div>
           )}
         </div>
       </form>
@@ -380,6 +535,43 @@ function RadarPageContent() {
           >
             Reintentar
           </button>
+        </div>
+      )}
+
+      {scanError && (
+        <div className="mt-4 flex items-start gap-3 p-3 rounded-xl bg-red-500/10 ring-1 ring-red-500/30 text-xs text-red-300">
+          <AlertCircle size={15} className="shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <strong className="block">No se pudieron analizar las webs</strong>
+            <span>{scanError}</span>
+          </div>
+          <button
+            onClick={() => void runSiteScan()}
+            className="shrink-0 px-2.5 py-1.5 rounded-lg ring-1 ring-red-500/40 font-semibold hover:bg-red-500/10"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {scanning && scanProgress && (
+        <div className="mt-4 p-3 rounded-xl bg-cyan-500/10 ring-1 ring-cyan-500/30 text-xs text-cyan-200">
+          <div className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-2">
+              <Loader2 size={13} className="animate-spin" /> Analizando webs: {scanProgress.done}/{scanProgress.total}
+            </span>
+            <span className="text-[10px] text-cyan-300/80">
+              HTTPS, móvil, contenido y conversión
+            </span>
+          </div>
+          <div className="mt-2 h-1 rounded-full bg-cyan-500/20 overflow-hidden">
+            <div
+              className="h-full bg-cyan-400 transition-all"
+              style={{
+                width: `${Math.round((scanProgress.done / Math.max(1, scanProgress.total)) * 100)}%`,
+              }}
+            />
+          </div>
         </div>
       )}
 
@@ -403,8 +595,20 @@ function RadarPageContent() {
                 <span className="ml-1 text-[10px] text-muted-foreground">{result.savedCount} ya guardados</span>
               )}
               {result.cached && <span className="ml-2 px-2 py-0.5 rounded bg-muted text-[10px]">caché</span>}
+              {(result.siteScannedCount ?? 0) > 0 && (
+                <span className="ml-2 text-[10px] text-cyan-300">
+                  {result.siteScannedCount} web(s) analizadas
+                </span>
+              )}
+              {(result.siteDeficientCount ?? 0) > 0 && (
+                <span className="ml-1 text-[10px] text-amber-300">
+                  {result.siteDeficientCount} con web deficiente
+                </span>
+              )}
             </div>
-            <div className="text-[10px] text-muted-foreground max-w-xl text-right">{result.warnings[0]}</div>
+            <div className="text-[10px] text-muted-foreground max-w-xl text-right">
+              {result.warnings.join(" · ")}
+            </div>
           </div>
 
           {filtered.length === 0 && (
@@ -484,10 +688,15 @@ function RadarPageContent() {
                           </span>
                         </div>
                         {b.address && <p className="text-xs text-muted-foreground mt-2">{b.address}</p>}
-                        <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
                           {b.phone && (
                             <a href={`tel:${b.phone}`} className="text-xs text-cyan-400 flex items-center gap-1">
                               <Phone size={12} /> {b.phone}
+                            </a>
+                          )}
+                          {b.email && (
+                            <a href={`mailto:${b.email}`} className="text-xs text-cyan-400 flex items-center gap-1 max-w-[220px] truncate">
+                              <Mail size={12} /> {b.email}
                             </a>
                           )}
                           {b.website ? (
@@ -499,7 +708,18 @@ function RadarPageContent() {
                               <Globe size={12} /> Sin web (OSM)
                             </span>
                           )}
+                          {b.websiteKind === "own" && (
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ring-1 ${qualityClasses(b.siteQuality)}`}>
+                              {qualityLabel(b.siteQuality, b.siteGrade)}
+                            </span>
+                          )}
                         </div>
+                        {b.contactName && (
+                          <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                            <User size={11} /> {b.contactName}
+                            {b.contactRole ? ` · ${b.contactRole}` : ""}
+                          </p>
+                        )}
                         <div className="flex items-center justify-between mt-3">
                           <button onClick={() => setExpanded(expanded === b.id ? null : b.id)} className="text-[11px] text-muted-foreground flex items-center gap-1">
                             {expanded === b.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Desglose
@@ -624,6 +844,21 @@ function BusinessRows({
           ) : (
             <span className="text-[11px] text-muted-foreground">Sin teléfono</span>
           )}
+          {business.email && (
+            <a
+              href={`mailto:${business.email}`}
+              className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1 mt-1 max-w-[200px] truncate"
+              title={`${business.email}${business.emailStatus ? ` · ${business.emailStatus}` : ""}`}
+            >
+              <Mail size={11} className="shrink-0" /> {business.email}
+            </a>
+          )}
+          {business.contactName && (
+            <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+              <User size={10} /> {business.contactName}
+              {business.contactRole ? ` · ${business.contactRole}` : ""}
+            </p>
+          )}
         </td>
         <td className="px-3 py-3">
           {business.website ? (
@@ -642,6 +877,21 @@ function BusinessRows({
           ) : (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30" title="OpenStreetMap no registra web para este negocio; confírmalo antes de contactar">
               Sin web (OSM)
+            </span>
+          )}
+          {business.websiteKind === "own" && (
+            <span
+              className={`mt-1 inline-flex text-[9px] font-bold px-2 py-0.5 rounded-full ring-1 ${qualityClasses(
+                business.siteQuality
+              )}`}
+              title={
+                business.siteSignals
+                  ?.filter((signal) => signal.status === "fail")
+                  .map((signal) => `${signal.label}: ${signal.evidence}`)
+                  .join(" · ") || "Sin analizar"
+              }
+            >
+              {qualityLabel(business.siteQuality, business.siteGrade)}
             </span>
           )}
         </td>

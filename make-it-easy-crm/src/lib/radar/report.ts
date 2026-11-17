@@ -109,6 +109,40 @@ export function buildAuditReportHtml({ business, report, pkg, addOns, sellerName
     <div class="score"><div class="k">Comprobaciones</div><div class="v">${report.checks.length}</div></div>
   </div>
 
+  ${
+    business.websiteKind === "own" && business.siteQuality && business.siteQuality !== "unknown"
+      ? `<h2>Salud de la web (chequeo rápido)</h2>
+  <div class="box">
+    <p class="lead"><strong>${business.siteGrade ?? 0}/100</strong> · ${
+      business.siteQuality === "good"
+        ? "Buena base"
+        : business.siteQuality === "weak"
+        ? "Mejorable"
+        : business.siteQuality === "broken"
+        ? "No responde"
+        : "Deficiente"
+    }</p>
+    <ul>${
+      (business.siteSignals ?? [])
+        .filter((signal) => signal.status === "fail")
+        .slice(0, 6)
+        .map((signal) => `<li><strong>${esc(signal.label)}:</strong> ${esc(signal.evidence)}</li>`)
+        .join("") || '<li class="muted">Sin fallos graves detectados en el chequeo rápido.</li>'
+    }</ul>
+  </div>`
+      : ""
+  }
+
+  ${
+    business.email || business.contactName
+      ? `<h2>Contacto</h2>
+  <div class="box">
+    ${business.email ? `<p class="lead">Email: <strong>${esc(business.email)}</strong>${business.emailStatus ? ` · ${esc(business.emailStatus)}` : ""}</p>` : ""}
+    ${business.contactName ? `<p class="lead">${esc(business.contactName)}${business.contactRole ? ` · ${esc(business.contactRole)}` : ""}</p>` : ""}
+  </div>`
+      : ""
+  }
+
   <h2>Resumen ejecutivo</h2>
   <p class="lead">${
     report.critical.length

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Loader2, MapPin, Play } from "lucide-react";
 import RadarNav from "@/components/radar/RadarNav";
 import { RADAR_CATEGORIES } from "@/lib/radar/categories";
+import { applyScanSummary, isDeficientQuality } from "@/lib/radar/siteQuality";
+import type { RadarBusiness, SiteScan } from "@/lib/radar/types";
 
 interface NicheRow {
   id: string;
@@ -12,6 +14,8 @@ interface NicheRow {
   total: number;
   noWebPct: number;
   withPhonePct: number;
+  badWebPct: number;
+  scanned: number;
   avgScore: number;
   opportunity: number;
   error?: string;
@@ -23,6 +27,26 @@ export default function NichesPage() {
   const [progress, setProgress] = useState(0);
   const [rows, setRows] = useState<NicheRow[]>([]);
   const [error, setError] = useState("");
+  const [scanSample, setScanSample] = useState(false);
+
+  async function scanSampleFor(items: RadarBusiness[]): Promise<RadarBusiness[]> {
+    const pending = items
+      .filter(
+        (b) =>
+          b.websiteKind === "own" && b.website && (!b.siteQuality || b.siteQuality === "unknown")
+      )
+      .slice(0, 3);
+    if (pending.length === 0) return items;
+    const res = await fetch("/api/radar/site-scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ businessIds: pending.map((b) => b.id) }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "No se pudieron analizar las webs");
+    const scans = (data.scans ?? {}) as Record<string, SiteScan>;
+    return items.map((b) => (scans[b.id] ? applyScanSummary(b, scans[b.id]) : b));
+  }
 
   async function run() {
     if (!zona.trim()) {
@@ -47,12 +71,29 @@ export default function NichesPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `Error en ${cat.label}`);
 
-        const items = Array.isArray(data.businesses) ? data.businesses : [];
+        let items = (Array.isArray(data.businesses) ? data.businesses : []) as RadarBusiness[];
+        let scanError = "";
+        if (scanSample) {
+          try {
+            items = await scanSampleFor(items);
+          } catch (err) {
+            scanError = err instanceof Error ? err.message : "No se pudo analizar la muestra";
+          }
+        }
+
         const total = items.length;
-        const noWeb = items.filter((b: { websiteKind: string }) => b.websiteKind !== "own").length;
-        const withPhone = items.filter((b: { phone: string }) => !!b.phone).length;
-        const avgScore = total ? Math.round(items.reduce((a: number, b: { score: number }) => a + b.score, 0) / total) : 0;
+        const noWeb = items.filter((b) => b.websiteKind !== "own").length;
+        const withPhone = items.filter((b) => !!b.phone).length;
+        const scanned = items.filter(
+          (b) => b.websiteKind === "own" && b.siteQuality && b.siteQuality !== "unknown"
+        ).length;
+        const deficient = items.filter((b) => isDeficientQuality(b.siteQuality)).length;
+        const badWebPct = scanned ? Math.round((deficient / scanned) * 100) : 0;
+        const avgScore = total ? Math.round(items.reduce((a, b) => a + b.score, 0) / total) : 0;
         const noWebPct = total ? Math.round((noWeb / total) * 100) : 0;
+        const opportunity = Math.round(
+          ((noWeb + deficient) / Math.max(1, total)) * 100 * Math.log10(total + 1)
+        );
 
         results.push({
           id: cat.id,
@@ -60,8 +101,11 @@ export default function NichesPage() {
           total,
           noWebPct,
           withPhonePct: total ? Math.round((withPhone / total) * 100) : 0,
+          badWebPct,
+          scanned,
           avgScore,
-          opportunity: Math.round(noWebPct * Math.log10(total + 1)),
+          opportunity,
+          error: scanError || undefined,
         });
       } catch (err) {
         results.push({
@@ -70,6 +114,8 @@ export default function NichesPage() {
           total: 0,
           noWebPct: 0,
           withPhonePct: 0,
+          badWebPct: 0,
+          scanned: 0,
           avgScore: 0,
           opportunity: 0,
           error: err instanceof Error ? err.message : "Error",
@@ -91,7 +137,7 @@ export default function NichesPage() {
       <div className="mt-4">
         <h1 className="text-xl font-bold">Radar de nichos</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Compara 14 categorías en una zona y detecta dónde hay más negocios sin web propia.
+          Compara 14 categorías en una zona y detecta dónde hay más negocios sin web o con una web mal hecha.
         </p>
       </div>
 
@@ -114,6 +160,16 @@ export default function NichesPage() {
         </button>
       </div>
 
+      <label className="flex items-center gap-2 text-[11px] text-muted-foreground mt-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={scanSample}
+          onChange={(e) => setScanSample(e.target.checked)}
+          className="accent-cyan-500"
+        />
+        Analizar hasta 3 webs por nicho para medir «web mala» (más lento y consume cuota de webs)
+      </label>
+
       <p className="text-[11px] text-muted-foreground mt-2">
         Gratis: se hacen {RADAR_CATEGORIES.length} búsquedas en OpenStreetMap (una por nicho). Suele tardar entre 20 y 40 segundos.
       </p>
@@ -135,6 +191,7 @@ export default function NichesPage() {
                 <th className="px-3 py-2.5">Nicho</th>
                 <th className="px-3 py-2.5 text-center">Negocios</th>
                 <th className="px-3 py-2.5 text-center">Sin web</th>
+                <th className="px-3 py-2.5 text-center">Web mala</th>
                 <th className="px-3 py-2.5 text-center">Con teléfono</th>
                 <th className="px-3 py-2.5 text-center">Score medio</th>
                 <th className="px-3 py-2.5 text-right">Ver</th>
@@ -152,6 +209,24 @@ export default function NichesPage() {
                   <td className="px-3 py-2.5 text-center">
                     <span className={`text-xs font-bold px-2 py-0.5 rounded ${row.noWebPct >= 60 ? "bg-emerald-500/15 text-emerald-300" : row.noWebPct >= 30 ? "bg-amber-500/15 text-amber-300" : "bg-muted text-muted-foreground"}`}>
                       {row.noWebPct}%
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    <span
+                      className={`text-xs font-bold px-2 py-0.5 rounded ${
+                        row.badWebPct >= 60
+                          ? "bg-red-500/15 text-red-300"
+                          : row.badWebPct >= 30
+                          ? "bg-amber-500/15 text-amber-300"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                      title={
+                        row.scanned > 0
+                          ? `${row.badWebPct}% de ${row.scanned} web(s) analizadas`
+                          : "Sin webs analizadas en este nicho"
+                      }
+                    >
+                      {row.badWebPct}%
                     </span>
                   </td>
                   <td className="px-3 py-2.5 text-center text-xs text-muted-foreground">{row.withPhonePct}%</td>
@@ -172,7 +247,7 @@ export default function NichesPage() {
       )}
 
       <p className="text-[10px] text-muted-foreground mt-3">
-        «Oportunidad» combina el porcentaje sin web con el volumen de negocios. OSM no ofrece reseñas ni valoraciones.
+        «Oportunidad» combina los negocios sin web y las webs deficientes con el volumen de negocios. OSM no ofrece reseñas ni valoraciones.
       </p>
     </div>
   );
