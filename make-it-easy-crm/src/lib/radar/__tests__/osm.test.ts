@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   expandTinyZone,
+  mapZoneSuggestions,
   needsOverpassFallback,
   pickZoneResult,
   searchOsm,
@@ -70,6 +71,29 @@ test("expandTinyZone deja intacta una ciudad con bbox grande", () => {
   const expanded = expandTinyZone(zone, "Bogotá");
   assert.equal(expanded.note, undefined);
   assert.deepEqual(expanded.bbox, zone.bbox);
+});
+
+test("mapZoneSuggestions prioriza areas y arma etiquetas cortas", () => {
+  const suggestions = mapZoneSuggestions([
+    {
+      ...BUS_STOP,
+      osm_type: "node",
+      osm_id: 1,
+      name: "Mazurén",
+      address: { city: "Bogotá", suburb: "Suba" },
+    },
+    {
+      ...RESIDENTIAL,
+      osm_type: "way",
+      osm_id: 2,
+      name: "Mazuren II",
+      address: { city: "Bogotá", suburb: "Suba" },
+    },
+  ]);
+  assert.equal(suggestions[0].kind, "area");
+  assert.equal(suggestions[0].label, "Mazuren II · Suba, Bogotá");
+  assert.equal(suggestions[1].kind, "poi");
+  assert.equal(suggestions[1].label, "Mazurén · Suba, Bogotá");
 });
 
 test("needsOverpassFallback se activa con pocos resultados", () => {

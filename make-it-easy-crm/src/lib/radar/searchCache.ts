@@ -2,9 +2,13 @@ import prisma from "@/lib/prisma";
 import type { RadarBusiness, RadarZone } from "./types";
 
 const TTL_MS = 24 * 60 * 60 * 1000;
+const CACHE_VERSION = "v2";
 
 export function searchCacheKey(zone: string, niche: string, keyword: string, mode: string): string {
-  return [zone, niche, keyword, mode].map((v) => v.trim().toLowerCase()).join("|").slice(0, 300);
+  return [CACHE_VERSION, zone, niche, keyword, mode]
+    .map((v) => v.trim().toLowerCase())
+    .join("|")
+    .slice(0, 300);
 }
 
 export interface CachedSearch {

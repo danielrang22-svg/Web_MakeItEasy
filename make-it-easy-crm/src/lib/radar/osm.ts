@@ -1,6 +1,6 @@
 import { classifyWebsite, normalizeUrl } from "./website";
 import { scoreFromOsm } from "./score";
-import type { RadarBusiness, RadarZone } from "./types";
+import type { RadarBusiness, RadarZone, ZoneSuggestion, ZoneSuggestionKind } from "./types";
 import { findCategory, RADAR_CATEGORIES } from "./categories";
 
 const UA = "MakeItEasy-Radar/1.0 (contacto: daniel.makeiteasy@gmail.com)";
@@ -67,6 +67,18 @@ export interface NominatimZoneResult {
   class?: string;
   type?: string;
   addresstype?: string;
+  osm_type?: string;
+  osm_id?: number;
+  name?: string;
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    municipality?: string;
+    suburb?: string;
+    neighbourhood?: string;
+    city_district?: string;
+  };
 }
 
 const AREA_TYPES = new Set([
@@ -151,6 +163,66 @@ export function expandTinyZone(zone: RadarZone, label: string): RadarZone {
 
 export function needsOverpassFallback(count: number): boolean {
   return count < FAST_FALLBACK_MIN;
+}
+
+const zoneSuggestCache = new Map<string, { at: number; data: ZoneSuggestion[] }>();
+const ZONE_SUGGEST_TTL = 10 * 60 * 1000;
+
+function suggestionKind(item: NominatimZoneResult): ZoneSuggestionKind {
+  const priority = zonePriority(item);
+  if (priority <= 1) return "area";
+  if (priority >= 5) return "poi";
+  return "address";
+}
+
+function shortZoneLabel(item: NominatimZoneResult): string {
+  const name = (item.name || item.display_name?.split(",")[0] || "").trim();
+  if (!name) return item.display_name ?? "";
+  const address = item.address ?? {};
+  const locality = address.suburb || address.neighbourhood || address.city_district || "";
+  const city = address.city || address.town || address.village || address.municipality || "";
+  const parts = [locality, city].filter(Boolean).filter((value, index, values) => values.indexOf(value) === index);
+  if (name.toLowerCase() === city.toLowerCase()) return name;
+  return parts.length ? `${name} · ${parts.join(", ")}` : name;
+}
+
+export function mapZoneSuggestions(list: NominatimZoneResult[]): ZoneSuggestion[] {
+  const unique = new Map<string, ZoneSuggestion>();
+  for (const item of list) {
+    if (!item.lat || !item.lon || !item.display_name) continue;
+    const id = item.osm_type && item.osm_id ? `${item.osm_type}:${item.osm_id}` : item.display_name;
+    if (unique.has(id)) continue;
+    unique.set(id, {
+      id,
+      label: shortZoneLabel(item),
+      displayName: item.display_name,
+      type: item.type || item.addresstype || "lugar",
+      kind: suggestionKind(item),
+      lat: Number(item.lat),
+      lon: Number(item.lon),
+    });
+    if (unique.size >= 8) break;
+  }
+  const order: Record<ZoneSuggestionKind, number> = { area: 0, address: 1, poi: 2 };
+  return [...unique.values()].sort((a, b) => order[a.kind] - order[b.kind]).slice(0, 6);
+}
+
+export async function suggestZones(query: string): Promise<ZoneSuggestion[]> {
+  const q = query.trim();
+  if (q.length < 3) return [];
+  const key = q.toLowerCase();
+  const hit = zoneSuggestCache.get(key);
+  if (hit && Date.now() - hit.at < ZONE_SUGGEST_TTL) return hit.data;
+
+  const url = `${NOMINATIM}/search?format=jsonv2&limit=8&countrycodes=${COUNTRY}&addressdetails=1&namedetails=1&q=${encodeURIComponent(q)}`;
+  const res = await nominatimFetch(url);
+  if (!res.ok) {
+    throw new RadarUpstreamError(`No se pudo buscar la zona (Nominatim ${res.status}).`, res.status);
+  }
+  const list = (await res.json()) as NominatimZoneResult[];
+  const data = mapZoneSuggestions(list);
+  zoneSuggestCache.set(key, { at: Date.now(), data });
+  return data;
 }
 
 export async function geocodeZone(zona: string): Promise<RadarZone> {
