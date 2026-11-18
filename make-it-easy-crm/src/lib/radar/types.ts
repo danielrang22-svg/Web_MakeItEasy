@@ -82,6 +82,8 @@ export interface RadarBusiness {
   tags: Record<string, string>;
   score: number;
   breakdown: ScoreBreakdown[];
+  /** Nicho usado en la búsqueda (para comparar competencia) */
+  niche?: string;
   /** Marcas que añade el servidor al buscar (no vienen de OSM) */
   isNew?: boolean;
   saved?: boolean;

@@ -223,6 +223,7 @@ export async function POST(request: NextRequest) {
       applyScanToBusiness(
         {
           ...b,
+          niche: b.niche ?? (nicho || keyword),
           isNew: !existingSet.has(b.id),
           saved: savedSet.has(b.id),
           audited: auditSet.has(b.id),
