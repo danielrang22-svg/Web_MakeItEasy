@@ -1,13 +1,26 @@
-import { assertPublicUrl, fetchRedirect, fetchText } from "./fetch";
+import { load } from "cheerio";
+import { assertPublicUrl, checkUrls, fetchText, followRedirects } from "./fetch";
 import { areaScores, runChecks } from "./checks";
-import { AREA_META, type AuditAreaScore, type AuditCheck, type AuditReport } from "./types";
+import {
+  AREA_META,
+  type AuditAreaScore,
+  type AuditBusiness,
+  type AuditCheck,
+  type AuditReport,
+} from "./types";
 
 const cache = new Map<string, { at: number; report: AuditReport }>();
 const TTL = 1000 * 60 * 60 * 24;
 
-export async function runAudit(rawUrl: string): Promise<AuditReport> {
+export interface RunAuditOptions {
+  business?: AuditBusiness;
+}
+
+export async function runAudit(rawUrl: string, options: RunAuditOptions = {}): Promise<AuditReport> {
   const url = assertPublicUrl(rawUrl).toString();
-  const hit = cache.get(url);
+  const business = options.business;
+  const cacheKey = `${url}|${business?.name ?? ""}|${business?.address ?? ""}|${business?.phone ?? ""}`;
+  const hit = cache.get(cacheKey);
   if (hit && Date.now() - hit.at < TTL) return hit.report;
 
   const started = Date.now();
@@ -25,12 +38,54 @@ export async function runAudit(rawUrl: string): Promise<AuditReport> {
   const httpUrl = url.startsWith("https:") ? url.replace("https:", "http:") : url;
   const notFoundUrl = `${origin}/radar-404-${Date.now().toString(36)}`;
 
-  const [robots, sitemap, notFound, httpRedirect] = await Promise.all([
+  const [robots, sitemap, notFound, redirectChain] = await Promise.all([
     fetchText(`${origin}/robots.txt`, 7000),
     fetchText(`${origin}/sitemap.xml`, 7000),
     fetchText(notFoundUrl, 7000),
-    fetchRedirect(httpUrl, 7000),
+    followRedirects(httpUrl, 5, 6000),
   ]);
+
+  const $ = load(page.html);
+  const finalHost = new URL(page.finalUrl).hostname;
+  const internalLinks: string[] = [];
+  $("a[href]").each((_, el) => {
+    const href = ($(el).attr("href") || "").trim();
+    if (!href || href.startsWith("#") || /^(mailto|tel|javascript):/i.test(href)) return;
+    try {
+      const target = new URL(href, page.finalUrl);
+      if (target.hostname !== finalHost) return;
+      if (/\.(png|jpe?g|gif|webp|svg|pdf|zip|mp4|mp3)$/i.test(target.pathname)) return;
+      internalLinks.push(target.toString());
+    } catch {
+      // ignorar
+    }
+  });
+
+  const hreflangUrls: string[] = [];
+  $('link[rel="alternate"][hreflang]').each((_, el) => {
+    const href = ($(el).attr("href") || "").trim();
+    if (!href) return;
+    try {
+      hreflangUrls.push(new URL(href, page.finalUrl).toString());
+    } catch {
+      // ignorar
+    }
+  });
+
+  const sitemapUrls = [...sitemap.html.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)]
+    .map((match) => match[1])
+    .slice(0, 5);
+
+  const [brokenLinks, hreflangStatus, sitemapStatus] = await Promise.all([
+    checkUrls(internalLinks.slice(0, 6)),
+    checkUrls(hreflangUrls.slice(0, 5)),
+    checkUrls(sitemapUrls),
+  ]);
+
+  const httpRedirect = {
+    status: redirectChain.chain[0]?.status ?? null,
+    location: redirectChain.chain[0]?.location ?? null,
+  };
 
   const { checks, title, description } = runChecks({
     page,
@@ -38,6 +93,11 @@ export async function runAudit(rawUrl: string): Promise<AuditReport> {
     sitemap,
     httpRedirect,
     notFound,
+    redirectChain,
+    brokenLinks,
+    hreflangStatus,
+    sitemapStatus,
+    business,
   });
 
   const rawAreas = areaScores(checks);
@@ -85,7 +145,7 @@ export async function runAudit(rawUrl: string): Promise<AuditReport> {
     },
   };
 
-  cache.set(url, { at: Date.now(), report });
+  cache.set(cacheKey, { at: Date.now(), report });
   return report;
 }
 

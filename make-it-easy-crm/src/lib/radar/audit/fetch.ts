@@ -74,6 +74,132 @@ export async function fetchText(url: string, timeoutMs = 8000): Promise<FetchRes
   }
 }
 
+export interface RedirectHop {
+  url: string;
+  status: number | null;
+  location: string | null;
+}
+
+export interface RedirectChainResult {
+  chain: RedirectHop[];
+  finalUrl: string;
+  loop: boolean;
+  exceeded: boolean;
+  error?: string;
+}
+
+export async function followRedirects(
+  rawUrl: string,
+  maxHops = 5,
+  timeoutMs = 6000
+): Promise<RedirectChainResult> {
+  const chain: RedirectHop[] = [];
+  const seen = new Set<string>();
+  let current = rawUrl;
+
+  for (let hop = 0; hop < maxHops; hop++) {
+    if (seen.has(current)) {
+      return { chain, finalUrl: current, loop: true, exceeded: false };
+    }
+    seen.add(current);
+
+    try {
+      assertPublicUrl(current);
+      const res = await fetch(current, {
+        headers: { "User-Agent": UA, Accept: "*/*" },
+        signal: AbortSignal.timeout(timeoutMs),
+        redirect: "manual",
+      });
+      const location = res.headers.get("location");
+      chain.push({ url: current, status: res.status, location });
+
+      if (!location || res.status < 300 || res.status >= 400) {
+        return { chain, finalUrl: current, loop: false, exceeded: false };
+      }
+
+      try {
+        current = new URL(location, current).toString();
+      } catch {
+        return { chain, finalUrl: current, loop: false, exceeded: false };
+      }
+    } catch (err) {
+      return {
+        chain,
+        finalUrl: current,
+        loop: false,
+        exceeded: false,
+        error: err instanceof Error ? err.message.slice(0, 140) : "Error de red",
+      };
+    }
+  }
+
+  return { chain, finalUrl: current, loop: false, exceeded: true };
+}
+
+export interface UrlCheck {
+  url: string;
+  status: number | null;
+  ok: boolean;
+  unknown: boolean;
+  error?: string;
+}
+
+export async function checkUrls(urls: string[], timeoutMs = 3500): Promise<UrlCheck[]> {
+  const unique = [...new Set(urls)].slice(0, 8);
+  return Promise.all(
+    unique.map(async (url): Promise<UrlCheck> => {
+      try {
+        assertPublicUrl(url);
+        const res = await fetch(url, {
+          method: "HEAD",
+          headers: { "User-Agent": UA, Accept: "*/*" },
+          signal: AbortSignal.timeout(timeoutMs),
+          redirect: "follow",
+        });
+        if (res.status === 405 || res.status === 501) {
+          return await checkUrlGet(url, timeoutMs);
+        }
+        const unknown = [401, 403, 429].includes(res.status);
+        return {
+          url,
+          status: res.status,
+          ok: res.status < 400,
+          unknown,
+        };
+      } catch (err) {
+        return {
+          url,
+          status: null,
+          ok: false,
+          unknown: true,
+          error: err instanceof Error ? err.message.slice(0, 100) : "Error de red",
+        };
+      }
+    })
+  );
+}
+
+async function checkUrlGet(url: string, timeoutMs: number): Promise<UrlCheck> {
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { "User-Agent": UA, Accept: "*/*" },
+      signal: AbortSignal.timeout(timeoutMs),
+      redirect: "follow",
+    });
+    const unknown = [401, 403, 429].includes(res.status);
+    return { url, status: res.status, ok: res.status < 400, unknown };
+  } catch (err) {
+    return {
+      url,
+      status: null,
+      ok: false,
+      unknown: true,
+      error: err instanceof Error ? err.message.slice(0, 100) : "Error de red",
+    };
+  }
+}
+
 export async function fetchRedirect(url: string, timeoutMs = 6000): Promise<{ status: number | null; location: string | null; error?: string }> {
   try {
     assertPublicUrl(url);

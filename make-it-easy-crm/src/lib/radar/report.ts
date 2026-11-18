@@ -163,6 +163,8 @@ export function buildAuditReportHtml({ business, report, pkg, addOns, sellerName
       : ""
   }
 
+  <p class="lead muted" style="font-size:11px;margin-top:10px">Nota técnica: el schema se detecta en el HTML. Si el CMS lo inyecta por JavaScript, verifícalo en Google Rich Results Test antes de concluir que falta.</p>
+
   <h2>Resumen ejecutivo</h2>
   <p class="lead">${
     report.critical.length

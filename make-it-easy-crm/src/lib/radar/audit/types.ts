@@ -1,6 +1,23 @@
 export type AuditArea = "indexacion" | "tecnico" | "onpage" | "local" | "conversion";
 export type AuditStatus = "pass" | "warn" | "fail" | "na";
 export type AuditImpact = "alto" | "medio" | "bajo";
+export type AuditGroup =
+  | "rastreo"
+  | "tecnico"
+  | "onpage"
+  | "contenido"
+  | "eeat"
+  | "local"
+  | "internacional"
+  | "conversion"
+  | "autoridad";
+
+export interface AuditBusiness {
+  name?: string;
+  address?: string;
+  phone?: string;
+  city?: string;
+}
 
 export interface AuditCheck {
   id: string;
@@ -11,6 +28,7 @@ export interface AuditCheck {
   weight: number;
   evidence: string;
   fix: string;
+  group?: AuditGroup;
 }
 
 export interface AuditAreaScore {
@@ -52,4 +70,16 @@ export const AREA_META: Record<AuditArea, { label: string; weight: number }> = {
   onpage: { label: "On-page", weight: 25 },
   local: { label: "Local", weight: 15 },
   conversion: { label: "Conversión", weight: 25 },
+};
+
+export const GROUP_META: Record<AuditGroup, { label: string }> = {
+  rastreo: { label: "Rastreo e indexación" },
+  tecnico: { label: "Fundamentos técnicos" },
+  onpage: { label: "On-page" },
+  contenido: { label: "Contenido" },
+  eeat: { label: "E-E-A-T y confianza" },
+  local: { label: "SEO local" },
+  internacional: { label: "Internacional" },
+  conversion: { label: "Conversión" },
+  autoridad: { label: "Autoridad y enlaces" },
 };
