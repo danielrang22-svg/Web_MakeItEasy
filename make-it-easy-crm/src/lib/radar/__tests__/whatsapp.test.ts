@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { detectWhatsApp, mergeWhatsAppDetections } from "../whatsapp";
+import { detectWhatsApp, mergeWhatsAppDetections, whatsappFromTags } from "../whatsapp";
 import { recommendPackage } from "../packages";
 import type { AuditReport } from "../audit/types";
 
@@ -61,6 +61,13 @@ test("mergeWhatsAppDetections prioriza automatizacion", () => {
   assert.equal(merged.kind, "automation");
   assert.equal(merged.provider, "Wati");
   assert.equal(merged.number, "573001234567");
+});
+
+test("whatsappFromTags detecta el contacto de OSM sin web", () => {
+  const result = whatsappFromTags({ "contact:whatsapp": "+57 300 123 4567" });
+  assert.equal(result?.kind, "manual");
+  assert.equal(result?.number, "573001234567");
+  assert.equal(whatsappFromTags({}), null);
 });
 
 test("recommendPackage vende agente si el WhatsApp es manual", () => {
