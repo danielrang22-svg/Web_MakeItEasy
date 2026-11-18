@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Sparkles,
   TriangleAlert,
+  Users,
 } from "lucide-react";
 import RadarNav from "@/components/radar/RadarNav";
 import AuditPanel from "@/components/radar/AuditPanel";
@@ -88,6 +89,9 @@ function BusinessContent() {
   const [whatsappVerified, setWhatsappVerified] = useState<WhatsAppVerification>("");
   const [whatsappNotes, setWhatsappNotes] = useState("");
   const [savingWhatsApp, setSavingWhatsApp] = useState(false);
+  const [competitors, setCompetitors] = useState<RadarBusiness[] | null>(null);
+  const [loadingCompetitors, setLoadingCompetitors] = useState(false);
+  const [competitorError, setCompetitorError] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -326,6 +330,38 @@ function BusinessContent() {
       setError(err instanceof Error ? err.message : "No se pudo guardar la verificación");
     } finally {
       setSavingWhatsApp(false);
+    }
+  }
+
+  async function loadCompetitors() {
+    if (!business) return;
+    if (business.lat == null || business.lng == null) {
+      setCompetitorError("Esta ficha no tiene coordenadas para comparar.");
+      return;
+    }
+    setLoadingCompetitors(true);
+    setCompetitorError("");
+    try {
+      const res = await fetch("/api/radar/competitors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessId: business.id,
+          name: business.name,
+          lat: business.lat,
+          lng: business.lng,
+          niche: business.niche,
+          category: business.category,
+          radiusKm: 5,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo comparar la competencia");
+      setCompetitors(Array.isArray(data.competitors) ? (data.competitors as RadarBusiness[]) : []);
+    } catch (err) {
+      setCompetitorError(err instanceof Error ? err.message : "No se pudo comparar la competencia");
+    } finally {
+      setLoadingCompetitors(false);
     }
   }
 
@@ -733,6 +769,77 @@ function BusinessContent() {
             <p className="text-[11px] text-cyan-300 mt-3">
               Pitch sugerido: <strong>{whatsappPitch}</strong>
             </p>
+          </div>
+
+          <div className="bg-card ring-1 ring-border rounded-2xl p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-bold flex items-center gap-2">
+                <Users size={15} className="text-cyan-400" /> Competencia
+              </h2>
+              <button
+                onClick={() => void loadCompetitors()}
+                disabled={loadingCompetitors}
+                className="px-3 py-1.5 rounded-lg bg-muted text-xs font-semibold hover:bg-muted/70 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {loadingCompetitors ? <Loader2 size={13} className="animate-spin" /> : <Users size={13} />}
+                {loadingCompetitors ? "Comparando…" : "Comparar"}
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Top 5 del mismo nicho a 5 km, excluyendo esta ficha.
+            </p>
+
+            {competitorError && <p className="text-[11px] text-red-400 mt-2">{competitorError}</p>}
+            {competitors && competitors.length === 0 && (
+              <p className="text-[11px] text-muted-foreground mt-2">
+                No se encontraron competidores en ese radio.
+              </p>
+            )}
+            {competitors && competitors.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {competitors.map((competitor) => (
+                  <div key={competitor.id} className="rounded-lg bg-muted/40 p-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold truncate">{competitor.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {competitor.category} · {competitor.address || "sin dirección"}
+                        </p>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded ring-1 ${scoreClasses(competitor.score)}`}>
+                        {competitor.score}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {competitor.websiteKind === "own" ? (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ring-1 ${qualityClasses(competitor.siteQuality)}`}>
+                          {qualityLabel(competitor.siteQuality, competitor.siteGrade)}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30">
+                          Sin web propia
+                        </span>
+                      )}
+                      {competitor.whatsappKind && competitor.whatsappKind !== "unknown" && (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ring-1 ${whatsappKindClasses(competitor.whatsappKind)}`}>
+                          {whatsappKindLabel(competitor.whatsappKind)}
+                        </span>
+                      )}
+                    </div>
+                    {competitor.website && (
+                      <a
+                        href={competitor.website}
+                        target="_blank"
+                        rel="noopener"
+                        className="text-[10px] text-cyan-400 hover:underline block truncate mt-1"
+                      >
+                        {competitor.website.replace(/^https?:\/\//, "")}
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="bg-card ring-1 ring-border rounded-2xl p-5">
