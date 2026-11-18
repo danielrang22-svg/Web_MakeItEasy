@@ -544,6 +544,9 @@ model RadarLead {
   status             String    @default("NUEVO")
   notes              String    @default("")
   nextActionAt       DateTime?
+  whatsappVerified   String    @default("")
+  whatsappNotes      String    @default("")
+  whatsappVerifiedAt DateTime?
   business           String
   fechaCreacion      DateTime  @default(now())
   fechaActualizacion DateTime  @updatedAt
@@ -592,10 +595,17 @@ model RadarBusiness {
   contactName   String    @default("")
   contactRole   String    @default("")
   enrichedAt    DateTime?
+  whatsappKind       String    @default("unknown")
+  whatsappProvider   String    @default("")
+  whatsappConfidence String    @default("")
+  whatsappEvidence   String    @default("[]")
+  whatsappNumber     String    @default("")
+  whatsappCheckedAt  DateTime?
 
   @@index([category])
   @@index([lastSeenAt])
   @@index([siteQuality])
+  @@index([whatsappKind])
   @@map("radar_businesses")
 }
 
@@ -613,6 +623,7 @@ model RadarSiteScan {
   signalsJson     String
   contactsJson    String
   emailChecksJson String
+  whatsappJson    String   @default("{}")
   placeholder     Boolean  @default(false)
   freeHosting     Boolean  @default(false)
   error           String?

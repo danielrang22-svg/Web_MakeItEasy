@@ -128,8 +128,8 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
     setQuoting(true);
     setError("");
     try {
-      const pkg = recommendPackage(report);
-      const addOns = addOnsFor(report);
+      const pkg = recommendPackage(report, business.whatsappKind);
+      const addOns = addOnsFor(report, business.whatsappKind);
       const total = pkg.fromCop + addOns.reduce((sum, a) => sum + a.fromCop, 0);
 
       const impRes = await fetch("/api/radar/import", {
@@ -190,8 +190,8 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
     );
   }
 
-  const pkg = report ? recommendPackage(report) : null;
-  const addOns = report ? addOnsFor(report) : [];
+  const pkg = report ? recommendPackage(report, business.whatsappKind) : null;
+  const addOns = report ? addOnsFor(report, business.whatsappKind) : [];
   const previous = history.length > 0 ? history[0] : null;
 
   return (

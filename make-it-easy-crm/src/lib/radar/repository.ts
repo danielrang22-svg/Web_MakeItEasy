@@ -91,7 +91,9 @@ export interface RadarRepository {
   upsert(businesses: RadarBusiness[]): Promise<RadarLead[]>;
   update(
     businessId: string,
-    patch: Partial<Pick<RadarLead, "status" | "notes" | "nextActionAt">>
+    patch: Partial<
+      Pick<RadarLead, "status" | "notes" | "nextActionAt" | "whatsappVerified" | "whatsappNotes">
+    >
   ): Promise<RadarLead[]>;
   remove(businessId: string): Promise<RadarLead[]>;
   clear(): Promise<void>;

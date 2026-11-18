@@ -8,12 +8,14 @@ import { getSettings, LEAD_STATUSES, radarRepository, saveBusinessSnapshot } fro
 import { buildIntroMessage, mailtoUrl, mapsRouteUrl, printVisitSheet, whatsappUrl } from "@/lib/radar/outreach";
 import { scoreClasses } from "@/lib/radar/score";
 import { isDeficientQuality, qualityClasses, qualityLabel } from "@/lib/radar/siteQuality";
+import { whatsappKindClasses, whatsappKindLabel } from "@/lib/radar/whatsapp";
 import type { RadarLead, RadarLeadStatus } from "@/lib/radar/types";
 export default function RadarLeadsPage() {
   const router = useRouter();
   const [leads, setLeads] = useState<RadarLead[]>([]);
   const [status, setStatus] = useState<string>("TODOS");
   const [webFilter, setWebFilter] = useState<string>("todas");
+  const [whatsappFilter, setWhatsappFilter] = useState<string>("todos");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<"table" | "board">("table");
   const [importing, setImporting] = useState<string | null>(null);
@@ -54,6 +56,11 @@ export default function RadarLeadsPage() {
       if (webFilter === "mala" && !isDeficientQuality(l.business.siteQuality)) return false;
       if (webFilter === "sin_web" && l.business.websiteKind === "own") return false;
       if (webFilter === "con_email" && !l.business.email) return false;
+      if (whatsappFilter === "sin_agente" && l.business.whatsappKind === "automation") return false;
+      if (whatsappFilter === "manual" && l.business.whatsappKind !== "manual") return false;
+      if (whatsappFilter === "automation" && l.business.whatsappKind !== "automation") return false;
+      if (whatsappFilter === "bot" && l.whatsappVerified !== "bot") return false;
+      if (whatsappFilter === "humano" && l.whatsappVerified !== "humano") return false;
       if (query.trim()) {
         const q = query.toLowerCase();
         return (
@@ -64,7 +71,7 @@ export default function RadarLeadsPage() {
       }
       return true;
     });
-  }, [leads, status, webFilter, query]);
+  }, [leads, status, webFilter, whatsappFilter, query]);
 
   async function setLeadStatus(id: string, next: RadarLeadStatus) {
     try {
@@ -145,6 +152,10 @@ export default function RadarLeadsPage() {
         "Estado email",
         "Contacto",
         "Cargo",
+        "WhatsApp",
+        "Proveedor WhatsApp",
+        "Verificacion WhatsApp",
+        "Notas WhatsApp",
         "Score",
         "Estado",
         "Notas",
@@ -162,6 +173,10 @@ export default function RadarLeadsPage() {
         l.business.emailStatus ?? "",
         l.business.contactName ?? "",
         l.business.contactRole ?? "",
+        l.business.whatsappKind ?? "",
+        l.business.whatsappProvider ?? "",
+        l.whatsappVerified ?? "",
+        l.whatsappNotes ?? "",
         String(l.business.score),
         l.status,
         l.notes,
@@ -215,6 +230,14 @@ export default function RadarLeadsPage() {
           <option value="sin_web">Sin web propia</option>
           <option value="con_email">Con email</option>
         </select>
+        <select value={whatsappFilter} onChange={(e) => setWhatsappFilter(e.target.value)} className="px-3 py-2 bg-muted rounded-xl text-xs ring-1 ring-border outline-none">
+          <option value="todos">Cualquier WhatsApp</option>
+          <option value="sin_agente">Sin agente detectado</option>
+          <option value="manual">WhatsApp manual</option>
+          <option value="automation">Con automatización</option>
+          <option value="bot">Verificado: bot</option>
+          <option value="humano">Verificado: humano</option>
+        </select>
       </div>
 
       {loading && (
@@ -260,6 +283,16 @@ export default function RadarLeadsPage() {
                     {l.business.websiteKind !== "own" && (
                       <span className="inline-flex mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30">
                         Sin web propia
+                      </span>
+                    )}
+                    {l.business.whatsappKind && l.business.whatsappKind !== "unknown" && (
+                      <span className={`inline-flex mt-1 ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ring-1 ${whatsappKindClasses(l.business.whatsappKind)}`}>
+                        {whatsappKindLabel(l.business.whatsappKind)}
+                      </span>
+                    )}
+                    {l.whatsappVerified && (
+                      <span className="inline-flex mt-1 ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground ring-1 ring-border">
+                        WA probado: {l.whatsappVerified}
                       </span>
                     )}
                   </td>
@@ -349,6 +382,11 @@ export default function RadarLeadsPage() {
                       {l.business.websiteKind === "own" && (
                         <span className={`inline-flex mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ring-1 ${qualityClasses(l.business.siteQuality)}`}>
                           {qualityLabel(l.business.siteQuality, l.business.siteGrade)}
+                        </span>
+                      )}
+                      {l.business.whatsappKind && l.business.whatsappKind !== "unknown" && (
+                        <span className={`inline-flex mt-1 ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ring-1 ${whatsappKindClasses(l.business.whatsappKind)}`}>
+                          {whatsappKindLabel(l.business.whatsappKind)}
                         </span>
                       )}
                       <div className="flex items-center justify-between mt-2">

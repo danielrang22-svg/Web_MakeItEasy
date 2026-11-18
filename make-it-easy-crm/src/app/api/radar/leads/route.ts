@@ -12,6 +12,8 @@ interface RadarLeadRow {
   status: string;
   notes: string;
   nextActionAt: Date | null;
+  whatsappVerified: string;
+  whatsappNotes: string;
   business: string;
   fechaCreacion: Date;
   fechaActualizacion: Date;
@@ -39,6 +41,8 @@ function serializeLead(row: RadarLeadRow): RadarLead | null {
     status: isRadarLeadStatus(row.status) ? row.status : "NUEVO",
     notes: row.notes,
     nextActionAt: row.nextActionAt ? row.nextActionAt.toISOString() : null,
+    whatsappVerified: row.whatsappVerified as RadarLead["whatsappVerified"],
+    whatsappNotes: row.whatsappNotes,
     createdAt: row.fechaCreacion.toISOString(),
     updatedAt: row.fechaActualizacion.toISOString(),
     business,
@@ -144,7 +148,14 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Falta el negocio" }, { status: 400 });
     }
 
-    const data: { status?: string; notes?: string; nextActionAt?: Date | null } = {};
+    const data: {
+      status?: string;
+      notes?: string;
+      nextActionAt?: Date | null;
+      whatsappVerified?: string;
+      whatsappNotes?: string;
+      whatsappVerifiedAt?: Date | null;
+    } = {};
 
     if (body?.status !== undefined) {
       if (!isRadarLeadStatus(body.status)) {
@@ -170,6 +181,22 @@ export async function PATCH(request: NextRequest) {
         }
         data.nextActionAt = date;
       }
+    }
+
+    if (body?.whatsappVerified !== undefined) {
+      const value = body.whatsappVerified;
+      if (value !== "" && value !== "bot" && value !== "humano" && value !== "desconocido") {
+        return NextResponse.json({ error: "Verificación de WhatsApp no válida" }, { status: 400 });
+      }
+      data.whatsappVerified = value;
+      data.whatsappVerifiedAt = value ? new Date() : null;
+    }
+
+    if (body?.whatsappNotes !== undefined) {
+      if (typeof body.whatsappNotes !== "string") {
+        return NextResponse.json({ error: "Notas de WhatsApp no válidas" }, { status: 400 });
+      }
+      data.whatsappNotes = sanitize(body.whatsappNotes).slice(0, MAX_NOTES);
     }
 
     if (Object.keys(data).length === 0) {

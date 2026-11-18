@@ -134,6 +134,26 @@ export function buildAuditReportHtml({ business, report, pkg, addOns, sellerName
   }
 
   ${
+    business.whatsappKind && business.whatsappKind !== "unknown"
+      ? `<h2>WhatsApp y automatización</h2>
+  <div class="box">
+    <p class="lead"><strong>${
+      business.whatsappKind === "automation"
+        ? "Automatización probable"
+        : business.whatsappKind === "manual"
+        ? "WhatsApp manual"
+        : business.whatsappKind === "widget"
+        ? "Chat web detectado"
+        : "Sin WhatsApp visible"
+    }</strong>${business.whatsappProvider ? ` · ${esc(business.whatsappProvider)}` : ""}</p>
+    ${business.whatsappNumber ? `<p class="lead">Número: ${esc(business.whatsappNumber)}</p>` : ""}
+    <ul>${(business.whatsappEvidence ?? []).map((item) => `<li>${esc(item)}</li>`).join("") || '<li class="muted">Sin evidencia adicional.</li>'}</ul>
+    <p class="muted">Detectado desde la web pública. Un agente del lado de Meta puede no dejar rastro; verifica manualmente.</p>
+  </div>`
+      : ""
+  }
+
+  ${
     business.email || business.contactName
       ? `<h2>Contacto</h2>
   <div class="box">
