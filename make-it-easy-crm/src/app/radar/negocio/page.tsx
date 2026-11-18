@@ -467,6 +467,9 @@ function BusinessContent() {
           .join("")
       : "";
     const problems = a?.problems.map((p) => `<li><strong>${escapeHtml(p.title)}</strong>: ${escapeHtml(p.detail)}</li>`).join("") ?? "";
+    const eeat = a?.eeat
+      ? `<h2>E-E-A-T</h2><p>Experiencia ${a.eeat.experience}/100 · Expertise ${a.eeat.expertise}/100 · Autoridad ${a.eeat.authoritativeness}/100 · Confianza ${a.eeat.trust}/100</p><ul>${a.eeat.evidence.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+      : "";
     w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Ficha ${escapeHtml(business.name)}</title>
       <style>body{font-family:Segoe UI,Arial,sans-serif;margin:32px;color:#111}h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:22px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}small{color:#555}ul{padding-left:18px}li{margin:4px 0}.box{border:1px solid #ddd;border-radius:8px;padding:10px;margin-top:8px}</style>
       </head><body>
@@ -477,7 +480,7 @@ function BusinessContent() {
       <h2>Puntuación de oportunidad</h2>
       <p><strong>${business.score}/100</strong></p>
       <ul>${business.breakdown.map((b) => `<li>${escapeHtml(b.label)}: ${b.points > 0 ? "+" : ""}${b.points}</li>`).join("")}</ul>
-      ${a ? `<h2>Resumen</h2><p>${escapeHtml(a.summary)}</p><h2>Comprobación</h2><ul>${checklist}</ul><h2>Problemas</h2><ul>${problems}</ul><h2>Servicio recomendado</h2><p>${escapeHtml(a.recommendedService.type)} — ${escapeHtml(a.recommendedService.reason)}</p>` : ""}
+      ${a ? `<h2>Resumen</h2><p>${escapeHtml(a.summary)}</p><h2>Comprobación</h2><ul>${checklist}</ul><h2>Problemas</h2><ul>${problems}</ul><h2>Servicio recomendado</h2><p>${escapeHtml(a.recommendedService.type)} — ${escapeHtml(a.recommendedService.reason)}</p>${eeat}` : ""}
       ${record?.pagespeed ? `<h2>PageSpeed móvil</h2><p>Rendimiento ${record.pagespeed.performance ?? "?"} · SEO ${record.pagespeed.seo ?? "?"} · Accesibilidad ${record.pagespeed.accessibility ?? "?"} · Buenas prácticas ${record.pagespeed.bestPractices ?? "?"}</p>` : ""}
       ${notes ? `<h2>Notas</h2><p>${escapeHtml(notes)}</p>` : ""}
       </body></html>`);
@@ -965,6 +968,36 @@ function BusinessContent() {
                     ))}
                   </div>
                 </div>
+
+                {record.analysis.eeat && (
+                  <div>
+                    <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                      E-E-A-T
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        ["Experiencia", record.analysis.eeat.experience],
+                        ["Expertise", record.analysis.eeat.expertise],
+                        ["Autoridad", record.analysis.eeat.authoritativeness],
+                        ["Confianza", record.analysis.eeat.trust],
+                      ].map(([label, value]) => (
+                        <div key={String(label)} className="bg-muted/50 rounded-xl p-2.5 text-center">
+                          <p className={`text-lg font-bold ${scoreColor(value as number)}`}>{value}</p>
+                          <p className="text-[10px] text-muted-foreground">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {record.analysis.eeat.evidence.length > 0 && (
+                      <ul className="mt-2 space-y-1">
+                        {record.analysis.eeat.evidence.map((item) => (
+                          <li key={item} className="text-[11px] text-muted-foreground">
+                            · {item}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
 
                 {record.analysis.problems.length > 0 && (
                   <div>

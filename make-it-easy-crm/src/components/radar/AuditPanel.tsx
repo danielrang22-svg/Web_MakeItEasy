@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, ChevronDown, Clipboard, FileText, Loader2, Play, Receipt } from "lucide-react";
-import type { AuditReport } from "@/lib/radar/audit/types";
+import { GROUP_META, type AuditGroup, type AuditReport } from "@/lib/radar/audit/types";
 import { getAudit, getSettings, saveAudit } from "@/lib/radar/repository";
 import { addOnsFor, formatCop, recommendPackage } from "@/lib/radar/packages";
 import { printAuditReport } from "@/lib/radar/report";
@@ -200,6 +200,20 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
 
   const pkg = report ? recommendPackage(report, business.whatsappKind) : null;
   const addOns = report ? addOnsFor(report, business.whatsappKind) : [];
+  const groupStats = report
+    ? (Object.keys(GROUP_META) as AuditGroup[])
+        .map((group) => {
+          const items = report.checks.filter((check) => check.group === group);
+          return {
+            group,
+            label: GROUP_META[group].label,
+            total: items.length,
+            fail: items.filter((check) => check.status === "fail").length,
+            warn: items.filter((check) => check.status === "warn").length,
+          };
+        })
+        .filter((item) => item.total > 0)
+    : [];
   const previous = history.length > 0 ? history[0] : null;
 
   return (
@@ -303,6 +317,24 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
               </div>
             ))}
           </div>
+
+          {groupStats.length > 0 && (
+            <div>
+              <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">
+                Lectura por framework
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {groupStats.map((item) => (
+                  <div key={item.group} className="rounded-lg bg-muted/40 px-2.5 py-2">
+                    <p className="text-[10px] font-semibold">{item.label}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {item.total} checks · {item.fail} fallos · {item.warn} avisos
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {report.critical.length > 0 && (
             <div className="p-3 rounded-xl bg-red-500/10 ring-1 ring-red-500/30">

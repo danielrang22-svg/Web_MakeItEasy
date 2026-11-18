@@ -37,6 +37,13 @@ interface Analysis {
   contacts: { emails: string[]; socials: string[] };
   problems: Array<{ title: string; detail: string }>;
   recommendedService: { type: string; reason: string };
+  eeat: {
+    experience: number;
+    expertise: number;
+    authoritativeness: number;
+    trust: number;
+    evidence: string[];
+  };
 }
 
 const SYSTEM = `Eres un consultor de ventas de servicios digitales para negocios locales en Colombia.
@@ -53,13 +60,21 @@ Analizas la web de un negocio y devuelves SOLO un objeto JSON con este esquema e
   },
   "contacts": { "emails": ["string"], "socials": ["string"] },
   "problems": [{ "title": "string", "detail": "string" }],
-  "recommendedService": { "type": "web_nueva | agente_whatsapp | sistema_citas", "reason": "string" }
+  "recommendedService": { "type": "web_nueva | agente_whatsapp | sistema_citas", "reason": "string" },
+  "eeat": {
+    "experience": 0,
+    "expertise": 0,
+    "authoritativeness": 0,
+    "trust": 0,
+    "evidence": ["string"]
+  }
 }
 Reglas:
 - Español de Colombia, tono profesional y directo.
 - Entre 3 y 5 problemas, concretos y en lenguaje llano (sin jerga técnica).
 - No inventes datos que no aparezcan en el contenido o en el snapshot.
-- El servicio recomendado debe ser uno de los tres tipos indicados.`;
+- El servicio recomendado debe ser uno de los tres tipos indicados.
+- E-E-A-T: puntúa de 0 a 100 solo con evidencia visible (experiencia/casos, credenciales/equipo, reseñas/reconocimiento, datos de contacto/legal/actualidad). Si falta evidencia, puntúa 50 y dilo en evidence; nunca inventes. Incluye 2-4 frases cortas de evidencia.`;
 
 export async function POST(request: NextRequest) {
   const auth = await verifyAuthRole(request);
@@ -103,6 +118,13 @@ export async function POST(request: NextRequest) {
         recommendedService: {
           type: 'web_nueva',
           reason: 'Una web propia con WhatsApp y formulario es la base para captar y medir clientes.',
+        },
+        eeat: {
+          experience: 50,
+          expertise: 50,
+          authoritativeness: 50,
+          trust: 50,
+          evidence: ['Sin web propia: no hay señales E-E-A-T visibles que evaluar.'],
         },
       };
 
@@ -233,5 +255,20 @@ function normalizeAnalysis(raw: Analysis): Analysis {
       type: String(raw?.recommendedService?.type ?? 'web_nueva'),
       reason: String(raw?.recommendedService?.reason ?? '').slice(0, 600),
     },
+    eeat: {
+      experience: eeatScore(raw?.eeat?.experience),
+      expertise: eeatScore(raw?.eeat?.expertise),
+      authoritativeness: eeatScore(raw?.eeat?.authoritativeness),
+      trust: eeatScore(raw?.eeat?.trust),
+      evidence: Array.isArray(raw?.eeat?.evidence)
+        ? raw.eeat.evidence.slice(0, 4).map((item) => String(item).slice(0, 220))
+        : [],
+    },
   };
+}
+
+function eeatScore(value: unknown): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 50;
+  return Math.max(0, Math.min(100, Math.round(numeric)));
 }

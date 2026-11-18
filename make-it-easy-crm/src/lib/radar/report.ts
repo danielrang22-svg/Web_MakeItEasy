@@ -1,4 +1,4 @@
-import type { AuditReport } from "./audit/types";
+import { GROUP_META, type AuditGroup, type AuditReport } from "./audit/types";
 import type { RadarPackage } from "./packages";
 import { formatCop } from "./packages";
 import type { RadarBusiness } from "./types";
@@ -37,6 +37,30 @@ export function buildAuditReportHtml({ business, report, pkg, addOns, sellerName
         <td class="num">${a.pass}</td>
         <td class="num">${a.warn}</td>
         <td class="num" style="color:#dc2626">${a.fail}</td>
+      </tr>`
+    )
+    .join("");
+
+  const frameworkRows = (Object.keys(GROUP_META) as AuditGroup[])
+    .map((group) => {
+      const items = report.checks.filter((check) => check.group === group);
+      return {
+        group,
+        label: GROUP_META[group].label,
+        total: items.length,
+        pass: items.filter((check) => check.status === "pass").length,
+        warn: items.filter((check) => check.status === "warn").length,
+        fail: items.filter((check) => check.status === "fail").length,
+      };
+    })
+    .filter((item) => item.total > 0)
+    .map(
+      (item) => `<tr>
+        <td>${esc(item.label)}</td>
+        <td class="num">${item.total}</td>
+        <td class="num" style="color:#16a34a">${item.pass}</td>
+        <td class="num" style="color:#d97706">${item.warn}</td>
+        <td class="num" style="color:#dc2626">${item.fail}</td>
       </tr>`
     )
     .join("");
@@ -176,6 +200,12 @@ export function buildAuditReportHtml({ business, report, pkg, addOns, sellerName
   <table>
     <thead><tr><th>Área</th><th class="num">Nota</th><th class="num">OK</th><th class="num">Avisos</th><th class="num">Fallos</th></tr></thead>
     <tbody>${areaRows}</tbody>
+  </table>
+
+  <h2>Lectura por framework</h2>
+  <table>
+    <thead><tr><th>Bloque</th><th class="num">Checks</th><th class="num">OK</th><th class="num">Avisos</th><th class="num">Fallos</th></tr></thead>
+    <tbody>${frameworkRows}</tbody>
   </table>
 
   <h2>Hallazgos</h2>
