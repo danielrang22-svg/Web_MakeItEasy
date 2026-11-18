@@ -92,6 +92,8 @@ export interface RadarZone {
   polygons?: number[][][][];
   /** Aviso cuando la zona se interpretó como punto y se amplió a un radio */
   note?: string;
+  /** Si existe, la búsqueda se limita a este radio (km) desde lat/lng */
+  radiusKm?: number;
 }
 
 export type ZoneSuggestionKind = "area" | "poi" | "address";

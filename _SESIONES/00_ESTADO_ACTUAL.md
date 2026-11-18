@@ -25,6 +25,8 @@ Sitio público de Make It Easy y CRM interno (leads, cotizaciones, proyectos y R
 - [x] Verificación de producción: `/login` 200, `/radar` 307→login, `/api/radar/site-scan` 401 (ruta nueva activa) y `/api/radar/search` 401.
 - [x] Cache de búsqueda versionada a `v2` y autocompletado de zonas desplegados: PR #8, run `44173169532` verde en 1m55s; `/api/radar/zones` 401 sin sesión.
 - [x] El fallo reportado en producción era la fila de caché vieja: servía el resultado vacío con la zona de la parada de bus aunque el código nuevo ya estaba desplegado.
+- [x] Selección de sugerencia corregida: se envían lat/lng/bbox y ya no se re-geocodifica el `display_name` largo. PR #9, run `44331727301` verde en 1m50s.
+- [x] Prueba exacta del usuario (Mazurén, Usaquén): 6 gimnasios en rápido, sin error de geocodificación.
 
 ## En curso
 - [ ] Configurar `PAGESPEED_API_KEY` en el VPS (opcional, gratis).

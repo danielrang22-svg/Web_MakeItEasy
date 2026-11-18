@@ -75,6 +75,9 @@ Antes: `geocodeZone("Mazurén")` elegía una parada de bus con bbox de ~11 m; fa
 - PR #8 `fix(radar): cache v2 y autocompletado de zonas`, run `44173169532` verde en 1m55s.
 - Producción: `/api/radar/zones` 401 sin sesión (ruta nueva activa); `/login` 200.
 - Causa del segundo fallo: la búsqueda venía de caché vieja (zona de parada de bus, 0 resultados) y no ejecutaba la geocodificación nueva.
+- PR #9 `fix(radar): usar coordenadas de la sugerencia de zona`, run `44331727301` verde en 1m50s.
+- El tercer fallo era enviar el `display_name` largo a Nominatim; ahora se envían lat/lng/bbox y `zoneFromSelection` construye la zona sin re-geocodificar.
+- Prueba con la sugerencia exacta (Mazurén, Usaquén): 6 gimnasios en rápido.
 
 ## Pendientes
 

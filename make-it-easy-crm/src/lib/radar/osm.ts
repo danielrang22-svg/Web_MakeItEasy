@@ -8,6 +8,7 @@ import type {
   ZoneSuggestionKind,
 } from "./types";
 import { findCategory, RADAR_CATEGORIES } from "./categories";
+import { radiusLabel } from "./radius";
 
 const UA = "MakeItEasy-Radar/1.0 (contacto: daniel.makeiteasy@gmail.com)";
 const NOMINATIM = "https://nominatim.openstreetmap.org";
@@ -149,22 +150,38 @@ export function pickZoneResult(list: NominatimZoneResult[]): NominatimZoneResult
   })[0];
 }
 
-export function expandTinyZone(zone: RadarZone, label: string): RadarZone {
+export function zoneWithRadius(
+  zone: RadarZone,
+  label: string,
+  radiusKm: number,
+  note?: string
+): RadarZone {
+  const latDelta = radiusKm / 111.32;
+  const lngDelta = radiusKm / (111.32 * Math.cos((zone.lat * Math.PI) / 180));
+  return {
+    ...zone,
+    displayName: `${label.trim()} · radio ${radiusLabel(radiusKm)}`,
+    bbox: [zone.lat - latDelta, zone.lng - lngDelta, zone.lat + latDelta, zone.lng + lngDelta],
+    polygons: undefined,
+    radiusKm,
+    note: note ?? `Se buscó en un radio de ${radiusLabel(radiusKm)} desde el centro de la zona.`,
+  };
+}
+
+export function expandTinyZone(zone: RadarZone, label: string, radiusKm?: number): RadarZone {
+  if (radiusKm != null) return zoneWithRadius(zone, label, radiusKm);
+
   const [s, w, n, e] = zone.bbox;
   const area = bboxAreaKm2(zone.bbox);
   const spans = Math.max(Math.abs(n - s), Math.abs(e - w));
   if (area >= ZONE_MIN_AREA_KM2 && spans >= 0.01) return zone;
 
-  const latDelta = ZONE_RADIUS_KM / 111.32;
-  const lngDelta = ZONE_RADIUS_KM / (111.32 * Math.cos((zone.lat * Math.PI) / 180));
-  const radiusLabel = Number.isInteger(ZONE_RADIUS_KM) ? String(ZONE_RADIUS_KM) : ZONE_RADIUS_KM.toFixed(1);
-  return {
-    ...zone,
-    displayName: `${label.trim()} · radio ${radiusLabel} km`,
-    bbox: [zone.lat - latDelta, zone.lng - lngDelta, zone.lat + latDelta, zone.lng + lngDelta],
-    polygons: undefined,
-    note: `"${label.trim()}" no tiene un polígono de barrio en OpenStreetMap; se buscó en un radio de ${radiusLabel} km.`,
-  };
+  return zoneWithRadius(
+    zone,
+    label,
+    ZONE_RADIUS_KM,
+    `"${label.trim()}" no tiene un polígono de barrio en OpenStreetMap; se buscó en un radio de ${radiusLabel(ZONE_RADIUS_KM)}.`
+  );
 }
 
 export function needsOverpassFallback(count: number): boolean {
@@ -236,58 +253,56 @@ export async function suggestZones(query: string): Promise<ZoneSuggestion[]> {
   return data;
 }
 
-export function zoneFromSelection(selection: ZoneSelection): RadarZone {
-  return expandTinyZone(
-    {
-      displayName: selection.displayName,
-      lat: selection.lat,
-      lng: selection.lng,
-      bbox: selection.bbox,
-      polygons: undefined,
-    },
-    selection.label || selection.displayName
-  );
+export function zoneFromSelection(selection: ZoneSelection, radiusKm?: number): RadarZone {
+  const base: RadarZone = {
+    displayName: selection.displayName,
+    lat: selection.lat,
+    lng: selection.lng,
+    bbox: selection.bbox,
+    polygons: undefined,
+  };
+  const label = selection.label || selection.displayName;
+  return radiusKm != null ? zoneWithRadius(base, label, radiusKm) : expandTinyZone(base, label);
 }
 
-export async function geocodeZone(zona: string): Promise<RadarZone> {
+export async function geocodeZone(zona: string, radiusKm?: number): Promise<RadarZone> {
   const key = zona.trim().toLowerCase();
   const hit = zoneCache.get(key);
-  if (hit && Date.now() - hit.at < ZONE_TTL) return hit.zone;
+  let base: RadarZone | null = hit && Date.now() - hit.at < ZONE_TTL ? hit.zone : null;
 
-  const url = `${NOMINATIM}/search?format=jsonv2&limit=10&countrycodes=${COUNTRY}&polygon_geojson=1&q=${encodeURIComponent(zona)}`;
-  const res = await nominatimFetch(url);
+  if (!base) {
+    const url = `${NOMINATIM}/search?format=jsonv2&limit=10&countrycodes=${COUNTRY}&polygon_geojson=1&q=${encodeURIComponent(zona)}`;
+    const res = await nominatimFetch(url);
 
-  if (!res.ok) {
-    throw new RadarUpstreamError(
-      `No se pudo localizar la zona (Nominatim ${res.status}). ${await safeText(res)}`,
-      res.status
-    );
-  }
+    if (!res.ok) {
+      throw new RadarUpstreamError(
+        `No se pudo localizar la zona (Nominatim ${res.status}). ${await safeText(res)}`,
+        res.status
+      );
+    }
 
-  const list = (await res.json()) as NominatimZoneResult[];
+    const list = (await res.json()) as NominatimZoneResult[];
 
-  const first = pickZoneResult(list);
-  if (!first?.lat || !first?.lon || !first?.boundingbox) {
-    throw new RadarUpstreamError(
-      `No encuentro "${zona}". Prueba con municipio, barrio o código postal.`,
-      404
-    );
-  }
+    const first = pickZoneResult(list);
+    if (!first?.lat || !first?.lon || !first?.boundingbox) {
+      throw new RadarUpstreamError(
+        `No encuentro "${zona}". Prueba con municipio, barrio o código postal.`,
+        404
+      );
+    }
 
-  const [s, n, w, e] = first.boundingbox.map(Number) as [number, number, number, number];
-  const zone = expandTinyZone(
-    {
+    const [s, n, w, e] = first.boundingbox.map(Number) as [number, number, number, number];
+    base = {
       displayName: first.display_name ?? zona,
       lat: Number(first.lat),
       lng: Number(first.lon),
       bbox: [s, w, n, e],
       polygons: extractPolygons(first.geojson),
-    },
-    zona
-  );
+    };
+    zoneCache.set(key, { at: Date.now(), zone: base });
+  }
 
-  zoneCache.set(key, { at: Date.now(), zone });
-  return zone;
+  return radiusKm != null ? zoneWithRadius(base, zona, radiusKm) : expandTinyZone(base, zona);
 }
 
 /* ────────────────────────── Photon (rápido) ────────────────────────── */
@@ -393,18 +408,6 @@ function normalizeOsmType(type: string | undefined): string {
   }
 }
 
-function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
-
 function extractPolygons(geojson: { type?: string; coordinates?: unknown } | undefined): number[][][][] | undefined {
   if (!geojson?.coordinates) return undefined;
   if (geojson.type === "Polygon") return [geojson.coordinates as number[][][]];
@@ -434,7 +437,20 @@ function pointInPolygon(lng: number, lat: number, rings: number[][][]): boolean 
   return true;
 }
 
+export function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const earthKm = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return 2 * earthKm * Math.asin(Math.sqrt(a));
+}
+
 function isInsideZone(zone: RadarZone, lat: number, lng: number): boolean {
+  if (zone.radiusKm != null) {
+    return distanceKm(zone.lat, zone.lng, lat, lng) <= zone.radiusKm;
+  }
   if (zone.polygons?.length) {
     return zone.polygons.some((rings) => pointInPolygon(lng, lat, rings));
   }
@@ -582,9 +598,12 @@ interface OverpassElement {
   tags?: Record<string, string>;
 }
 
-function buildOverpassQuery(bbox: RadarZone["bbox"], nicho: string, keyword: string): string {
-  const [s, w, n, e] = bbox;
-  const box = `(${s},${w},${n},${e})`;
+export function buildOverpassQuery(zone: RadarZone, nicho: string, keyword: string): string {
+  const [s, w, n, e] = zone.bbox;
+  const box =
+    zone.radiusKm != null
+      ? `(around:${Math.round(zone.radiusKm * 1000)},${zone.lat},${zone.lng})`
+      : `(${s},${w},${n},${e})`;
   const parts: string[] = [];
 
   const category = findCategory(nicho);
@@ -642,7 +661,7 @@ async function searchOverpass(
   nicho: string,
   keyword: string
 ): Promise<RadarBusiness[]> {
-  const elements = await runOverpass(buildOverpassQuery(zone.bbox, nicho, keyword));
+  const elements = await runOverpass(buildOverpassQuery(zone, nicho, keyword));
   const categoryLabel = findCategory(nicho)?.label ?? (keyword || "Búsqueda libre");
   const businesses: RadarBusiness[] = [];
 
@@ -711,13 +730,14 @@ export async function searchOsm(
   nicho: string,
   keyword = "",
   mode: RadarMode = "fast",
-  zoneOverride?: RadarZone
+  zoneOverride?: RadarZone,
+  radiusKm?: number
 ): Promise<SearchOutcome> {
-  const cacheKey = `${zona}|${zoneOverride ? zoneOverride.bbox.join(",") : ""}|${nicho}|${keyword}|${mode}`.toLowerCase();
+  const cacheKey = `${zona}|${zoneOverride ? zoneOverride.bbox.join(",") : ""}|${radiusKm ?? ""}|${nicho}|${keyword}|${mode}`.toLowerCase();
   const hit = searchCache.get(cacheKey);
   if (hit && Date.now() - hit.at < SEARCH_TTL) {
     return {
-      zone: zoneOverride ?? (await geocodeZone(zona)),
+      zone: zoneOverride ?? (await geocodeZone(zona, radiusKm)),
       businesses: hit.data,
       cached: true,
       provider: hit.provider,
@@ -729,7 +749,7 @@ export async function searchOsm(
   if (running) return running;
 
   const promise = (async (): Promise<SearchOutcome> => {
-    const zone = zoneOverride ?? (await geocodeZone(zona));
+    const zone = zoneOverride ?? (await geocodeZone(zona, radiusKm));
     let provider: RadarProvider = "photon";
     let businesses: RadarBusiness[] = [];
     let note: string | undefined;
