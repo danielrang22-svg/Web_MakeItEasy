@@ -6,6 +6,7 @@ import {
   needsOverpassFallback,
   pickZoneResult,
   searchOsm,
+  zoneFromSelection,
   type NominatimZoneResult,
 } from "../osm";
 import type { RadarZone } from "../types";
@@ -71,6 +72,27 @@ test("expandTinyZone deja intacta una ciudad con bbox grande", () => {
   const expanded = expandTinyZone(zone, "Bogotá");
   assert.equal(expanded.note, undefined);
   assert.deepEqual(expanded.bbox, zone.bbox);
+});
+
+test("zoneFromSelection usa el bbox de un area grande y expande un punto", () => {
+  const city = zoneFromSelection({
+    displayName: "Bogotá, Colombia",
+    label: "Bogotá",
+    lat: 4.6533326,
+    lng: -74.083652,
+    bbox: [3.7288874, -74.4369562, 4.8370295, -73.9913854],
+  });
+  assert.equal(city.note, undefined);
+
+  const poi = zoneFromSelection({
+    displayName: "Mazurén, Avenida Carrera 45, Bogotá",
+    label: "Mazurén · Suba, Bogotá",
+    lat: 4.7329371,
+    lng: -74.0494827,
+    bbox: [4.7327086, -74.0495371, 4.7365939, -74.048863],
+  });
+  assert.ok(poi.note?.includes("radio"));
+  assert.ok(poi.displayName.includes("radio"));
 });
 
 test("mapZoneSuggestions prioriza areas y arma etiquetas cortas", () => {
