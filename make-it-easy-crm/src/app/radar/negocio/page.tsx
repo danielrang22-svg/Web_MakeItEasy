@@ -13,6 +13,7 @@ import {
   Globe,
   Loader2,
   MapPin,
+  MessageCircle,
   Phone,
   RefreshCw,
   Sparkles,
@@ -31,7 +32,18 @@ import {
 } from "@/lib/radar/repository";
 import { scoreClasses } from "@/lib/radar/score";
 import { applyScanSummary, qualityClasses, qualityLabel } from "@/lib/radar/siteQuality";
-import type { RadarBusiness, RadarLeadStatus, SiteScan } from "@/lib/radar/types";
+import { whatsappUrl } from "@/lib/radar/outreach";
+import {
+  whatsappConfidenceLabel,
+  whatsappKindClasses,
+  whatsappKindLabel,
+} from "@/lib/radar/whatsapp";
+import type {
+  RadarBusiness,
+  RadarLeadStatus,
+  SiteScan,
+  WhatsAppVerification,
+} from "@/lib/radar/types";
 
 const TONES = [
   { value: "cercano", label: "Cercano" },
@@ -73,6 +85,9 @@ function BusinessContent() {
   const [isSaved, setIsSaved] = useState(false);
   const [savingLead, setSavingLead] = useState(false);
   const [siteScanning, setSiteScanning] = useState(false);
+  const [whatsappVerified, setWhatsappVerified] = useState<WhatsAppVerification>("");
+  const [whatsappNotes, setWhatsappNotes] = useState("");
+  const [savingWhatsApp, setSavingWhatsApp] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -93,6 +108,8 @@ function BusinessContent() {
         setNotes(lead.notes);
         setStatus(lead.status);
         setNextAction(lead.nextActionAt ? lead.nextActionAt.slice(0, 10) : "");
+        setWhatsappVerified((lead.whatsappVerified as WhatsAppVerification) || "");
+        setWhatsappNotes(lead.whatsappNotes || "");
         setIsSaved(true);
       })
       .catch(() => undefined);
@@ -103,6 +120,22 @@ function BusinessContent() {
   }, [id]);
 
   const seller = useMemo(() => getSettings(), []);
+  const whatsappTestUrl = business
+    ? whatsappUrl(
+        business.whatsappNumber || business.phone,
+        "Hola, quería hacer una consulta sobre sus servicios."
+      )
+    : null;
+  const bookingDetected =
+    business?.siteSignals?.find((signal) => signal.id === "booking")?.status === "pass";
+  const formDetected =
+    business?.siteSignals?.find((signal) => signal.id === "form")?.status === "pass";
+  const whatsappPitch =
+    business?.whatsappKind === "automation"
+      ? "Vender mejora o migración del agente actual"
+      : business?.whatsappKind === "manual" || business?.whatsappKind === "none"
+      ? "Vender agente de WhatsApp"
+      : "Verificar WhatsApp antes de proponer";
 
   if (!business) {
     return (
@@ -203,7 +236,7 @@ function BusinessContent() {
     }
   }
 
-  async function scanSiteQuality() {
+  async function scanSiteQuality(force = false) {
     if (!business) return;
     setSiteScanning(true);
     setError("");
@@ -211,7 +244,7 @@ function BusinessContent() {
       const res = await fetch("/api/radar/site-scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessIds: [business.id] }),
+        body: JSON.stringify({ businessIds: [business.id], force: force || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo analizar la web");
@@ -271,6 +304,8 @@ function BusinessContent() {
         status,
         notes,
         nextActionAt: nextAction ? new Date(nextAction).toISOString() : null,
+        whatsappVerified,
+        whatsappNotes,
       });
       setIsSaved(true);
       setNotice(wasSaved ? "Cambios guardados." : "Lead creado en Mis leads.");
@@ -278,6 +313,19 @@ function BusinessContent() {
       setError(err instanceof Error ? err.message : "No se pudo guardar en Mis leads");
     } finally {
       setSavingLead(false);
+    }
+  }
+
+  async function saveWhatsAppVerification() {
+    if (!business || !isSaved) return;
+    setSavingWhatsApp(true);
+    try {
+      await radarRepository.update(business.id, { whatsappVerified, whatsappNotes });
+      setNotice("Verificación de WhatsApp guardada.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar la verificación");
+    } finally {
+      setSavingWhatsApp(false);
     }
   }
 
@@ -544,6 +592,148 @@ function BusinessContent() {
               )}
             </div>
           )}
+
+          <div className="bg-card ring-1 ring-border rounded-2xl p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-sm font-bold flex items-center gap-2">
+                <MessageCircle size={15} className="text-cyan-400" /> WhatsApp y automatización
+              </h2>
+              <span
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ring-1 ${whatsappKindClasses(
+                  business.whatsappKind
+                )}`}
+              >
+                {whatsappKindLabel(business.whatsappKind)}
+              </span>
+            </div>
+
+            <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">
+              {business.whatsappProvider && (
+                <p>
+                  Proveedor: <strong className="text-foreground">{business.whatsappProvider}</strong>
+                </p>
+              )}
+              {business.whatsappConfidence && (
+                <p>Detección: {whatsappConfidenceLabel(business.whatsappConfidence)}</p>
+              )}
+              {business.whatsappNumber && <p>Número: {business.whatsappNumber}</p>}
+            </div>
+
+            {(business.whatsappEvidence ?? []).length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {(business.whatsappEvidence ?? []).map((item) => (
+                  <li key={item} className="text-[11px] text-muted-foreground">
+                    · {item}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <p className="text-[10px] text-muted-foreground mt-2">
+              Detectado desde la web pública. Un agente del lado de Meta puede no dejar rastro:
+              verifica manualmente antes de afirmarlo.
+            </p>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {whatsappTestUrl && (
+                <a
+                  href={whatsappTestUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30 text-xs font-bold hover:bg-emerald-500/25"
+                >
+                  Probar WhatsApp
+                </a>
+              )}
+              {business.websiteKind === "own" && (
+                <button
+                  onClick={() => void scanSiteQuality(true)}
+                  disabled={siteScanning}
+                  className="px-3 py-1.5 rounded-lg bg-muted text-xs font-semibold hover:bg-muted/70 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {siteScanning ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                  Reanalizar web
+                </button>
+              )}
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">
+                Resultado de la prueba
+                <select
+                  value={whatsappVerified}
+                  onChange={(event) => setWhatsappVerified(event.target.value as WhatsAppVerification)}
+                  className="w-full mt-1 px-2 py-2 bg-muted rounded-lg text-xs ring-1 ring-border outline-none normal-case font-normal"
+                >
+                  <option value="">Sin verificar</option>
+                  <option value="bot">Bot</option>
+                  <option value="humano">Humano</option>
+                  <option value="desconocido">Desconocido</option>
+                </select>
+              </label>
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">
+                Notas de WhatsApp
+                <input
+                  value={whatsappNotes}
+                  onChange={(event) => setWhatsappNotes(event.target.value)}
+                  placeholder="Ej: respondió bot con menú; humano a los 2 min"
+                  className="w-full mt-1 px-2 py-2 bg-muted rounded-lg text-xs ring-1 ring-border outline-none normal-case font-normal"
+                />
+              </label>
+            </div>
+
+            {isSaved ? (
+              <button
+                onClick={() => void saveWhatsAppVerification()}
+                disabled={savingWhatsApp}
+                className="mt-2 px-3 py-1.5 rounded-lg bg-muted text-xs font-bold hover:bg-muted/70 disabled:opacity-50"
+              >
+                {savingWhatsApp ? "Guardando…" : "Guardar verificación"}
+              </button>
+            ) : (
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Convierte en lead para guardar la verificación.
+              </p>
+            )}
+          </div>
+
+          <div className="bg-card ring-1 ring-border rounded-2xl p-5">
+            <h2 className="text-sm font-bold flex items-center gap-2">
+              <Sparkles size={15} className="text-cyan-400" /> Servicios y huecos
+            </h2>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+              {[
+                [
+                  "Web",
+                  business.websiteKind === "own"
+                    ? qualityLabel(business.siteQuality, business.siteGrade)
+                    : "Sin web propia",
+                ],
+                ["WhatsApp", whatsappKindLabel(business.whatsappKind)],
+                ["Citas online", bookingDetected ? "Detectado" : "No detectado"],
+                ["Formulario", formDetected ? "Detectado" : "No detectado"],
+                [
+                  "Automatización",
+                  business.whatsappKind === "automation" ? "Probable" : "No detectada",
+                ],
+                [
+                  "SEO",
+                  business.siteGrade == null ? "Sin analizar" : `${business.siteGrade}/100`,
+                ],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-2"
+                >
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="font-semibold text-right">{value}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-cyan-300 mt-3">
+              Pitch sugerido: <strong>{whatsappPitch}</strong>
+            </p>
+          </div>
 
           <div className="bg-card ring-1 ring-border rounded-2xl p-5">
             <div className="flex items-center justify-between gap-3">

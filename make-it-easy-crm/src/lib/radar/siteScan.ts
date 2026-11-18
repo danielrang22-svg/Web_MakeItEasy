@@ -1,7 +1,14 @@
 import { load } from "cheerio";
 import { assertPublicUrl, fetchText } from "./audit/fetch";
 import { extractContacts, mergeContacts, verifyEmails, type ContactInfo } from "./contacts";
-import type { EmailCheck, SiteQuality, SiteScan, SiteSignal } from "./types";
+import { detectWhatsApp, mergeWhatsAppDetections } from "./whatsapp";
+import type {
+  EmailCheck,
+  SiteQuality,
+  SiteScan,
+  SiteSignal,
+  WhatsAppDetection,
+} from "./types";
 import { isFreeHosting, normalizeUrl } from "./website";
 
 export interface SiteFacts {
@@ -21,6 +28,7 @@ export interface SiteFacts {
   copyrightYear: number | null;
   placeholder: boolean;
   freeHosting: boolean;
+  whatsapp?: WhatsAppDetection;
 }
 
 export interface ClassifiedSite {
@@ -41,6 +49,19 @@ const BOOKING_RE =
 
 function emptyContacts(): ContactInfo {
   return { emails: [], phones: [], socials: [], contactName: null, contactRole: null };
+}
+
+function unknownWhatsApp(): WhatsAppDetection {
+  return {
+    kind: "unknown",
+    provider: null,
+    webChatProvider: null,
+    confidence: "low",
+    evidence: [],
+    number: "",
+    hasLink: false,
+    hasBusinessApi: false,
+  };
 }
 
 function signal(
@@ -78,6 +99,7 @@ export function factsFromHtml(
       copyrightYear: null,
       placeholder: false,
       freeHosting: isFreeHosting(finalUrl),
+      whatsapp: unknownWhatsApp(),
     };
   }
 
@@ -89,6 +111,7 @@ export function factsFromHtml(
   const yearMatch = html.match(/(?:©|&copy;|copyright)[^0-9]{0,40}(20\d{2})/i);
   const copyrightYear = yearMatch ? Number(yearMatch[1]) : null;
   const placeholder = PLACEHOLDER_RE.test(`${title} ${text.slice(0, 6000)} ${html.slice(0, 2000)}`);
+  const whatsapp = detectWhatsApp(html, text);
 
   return {
     ok: meta.ok,
@@ -109,6 +132,7 @@ export function factsFromHtml(
     copyrightYear,
     placeholder,
     freeHosting: isFreeHosting(finalUrl),
+    whatsapp,
   };
 }
 
@@ -228,6 +252,7 @@ function unknownScan(url: string, scannedAt: string, error: string): SiteScan {
     contactName: null,
     contactRole: null,
     emailChecks: [],
+    whatsapp: unknownWhatsApp(),
     freeHosting: isFreeHosting(url),
     placeholder: false,
     error,
@@ -287,6 +312,7 @@ function finishScan(
     contactName: contacts.contactName,
     contactRole: contacts.contactRole,
     emailChecks,
+    whatsapp: facts.whatsapp ?? unknownWhatsApp(),
     freeHosting: facts.freeHosting,
     placeholder: facts.placeholder,
     scannedAt,
@@ -320,7 +346,7 @@ export async function scanSite(rawUrl: string, options: ScanOptions = {}): Promi
 
   const contentType = page.headers["content-type"] ?? "";
   const isHtml = /text\/html|application\/xhtml/i.test(contentType) || (!contentType && page.html.includes("<html"));
-  const facts = factsFromHtml(page.html, page.finalUrl, {
+  let facts = factsFromHtml(page.html, page.finalUrl, {
     ok: true,
     status: page.status,
     ms: page.ms,
@@ -335,6 +361,16 @@ export async function scanSite(rawUrl: string, options: ScanOptions = {}): Promi
       const extra = await fetchText(contactUrl, options.timeoutMs ?? 8000);
       if (extra.ok && extra.html) {
         contacts = mergeContacts(contacts, extractContacts(extra.html));
+        const extraText = load(extra.html)("body").text().replace(/\s+/g, " ").trim();
+        const mergedWhatsApp = mergeWhatsAppDetections(
+          facts.whatsapp ?? unknownWhatsApp(),
+          detectWhatsApp(extra.html, extraText)
+        );
+        facts = {
+          ...facts,
+          whatsapp: mergedWhatsApp,
+          hasWhatsapp: facts.hasWhatsapp || mergedWhatsApp.hasLink,
+        };
       }
     }
   }

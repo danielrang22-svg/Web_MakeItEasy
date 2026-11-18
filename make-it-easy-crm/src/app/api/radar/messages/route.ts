@@ -17,6 +17,9 @@ Reglas:
 - Menciona 1 o 2 problemas concretos detectados.
 - Si el negocio ya tiene web, habla de mejorarla (velocidad, móvil, WhatsApp, reservas, SEO); nunca digas que no tiene web.
 - Si no tiene web propia, enfoca la oportunidad de tener presencia digital y captar contactos.
+- Si WhatsApp es "manual" o "none", propone un agente que atienda y cualifique 24/7.
+- Si WhatsApp es "automation", propone una mejora o migración; nunca digas que no tiene agente.
+- Si WhatsApp es "unknown", no afirmes nada: invita a verificar.
 - Termina con una propuesta de conversación, nunca con presión.
 - No inventes datos del negocio.`;
 
@@ -59,6 +62,9 @@ export async function POST(request: NextRequest) {
       `RESUMEN: ${analysis?.summary || 'no disponible'}`,
       `PROBLEMAS:\n${problems}`,
       `SERVICIO RECOMENDADO: ${analysis?.recommendedService?.type || 'web_nueva'} — ${analysis?.recommendedService?.reason || ''}`,
+      `WHATSAPP: ${business.whatsappKind || 'sin analizar'}${
+        business.whatsappProvider ? ` · ${business.whatsappProvider}` : ''
+      } (${business.whatsappConfidence || 'sin confianza'})`,
       `CONTACTO: ${business.contactName || 'no identificado'}${
         business.contactRole ? ` (${business.contactRole})` : ''
       }`,

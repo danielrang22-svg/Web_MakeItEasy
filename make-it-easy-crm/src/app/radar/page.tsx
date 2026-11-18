@@ -26,6 +26,7 @@ import { radarRepository } from "@/lib/radar/repository";
 import { scoreClasses } from "@/lib/radar/score";
 import { applyScanSummary, isDeficientQuality, qualityClasses, qualityLabel } from "@/lib/radar/siteQuality";
 import { RADAR_RADIUS_OPTIONS } from "@/lib/radar/radius";
+import { whatsappKindClasses, whatsappKindLabel } from "@/lib/radar/whatsapp";
 import type { RadarBusiness, RadarSearchResult, SiteScan, ZoneSuggestion } from "@/lib/radar/types";
 
 const PAGE_SIZE = 20;
@@ -178,7 +179,12 @@ function RadarPageContent() {
   async function runSiteScan() {
     const items = result?.businesses ?? [];
     const pending = items.filter(
-      (b) => b.websiteKind === "own" && b.website && (!b.siteQuality || b.siteQuality === "unknown")
+      (b) =>
+        b.websiteKind === "own" &&
+        b.website &&
+        ((!b.siteQuality || b.siteQuality === "unknown") ||
+          !b.whatsappKind ||
+          b.whatsappKind === "unknown")
     );
     if (pending.length === 0) {
       setToast({ message: "Todas las webs de esta búsqueda ya están analizadas.", type: "info" });
@@ -262,7 +268,12 @@ function RadarPageContent() {
   const pendingSites = useMemo(
     () =>
       filtered.filter(
-        (b) => b.websiteKind === "own" && b.website && (!b.siteQuality || b.siteQuality === "unknown")
+        (b) =>
+          b.websiteKind === "own" &&
+          b.website &&
+          ((!b.siteQuality || b.siteQuality === "unknown") ||
+            !b.whatsappKind ||
+            b.whatsappKind === "unknown")
       ).length,
     [filtered]
   );
@@ -763,6 +774,11 @@ function RadarPageContent() {
                               {qualityLabel(b.siteQuality, b.siteGrade)}
                             </span>
                           )}
+                          {b.whatsappKind && b.whatsappKind !== "unknown" && (
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ring-1 ${whatsappKindClasses(b.whatsappKind)}`}>
+                              {whatsappKindLabel(b.whatsappKind)}
+                            </span>
+                          )}
                         </div>
                         {b.contactName && (
                           <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
@@ -942,6 +958,16 @@ function BusinessRows({
               }
             >
               {qualityLabel(business.siteQuality, business.siteGrade)}
+            </span>
+          )}
+          {business.whatsappKind && business.whatsappKind !== "unknown" && (
+            <span
+              className={`mt-1 ml-1 inline-flex text-[9px] font-bold px-2 py-0.5 rounded-full ring-1 ${whatsappKindClasses(
+                business.whatsappKind
+              )}`}
+              title={business.whatsappEvidence?.join(" · ") || "Detectado desde la web"}
+            >
+              {whatsappKindLabel(business.whatsappKind)}
             </span>
           )}
         </td>

@@ -4,6 +4,20 @@ export type RadarSource = "osm" | "google";
 export type SiteQuality = "broken" | "bad" | "weak" | "good" | "unknown";
 export type SiteSignalStatus = "pass" | "warn" | "fail" | "na";
 export type EmailStatus = "verified" | "risky" | "invalid";
+export type WhatsAppKind = "none" | "manual" | "widget" | "automation" | "unknown";
+export type WhatsAppConfidence = "high" | "medium" | "low";
+export type WhatsAppVerification = "bot" | "humano" | "desconocido" | "";
+
+export interface WhatsAppDetection {
+  kind: WhatsAppKind;
+  provider: string | null;
+  webChatProvider: string | null;
+  confidence: WhatsAppConfidence;
+  evidence: string[];
+  number: string;
+  hasLink: boolean;
+  hasBusinessApi: boolean;
+}
 
 export interface SiteSignal {
   id: string;
@@ -35,6 +49,7 @@ export interface SiteScan {
   contactName: string | null;
   contactRole: string | null;
   emailChecks: EmailCheck[];
+  whatsapp?: WhatsAppDetection;
   freeHosting: boolean;
   placeholder: boolean;
   error?: string;
@@ -81,6 +96,12 @@ export interface RadarBusiness {
   contactName?: string;
   contactRole?: string;
   enrichedAt?: string;
+  whatsappKind?: WhatsAppKind;
+  whatsappProvider?: string;
+  whatsappConfidence?: WhatsAppConfidence;
+  whatsappEvidence?: string[];
+  whatsappNumber?: string;
+  whatsappCheckedAt?: string;
 }
 
 export interface RadarZone {
@@ -146,6 +167,8 @@ export interface RadarSearchResult {
   savedCount?: number;
   siteScannedCount?: number;
   siteDeficientCount?: number;
+  whatsappScannedCount?: number;
+  whatsappAutomationCount?: number;
   warnings: string[];
   cached: boolean;
   usage?: RadarUsage;
@@ -165,6 +188,8 @@ export interface RadarLead {
   status: RadarLeadStatus;
   notes: string;
   nextActionAt: string | null;
+  whatsappVerified?: WhatsAppVerification;
+  whatsappNotes?: string;
   createdAt: string;
   updatedAt: string;
   business: RadarBusiness;

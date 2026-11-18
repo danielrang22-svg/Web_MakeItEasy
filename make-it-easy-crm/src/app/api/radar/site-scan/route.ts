@@ -62,7 +62,11 @@ export async function POST(request: NextRequest) {
 
     const scannableIds = new Set(scannable.map((row) => row.externalId));
     const skipped = ids.filter((id) => !scannableIds.has(id));
-    const cached = force ? new Map<string, SiteScan>() : await getFreshScans(scannable.map((row) => row.externalId));
+    const cached = force
+      ? new Map<string, SiteScan>()
+      : await getFreshScans(scannable.map((row) => row.externalId), undefined, {
+          requireWhatsApp: true,
+        });
     const pending = scannable.filter((row) => !cached.has(row.externalId));
 
     if (pending.length > 0) {

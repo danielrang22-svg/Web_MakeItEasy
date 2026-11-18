@@ -1,5 +1,12 @@
 import prisma from "@/lib/prisma";
-import type { EmailCheck, SiteQuality, SiteScan, SiteSignal } from "./types";
+import type {
+  EmailCheck,
+  SiteQuality,
+  SiteScan,
+  SiteSignal,
+  WhatsAppDetection,
+  WhatsAppKind,
+} from "./types";
 
 export { applyScanSummary as applyScanToBusiness } from "./siteQuality";
 
@@ -25,10 +32,36 @@ interface ScanRow {
   signalsJson: string;
   contactsJson: string;
   emailChecksJson: string;
+  whatsappJson: string;
   placeholder: boolean;
   freeHosting: boolean;
   error: string | null;
   createdAt: Date;
+}
+
+const UNKNOWN_WHATSAPP: WhatsAppDetection = {
+  kind: "unknown",
+  provider: null,
+  webChatProvider: null,
+  confidence: "low",
+  evidence: [],
+  number: "",
+  hasLink: false,
+  hasBusinessApi: false,
+};
+
+const WHATSAPP_KINDS = new Set<WhatsAppKind>(["none", "manual", "widget", "automation", "unknown"]);
+
+function toWhatsApp(value: unknown): WhatsAppDetection {
+  if (!value || typeof value !== "object") return UNKNOWN_WHATSAPP;
+  const record = value as Partial<WhatsAppDetection>;
+  const kind = WHATSAPP_KINDS.has(record.kind as WhatsAppKind) ? (record.kind as WhatsAppKind) : "unknown";
+  return {
+    ...UNKNOWN_WHATSAPP,
+    ...record,
+    kind,
+    evidence: Array.isArray(record.evidence) ? record.evidence : [],
+  };
 }
 
 function parseJson<T>(value: string, fallback: T): T {
@@ -67,6 +100,7 @@ function rowToScan(row: ScanRow): SiteScan {
     contactName: contacts.contactName,
     contactRole: contacts.contactRole,
     emailChecks: parseJson<EmailCheck[]>(row.emailChecksJson, []),
+    whatsapp: toWhatsApp(parseJson<unknown>(row.whatsappJson, {})),
     freeHosting: row.freeHosting,
     placeholder: row.placeholder,
     error: row.error ?? undefined,
@@ -74,9 +108,14 @@ function rowToScan(row: ScanRow): SiteScan {
   };
 }
 
+export interface FreshScanOptions {
+  requireWhatsApp?: boolean;
+}
+
 export async function getFreshScans(
   businessIds: string[],
-  ttlMs: number = SITE_SCAN_TTL_MS
+  ttlMs: number = SITE_SCAN_TTL_MS,
+  options: FreshScanOptions = {}
 ): Promise<Map<string, SiteScan>> {
   if (businessIds.length === 0) return new Map();
   const rows = await prisma.radarSiteScan.findMany({
@@ -94,6 +133,7 @@ export async function getFreshScans(
       signalsJson: true,
       contactsJson: true,
       emailChecksJson: true,
+      whatsappJson: true,
       placeholder: true,
       freeHosting: true,
       error: true,
@@ -104,6 +144,7 @@ export async function getFreshScans(
   for (const row of rows) {
     if (scans.has(row.radarPlaceId)) continue;
     if (row.quality === "unknown") continue;
+    if (options.requireWhatsApp && (!row.whatsappJson || row.whatsappJson === "{}")) continue;
     scans.set(row.radarPlaceId, rowToScan(row));
   }
   return scans;
@@ -121,6 +162,7 @@ export async function saveScan(businessId: string, userEmail: string, scan: Site
     scan.emailChecks.find((check) => check.status === "verified") ??
     scan.emailChecks.find((check) => check.status === "risky") ??
     scan.emailChecks[0];
+  const whatsapp = scan.whatsapp ?? UNKNOWN_WHATSAPP;
   const checkedAt = new Date(scan.scannedAt);
 
   await prisma.$transaction([
@@ -138,6 +180,7 @@ export async function saveScan(businessId: string, userEmail: string, scan: Site
         signalsJson: JSON.stringify(scan.signals),
         contactsJson: JSON.stringify(contacts),
         emailChecksJson: JSON.stringify(scan.emailChecks),
+        whatsappJson: JSON.stringify(whatsapp),
         placeholder: scan.placeholder,
         freeHosting: scan.freeHosting,
         error: scan.error ? scan.error.slice(0, 300) : null,
@@ -154,6 +197,12 @@ export async function saveScan(businessId: string, userEmail: string, scan: Site
         contactName: scan.contactName ?? "",
         contactRole: scan.contactRole ?? "",
         enrichedAt: checkedAt,
+        whatsappKind: whatsapp.kind,
+        whatsappProvider: whatsapp.provider ?? "",
+        whatsappConfidence: whatsapp.confidence,
+        whatsappEvidence: JSON.stringify(whatsapp.evidence),
+        whatsappNumber: whatsapp.number,
+        whatsappCheckedAt: checkedAt,
       },
     }),
   ]);

@@ -27,6 +27,7 @@ interface SearchBody {
     objective?: 'sin_web' | 'web_deficiente' | 'ambos';
     maxSiteGrade?: number | null;
     requireEmail?: boolean;
+    whatsapp?: 'any' | 'sin_agente' | 'manual' | 'automation' | 'unknown';
   };
 }
 
@@ -77,6 +78,10 @@ function applyFilters(items: RadarBusiness[], body: SearchBody): RadarBusiness[]
       return false;
     }
     if (f.requireEmail && !b.email) return false;
+    if (f.whatsapp === 'sin_agente' && b.whatsappKind === 'automation') return false;
+    if (f.whatsapp === 'manual' && b.whatsappKind !== 'manual') return false;
+    if (f.whatsapp === 'automation' && b.whatsappKind !== 'automation') return false;
+    if (f.whatsapp === 'unknown' && b.whatsappKind && b.whatsappKind !== 'unknown') return false;
     return true;
   });
 }
@@ -249,6 +254,10 @@ export async function POST(request: NextRequest) {
       (b) => b.websiteKind === 'own' && b.siteQuality && b.siteQuality !== 'unknown'
     ).length;
     const siteDeficientCount = enriched.filter((b) => isDeficientQuality(b.siteQuality)).length;
+    const whatsappScannedCount = enriched.filter(
+      (b) => b.whatsappKind && b.whatsappKind !== 'unknown'
+    ).length;
+    const whatsappAutomationCount = enriched.filter((b) => b.whatsappKind === 'automation').length;
     const unknownSites = enriched.filter(
       (b) => b.websiteKind === 'own' && (!b.siteQuality || b.siteQuality === 'unknown')
     ).length;
@@ -263,6 +272,8 @@ export async function POST(request: NextRequest) {
       savedCount: enriched.filter((b) => b.saved).length,
       siteScannedCount,
       siteDeficientCount,
+      whatsappScannedCount,
+      whatsappAutomationCount,
       cached,
       usage,
       warnings: [

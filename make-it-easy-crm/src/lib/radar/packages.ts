@@ -1,4 +1,5 @@
 import type { AuditReport } from "./audit/types";
+import type { WhatsAppKind } from "./types";
 
 /** Precios «desde» publicados en makeiteasycol.com (locale Colombia, COP). */
 export const PAGE_PRICES = {
@@ -79,12 +80,16 @@ export function getPackage(id: string): RadarPackage {
 }
 
 /** Elige el paquete más vendible según los fallos reales de la auditoría. */
-export function recommendPackage(report: AuditReport): RadarPackage {
+export function recommendPackage(report: AuditReport, whatsappKind?: WhatsAppKind): RadarPackage {
   const failed = new Set(report.checks.filter((c) => c.status === "fail").map((c) => c.id));
   const area = (name: string) => report.areas.find((a) => a.area === name)?.score ?? 100;
 
   if (failed.has("tech_https") || area("onpage") < 45 || report.globalScore < 45) {
     return getPackage("rediseno_seo");
+  }
+  if (whatsappKind === "manual" || whatsappKind === "none") {
+    if (failed.has("conv_form") || failed.has("conv_booking")) return getPackage("captacion");
+    return getPackage("whatsapp");
   }
   if (failed.has("conv_whatsapp") && (failed.has("conv_form") || failed.has("conv_booking"))) {
     return getPackage("captacion");
@@ -95,13 +100,17 @@ export function recommendPackage(report: AuditReport): RadarPackage {
   return getPackage("web");
 }
 
-export function addOnsFor(report: AuditReport): RadarPackage[] {
+export function addOnsFor(report: AuditReport, whatsappKind?: WhatsAppKind): RadarPackage[] {
   const failed = new Set(report.checks.filter((c) => c.status === "fail").map((c) => c.id));
   const addOns: RadarPackage[] = [];
-  if (failed.has("conv_whatsapp")) addOns.push(getPackage("whatsapp"));
+  if (failed.has("conv_whatsapp") || whatsappKind === "manual" || whatsappKind === "none") {
+    addOns.push(getPackage("whatsapp"));
+  }
   if (failed.has("conv_booking")) addOns.push(getPackage("citas"));
   if (failed.has("on_schema") || failed.has("on_desc")) addOns.push(getPackage("auditoria"));
-  return addOns.filter((p) => p.id !== recommendPackage(report).id).slice(0, 2);
+  return addOns
+    .filter((p) => p.id !== recommendPackage(report, whatsappKind).id)
+    .slice(0, 2);
 }
 
 export function formatCop(value: number): string {

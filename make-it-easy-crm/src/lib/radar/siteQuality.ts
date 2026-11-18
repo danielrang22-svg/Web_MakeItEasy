@@ -76,5 +76,11 @@ export function applyScanSummary(business: RadarBusiness, scan: SiteScan | null 
     contactName: scan.contactName ?? business.contactName,
     contactRole: scan.contactRole ?? business.contactRole,
     enrichedAt: scan.scannedAt,
+    whatsappKind: scan.whatsapp?.kind ?? business.whatsappKind,
+    whatsappProvider: scan.whatsapp?.provider ?? business.whatsappProvider,
+    whatsappConfidence: scan.whatsapp?.confidence ?? business.whatsappConfidence,
+    whatsappEvidence: scan.whatsapp?.evidence ?? business.whatsappEvidence,
+    whatsappNumber: scan.whatsapp?.number ?? business.whatsappNumber,
+    whatsappCheckedAt: scan.whatsapp ? scan.scannedAt : business.whatsappCheckedAt,
   };
 }
