@@ -246,12 +246,17 @@ export function runChecks(ctx: AuditContext): { checks: AuditCheck[]; title: str
   let missingAlt = 0;
   let missingDims = 0;
   let lazy = 0;
+  let modernImgs = 0;
+  let legacyImgs = 0;
   imgs.each((_, el) => {
     const img = $(el);
     const alt = img.attr("alt");
     if (alt === undefined || alt.trim() === "") missingAlt++;
     if (!img.attr("width") || !img.attr("height")) missingDims++;
     if ((img.attr("loading") || "").toLowerCase() === "lazy") lazy++;
+    const src = img.attr("src") || "";
+    if (/\.(webp|avif)(\?|$)/i.test(src)) modernImgs++;
+    else if (/\.(jpe?g|png|gif)(\?|$)/i.test(src)) legacyImgs++;
   });
 
   checks.push(
@@ -275,6 +280,18 @@ export function runChecks(ctx: AuditContext): { checks: AuditCheck[]; title: str
       "medio",
       imgTotal === 0 ? "sin imágenes" : `${missingDims} sin width/height · ${lazy} con lazy`,
       "Define width/height y loading=\"lazy\" en las imágenes."
+    )
+  );
+
+  checks.push(
+    C(
+      "tech_img_format",
+      "tecnico",
+      "Formato de imágenes",
+      imgTotal === 0 ? "na" : legacyImgs === 0 ? "pass" : modernImgs >= legacyImgs ? "warn" : "fail",
+      "bajo",
+      imgTotal === 0 ? "sin imágenes" : `${modernImgs} modernas · ${legacyImgs} jpg/png/gif`,
+      "Usa WebP o AVIF y comprime las imágenes."
     )
   );
 
@@ -343,6 +360,19 @@ export function runChecks(ctx: AuditContext): { checks: AuditCheck[]; title: str
   });
   checks.push(
     C("on_internal_links", "onpage", "Enlazado interno", internalLinks.size >= 5 ? "pass" : internalLinks.size >= 1 ? "warn" : "fail", "medio", `${internalLinks.size} enlaces internos únicos`, "Enlaza servicios y páginas clave desde la home.")
+  );
+
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  checks.push(
+    C(
+      "on_word_count",
+      "onpage",
+      "Profundidad de contenido",
+      wordCount >= 300 ? "pass" : wordCount >= 150 ? "warn" : "fail",
+      "medio",
+      `${wordCount} palabras`,
+      "Añade contenido útil: servicios, preguntas frecuentes y casos."
+    )
   );
 
   /* ── Local ── */

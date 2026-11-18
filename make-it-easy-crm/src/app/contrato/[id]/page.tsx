@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
+import Link from "next/link";
 import { Contrato } from "@/lib/types";
 import { formatCurrency } from "@/lib/constants";
 import { FileText, ShieldCheck, Download, Fingerprint, Globe, User, AlertCircle, CheckCircle } from "lucide-react";
@@ -89,9 +90,9 @@ export default function ContratoClientePage({ params }: { params: Promise<{ id: 
           <AlertCircle className="mx-auto mb-3 text-rose-500" size={40} />
           <h2 className="text-lg font-bold mb-2">Error de Acceso</h2>
           <p className="text-sm text-muted-foreground mb-4">{error || "El contrato solicitado no existe."}</p>
-          <a href="/" className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-xl text-xs font-bold transition-all">
+          <Link href="/" className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-xl text-xs font-bold transition-all">
             Volver al CRM
-          </a>
+          </Link>
         </div>
       </div>
     );

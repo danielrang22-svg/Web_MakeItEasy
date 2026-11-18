@@ -3,7 +3,14 @@ import prisma from "@/lib/prisma";
 import { verifyAuthRole } from "@/lib/auth";
 import { sanitize } from "@/lib/validate";
 import { isRadarLeadStatus } from "@/lib/radar/statuses";
-import type { RadarBusiness, RadarLead } from "@/lib/radar/types";
+import type {
+  EmailStatus,
+  RadarBusiness,
+  RadarLead,
+  SiteQuality,
+  WhatsAppConfidence,
+  WhatsAppKind,
+} from "@/lib/radar/types";
 
 interface RadarLeadRow {
   businessId: string;
@@ -49,12 +56,91 @@ function serializeLead(row: RadarLeadRow): RadarLead | null {
   };
 }
 
+interface BusinessScanRow {
+  externalId: string;
+  siteQuality: string;
+  siteGrade: number;
+  siteCheckedAt: Date | null;
+  email: string;
+  emailStatus: string;
+  contactName: string;
+  contactRole: string;
+  enrichedAt: Date | null;
+  whatsappKind: string;
+  whatsappProvider: string;
+  whatsappConfidence: string;
+  whatsappEvidence: string;
+  whatsappNumber: string;
+  whatsappCheckedAt: Date | null;
+}
+
+function parseEvidence(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function mergeBusinessScan(business: RadarBusiness, row: BusinessScanRow | undefined): RadarBusiness {
+  if (!row) return business;
+  return {
+    ...business,
+    siteQuality: row.siteQuality as SiteQuality,
+    siteGrade: row.siteGrade,
+    siteCheckedAt: row.siteCheckedAt?.toISOString(),
+    email: row.email || business.email,
+    emailStatus: (row.emailStatus || business.emailStatus) as EmailStatus | undefined,
+    contactName: row.contactName || business.contactName,
+    contactRole: row.contactRole || business.contactRole,
+    enrichedAt: row.enrichedAt?.toISOString(),
+    whatsappKind: row.whatsappKind as WhatsAppKind,
+    whatsappProvider: row.whatsappProvider || undefined,
+    whatsappConfidence: (row.whatsappConfidence || undefined) as WhatsAppConfidence | undefined,
+    whatsappEvidence: parseEvidence(row.whatsappEvidence),
+    whatsappNumber: row.whatsappNumber || undefined,
+    whatsappCheckedAt: row.whatsappCheckedAt?.toISOString(),
+  };
+}
+
+async function attachScans(leads: RadarLead[]): Promise<RadarLead[]> {
+  const ids = [...new Set(leads.map((lead) => lead.businessId))];
+  if (ids.length === 0) return leads;
+  const scans = await prisma.radarBusiness.findMany({
+    where: { externalId: { in: ids } },
+    select: {
+      externalId: true,
+      siteQuality: true,
+      siteGrade: true,
+      siteCheckedAt: true,
+      email: true,
+      emailStatus: true,
+      contactName: true,
+      contactRole: true,
+      enrichedAt: true,
+      whatsappKind: true,
+      whatsappProvider: true,
+      whatsappConfidence: true,
+      whatsappEvidence: true,
+      whatsappNumber: true,
+      whatsappCheckedAt: true,
+    },
+  });
+  const byId = new Map(scans.map((scan) => [scan.externalId, scan]));
+  return leads.map((lead) => ({
+    ...lead,
+    business: mergeBusinessScan(lead.business, byId.get(lead.businessId)),
+  }));
+}
+
 async function listLeads(ownerEmail: string): Promise<RadarLead[]> {
   const rows = await prisma.radarLead.findMany({
     where: { ownerEmail },
     orderBy: { fechaActualizacion: "desc" },
   });
-  return rows.map(serializeLead).filter((lead): lead is RadarLead => lead !== null);
+  const leads = rows.map(serializeLead).filter((lead): lead is RadarLead => lead !== null);
+  return attachScans(leads);
 }
 
 export async function GET(request: NextRequest) {
@@ -67,7 +153,9 @@ export async function GET(request: NextRequest) {
       const rows = await prisma.radarLead.findMany({
         orderBy: { fechaActualizacion: "desc" },
       });
-      const leads = rows.map(serializeLead).filter((lead): lead is RadarLead => lead !== null);
+      const leads = await attachScans(
+        rows.map(serializeLead).filter((lead): lead is RadarLead => lead !== null)
+      );
       return NextResponse.json({ leads, scope: "all" });
     }
     return NextResponse.json({ leads: await listLeads(auth.email) });

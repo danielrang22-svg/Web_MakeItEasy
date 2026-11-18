@@ -1,5 +1,5 @@
 import type { AuditReport } from "./audit/types";
-import type { WhatsAppKind } from "./types";
+import type { RadarBusiness, WhatsAppKind } from "./types";
 
 /** Precios «desde» publicados en makeiteasycol.com (locale Colombia, COP). */
 export const PAGE_PRICES = {
@@ -97,6 +97,18 @@ export function recommendPackage(report: AuditReport, whatsappKind?: WhatsAppKin
   if (failed.has("conv_whatsapp")) return getPackage("whatsapp");
   if (failed.has("conv_booking")) return getPackage("citas");
   if (area("onpage") < 75) return getPackage("rediseno_seo");
+  return getPackage("web");
+}
+
+export function recommendForBusiness(business: RadarBusiness, report?: AuditReport): RadarPackage {
+  if (report) return recommendPackage(report, business.whatsappKind);
+  if (business.websiteKind !== "own") return getPackage("captacion");
+  if (business.whatsappKind === "manual" || business.whatsappKind === "none") {
+    return getPackage("whatsapp");
+  }
+  if (business.siteQuality === "bad" || business.siteQuality === "broken" || business.siteQuality === "weak") {
+    return getPackage("rediseno_seo");
+  }
   return getPackage("web");
 }
 

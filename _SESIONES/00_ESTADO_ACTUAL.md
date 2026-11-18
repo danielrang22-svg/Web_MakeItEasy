@@ -1,5 +1,5 @@
 # Estado actual — Web_MakeItEasy
-Actualizado: 2026-11-17 20:40 | Sesión: 2026-11-17_1426_radar-web-deficiente.md
+Actualizado: 2026-11-18 21:15 | Sesión: 2026-11-17_1426_radar-web-deficiente.md
 
 ## Objetivo del proyecto
 Sitio público de Make It Easy y CRM interno (leads, cotizaciones, proyectos y Radar de prospección).
@@ -27,15 +27,26 @@ Sitio público de Make It Easy y CRM interno (leads, cotizaciones, proyectos y R
 - [x] El fallo reportado en producción era la fila de caché vieja: servía el resultado vacío con la zona de la parada de bus aunque el código nuevo ya estaba desplegado.
 - [x] Selección de sugerencia corregida: se envían lat/lng/bbox y ya no se re-geocodifica el `display_name` largo. PR #9, run `44331727301` verde en 1m50s.
 - [x] Prueba exacta del usuario (Mazurén, Usaquén): 6 gimnasios en rápido, sin error de geocodificación.
+- [x] Radio 1/2/3/5 km con círculo real (Haversine + Overpass around), ficha sin auto-lead y “Convertir en lead”, tooltip/ajuste de Oportunidad. PR #10, run `44341250818` verde.
+- [x] Detección de WhatsApp/automatización, matriz de servicios, filtros en leads y verificación manual. PR #11, run `44346562188` verde.
+- [x] Producción verificada tras #10/#11: `/login` 200; `/api/radar/zones`, `/api/radar/site-scan` y `/api/radar/search` responden 401 sin sesión.
+- [x] Prueba real de detección: Smart Fit = WhatsApp manual (573234583063); Bodytech = sin WhatsApp; makeiteasycol.com = automatización probable (WhatsApp Business API).
+- [x] Filtro de WhatsApp en Buscar (sin agente/manual/automatización/sin analizar) y `contact:whatsapp` de OSM para negocios sin web. PR #12, run `44398458560` verde.
+- [x] Cache de búsqueda a `v3` para forzar resultados frescos con los datos de WhatsApp. PR #13, run `44399424218` verde.
+- [x] Producción tras #12/#13: `/login` 200; `/api/radar/search` y `/api/radar/zones` 401 sin sesión.
+- [x] Competencia en la ficha: top 5 del mismo nicho a 5 km con oportunidad, web y WhatsApp. PR #14, run `44403350130` verde.
+- [x] Producción tras #14: `/login` 200; `/api/radar/competitors` 401 sin sesión.
 
 ## En curso
 - [ ] Configurar `PAGESPEED_API_KEY` en el VPS (opcional, gratis).
-- [ ] Prueba funcional autenticada en producción (`Mazurén` + `Gimnasios`) por el usuario, con Ctrl+F5 para cargar el JS nuevo.
+- [ ] Prueba funcional autenticada en producción (radio, ficha/Convertir en lead, WhatsApp) por el usuario, con Ctrl+F5.
 
 ## Siguiente paso
-1. Entrar a `crm.makeiteasycol.com` con Ctrl+F5, escribir `mazuren` y elegir una sugerencia de área (Mazuren I/II/IV).
-2. Buscar `Gimnasios`: rápido ~5, exhaustivo ~35. Si sale caché vacía, «Reintentar sin caché».
-3. Pulsar «Analizar webs» en fichas que tengan URL y validar badges/contacto.
+1. Entrar a `crm.makeiteasycol.com` con Ctrl+F5.
+2. Buscar `Mazurén` + `Gimnasios`; probar radio 5 km y filtro WhatsApp «Sin agente».
+3. Abrir ficha, pulsar «Convertir en lead», analizar/reanalizar web y verificar WhatsApp manual.
+4. Configurar `PAGESPEED_API_KEY`.
+5. Siguiente fase: cotización desde ficha para negocios sin auditoría y Google Places/DataForSEO.
 
 ## Decisiones vigentes
 | Fecha | Decisión | Motivo |
@@ -44,6 +55,11 @@ Sitio público de Make It Easy y CRM interno (leads, cotizaciones, proyectos y R
 | 2026-11-17 | Sin Sellbird ni envío masivo; email manual | AGPL-3.0, deliverability y Ley 1581 |
 | 2026-11-17 | Calidad de web en 5 niveles con nota 0–100 | Permite filtrar «web mala» y explicar el pitch |
 | 2026-11-17 | Email verificado por MX, no por SMTP | Gratis y suficiente para distinguir dominio vivo/genérico |
+| 2026-11-18 | Radio elegible 1/2/3/5 km con círculo real | Evita cajas cuadradas y da control al vendedor |
+| 2026-11-18 | Ficha no crea lead hasta pulsar “Convertir en lead” | El usuario decide qué entra en Mis leads |
+| 2026-11-18 | WhatsApp: etiquetas probables + verificación manual | No hay API pública para saber si un negocio tiene bot |
+| 2026-11-18 | Cache de búsqueda v3 | Las filas v2 no traían WhatsApp desde etiquetas OSM |
+| 2026-11-18 | Filtro WhatsApp en Buscar | Permite prospectar “sin agente” sin pasar por Mis leads |
 | 2026-10-26 | `RADAR_COUNTRY` default `co` | El geocoder estaba fijado a España y "Bogotá" resolvía en Madrid |
 | 2026-10-26 | El workflow debe sincronizar `make-it-easy-crm/` | `deploy.sh` compila desde el webroot; excluirlo deja código viejo |
 | 2026-10-26 | PM2 en 3011 (standalone) | 3005 está ocupado por NullClaw |
@@ -53,6 +69,7 @@ Sitio público de Make It Easy y CRM interno (leads, cotizaciones, proyectos y R
 - La calidad de web es un chequeo rápido, no la auditoría completa.
 - Sitios que bloquean bots quedan `unknown`; no se penalizan.
 - Falsos positivos del decisor en cargos genéricos (se filtra «arquitecto/diseñador/…»).
+- La detección de WhatsApp es probabilística: un agente del lado de Meta puede no dejar rastro; la verificación manual manda.
 - Algunos `@types` de `node_modules` están como placeholders de OneDrive y rompen `tsc` sin `--types node`.
 
 ## Entorno y comandos

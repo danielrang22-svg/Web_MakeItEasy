@@ -78,6 +78,17 @@ Antes: `geocodeZone("Mazurén")` elegía una parada de bus con bbox de ~11 m; fa
 - PR #9 `fix(radar): usar coordenadas de la sugerencia de zona`, run `44331727301` verde en 1m50s.
 - El tercer fallo era enviar el `display_name` largo a Nominatim; ahora se envían lat/lng/bbox y `zoneFromSelection` construye la zona sin re-geocodificar.
 - Prueba con la sugerencia exacta (Mazurén, Usaquén): 6 gimnasios en rápido.
+- PR #10 `feat(radar): radio 1-5 km, ficha sin auto-lead y oportunidad`, run `44341250818` verde en 1m51s.
+- PR #11 `feat(radar): WhatsApp, automatizacion y servicios`, run `44346562188` verde en 1m47s.
+- Prueba radio 5 km: Mazurén/gimnasios -> 9 resultados.
+- Detección real: Smart Fit `manual` (573234583063), Bodytech `none`, makeiteasycol.com `automation`.
+- Migración `20261118170000_radar_whatsapp` aplicada en local; producción desplegada con el workflow.
+- Verificación producción: `/login` 200; `/api/radar/zones`, `/api/radar/site-scan` y `/api/radar/search` 401 sin sesión.
+- PR #12 `feat(radar): filtro WhatsApp y tags OSM`, run `44398458560` verde: selector de WhatsApp en Buscar y `contact:whatsapp` de OSM.
+- PR #13 `fix(radar): cache v3`, run `44399424218` verde: invalida búsquedas viejas para que traigan WhatsApp.
+- Tests finales: 40/40; tsc, lint y build OK.
+- PR #14 `feat(radar): competencia en la ficha`, run `44403350130` verde: `POST /api/radar/competitors` devuelve top 5 del mismo nicho a 5 km; la ficha muestra oportunidad, web y WhatsApp.
+- Producción tras #14: `/login` 200; `/api/radar/competitors` 401 sin sesión.
 
 ## Pendientes
 
