@@ -6,6 +6,8 @@ Thumbs.db
 # Node
 node_modules/
 package-lock.json
+.next/
+.next-*
 
 # IA/Agents
 .agents/
@@ -36,6 +38,10 @@ VPS.md
 !.env.example
 *.pem
 *.key
+
+# Backups locales de reglas/agentes
+*.bak
+*.bak-*
 
 # Archivos de prueba / descartados
 original_index.html

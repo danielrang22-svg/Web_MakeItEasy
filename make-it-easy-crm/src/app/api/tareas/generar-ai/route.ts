@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     let apiKey = activeAgent?.conexion?.apiKey;
     let modelo = activeAgent?.conexion?.modelo || 'gpt-4o-mini';
     let baseURL = resolveBaseUrl(activeAgent?.conexion?.proveedor ?? 'openai', activeAgent?.conexion?.baseUrl);
-    let systemPromptBase = activeAgent?.systemPrompt;
+    const systemPromptBase = activeAgent?.systemPrompt;
 
     if (!apiKey) {
       const aiConn = await prisma.aiConnection.findFirst({

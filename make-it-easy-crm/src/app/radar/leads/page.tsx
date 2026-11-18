@@ -23,6 +23,8 @@ export default function RadarLeadsPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [seller, setSeller] = useState("");
+  const [rescanning, setRescanning] = useState(false);
+  const [rescanProgress, setRescanProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     setSeller(getSettings().sellerName);
@@ -72,6 +74,45 @@ export default function RadarLeadsPage() {
       return true;
     });
   }, [leads, status, webFilter, whatsappFilter, query]);
+
+  async function rescanWebsites() {
+    const targets = [
+      ...new Set(
+        filtered
+          .filter((lead) => lead.business.websiteKind === "own" && lead.business.website)
+          .map((lead) => lead.businessId)
+      ),
+    ];
+    if (targets.length === 0) {
+      setToast("No hay webs propias para reanalizar");
+      return;
+    }
+
+    setRescanning(true);
+    setRescanProgress({ done: 0, total: targets.length });
+    try {
+      let done = 0;
+      for (let index = 0; index < targets.length; index += 10) {
+        const chunk = targets.slice(index, index + 10);
+        const res = await fetch("/api/radar/site-scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ businessIds: chunk }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "No se pudieron reanalizar las webs");
+        done += chunk.length;
+        setRescanProgress({ done, total: targets.length });
+      }
+      setLeads(await radarRepository.load());
+      setToast("Webs reanalizadas y datos actualizados");
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "No se pudieron reanalizar las webs");
+    } finally {
+      setRescanning(false);
+      setRescanProgress(null);
+    }
+  }
 
   async function setLeadStatus(id: string, next: RadarLeadStatus) {
     try {
@@ -203,6 +244,15 @@ export default function RadarLeadsPage() {
         <div className="ml-auto flex items-center gap-2">
           <button onClick={() => setView(view === "table" ? "board" : "table")} className="px-3 py-1.5 rounded-lg bg-muted text-xs font-semibold hover:bg-muted/70">
             {view === "table" ? "Ver tablero" : "Ver tabla"}
+          </button>
+          <button
+            onClick={() => void rescanWebsites()}
+            disabled={rescanning}
+            className="px-3 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/40 text-xs font-semibold hover:bg-cyan-500/25 disabled:opacity-50"
+          >
+            {rescanning && rescanProgress
+              ? `Analizando ${rescanProgress.done}/${rescanProgress.total}`
+              : "Reanalizar webs"}
           </button>
           <button onClick={exportCsv} className="px-3 py-1.5 rounded-lg bg-muted text-xs font-semibold hover:bg-muted/70 flex items-center gap-1">
             <Download size={13} /> CSV

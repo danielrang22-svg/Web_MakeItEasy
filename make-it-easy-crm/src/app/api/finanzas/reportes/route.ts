@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
       // Convertir a COP usando la TRM histórica guardada en el ingreso
       // Si el targetCurrency es USD, luego convertiremos el consolidado
-      let valorEnCop = ingreso.moneda === "COP" ? ingreso.monto : ingreso.monto * ingreso.trm;
+      const valorEnCop = ingreso.moneda === "COP" ? ingreso.monto : ingreso.monto * ingreso.trm;
       
       // Si la moneda destino solicitada es diferente a COP, hacemos una conversión aproximada
       // (Para un reporte exacto en USD, idealmente se usaría la TRM del día actual, aquí dividiremos por una TRM base si se pide en USD)
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       const month = gasto.fecha.toISOString().substring(0, 7); // "YYYY-MM"
       if (!resumen[month]) resumen[month] = { totalIngresos: 0, totalGastos: 0, totalNomina: 0, rentabilidad: 0 };
 
-      let valorEnCop = gasto.moneda === "COP" ? gasto.monto : gasto.monto * 4000; // Asumiendo TRM 4000 para gastos históricos en USD
+      const valorEnCop = gasto.moneda === "COP" ? gasto.monto : gasto.monto * 4000; // Asumiendo TRM 4000 para gastos históricos en USD
       
       let valorAportado = valorEnCop;
       if (targetCurrency === "USD") valorAportado = valorEnCop / 4000;

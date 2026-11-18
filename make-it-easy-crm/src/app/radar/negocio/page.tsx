@@ -34,6 +34,7 @@ import {
 import { scoreClasses } from "@/lib/radar/score";
 import { applyScanSummary, qualityClasses, qualityLabel } from "@/lib/radar/siteQuality";
 import { whatsappUrl } from "@/lib/radar/outreach";
+import { recommendForBusiness } from "@/lib/radar/packages";
 import {
   whatsappConfidenceLabel,
   whatsappKindClasses,
@@ -92,6 +93,7 @@ function BusinessContent() {
   const [competitors, setCompetitors] = useState<RadarBusiness[] | null>(null);
   const [loadingCompetitors, setLoadingCompetitors] = useState(false);
   const [competitorError, setCompetitorError] = useState("");
+  const [quoting, setQuoting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -365,6 +367,62 @@ function BusinessContent() {
     }
   }
 
+  async function createQuote() {
+    if (!business) return;
+    setQuoting(true);
+    try {
+      const pkg = recommendForBusiness(business);
+      const impRes = await fetch("/api/radar/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ business }),
+      });
+      const imp = await impRes.json();
+      if (!impRes.ok) throw new Error(imp.error || "No se pudo crear el lead");
+
+      const challenge = [
+        business.websiteKind !== "own"
+          ? "Sin web propia."
+          : business.siteGrade != null
+          ? `Web ${business.siteGrade}/100 (${business.siteQuality ?? "sin analizar"}).`
+          : "Web sin analizar.",
+        business.whatsappKind === "manual"
+          ? "WhatsApp manual, sin automatización."
+          : business.whatsappKind === "none"
+          ? "Sin WhatsApp visible."
+          : business.whatsappKind === "automation"
+          ? "Automatización detectada; oportunidad de mejora."
+          : "WhatsApp sin verificar.",
+      ].join(" ");
+
+      const res = await fetch("/api/cotizaciones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          empresaNombre: business.name,
+          contactoNombre: business.contactName || business.name,
+          leadId: imp.leadId ?? null,
+          tituloPropuesta: `${pkg.label} para ${business.name}`,
+          desafioNegocio: `${challenge} ${pkg.pitch}`,
+          totalProyectoCore: pkg.fromCop,
+          moduloOpcionalFee: 0,
+          feeMensual: pkg.recurring?.fromCop ?? 0,
+          feeMensualIncluye: pkg.recurring?.label ?? "",
+          observaciones: "Generado desde Radar con el paquete recomendado y los datos detectados.",
+          moneda: "COP",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo crear la cotización");
+      setIsSaved(true);
+      router.push("/cotizaciones");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo crear la cotización");
+    } finally {
+      setQuoting(false);
+    }
+  }
+
   async function importToCrm() {
     if (!business) return;
     setImporting(true);
@@ -523,6 +581,13 @@ function BusinessContent() {
                   En Mis leads
                 </span>
               )}
+              <button
+                onClick={() => void createQuote()}
+                disabled={quoting}
+                className="px-3 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/40 text-xs font-bold hover:bg-cyan-500/25 disabled:opacity-40"
+              >
+                {quoting ? "Creando…" : "Crear cotización"}
+              </button>
               <button onClick={importToCrm} disabled={importing} className="px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 disabled:opacity-40">
                 {importing ? "Importando…" : "Enviar al CRM"}
               </button>
