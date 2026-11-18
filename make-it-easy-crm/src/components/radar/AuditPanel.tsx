@@ -81,7 +81,15 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
       const res = await fetch("/api/radar/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: business.website }),
+        body: JSON.stringify({
+          url: business.website,
+          business: {
+            name: business.name,
+            address: business.address,
+            phone: business.phone,
+            city: business.address.split("·").pop()?.trim() || "",
+          },
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo auditar la web");
@@ -200,8 +208,24 @@ export default function AuditPanel({ business }: { business: RadarBusiness }) {
         <div>
           <h2 className="text-sm font-bold">Auditoría SEO</h2>
           <p className="text-[10px] text-muted-foreground">
-            {report ? `${report.checks.length} comprobaciones · ${new Date(report.fetchedAt).toLocaleDateString("es-ES")}` : "38 comprobaciones · 0 tokens"}
+            {report
+              ? `${report.checks.length} comprobaciones · ${new Date(report.fetchedAt).toLocaleDateString("es-ES")}`
+              : "40+ comprobaciones · 0 tokens"}
           </p>
+          {business.website && (
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Schema detectado en HTML. Si el CMS lo inyecta por JS,{" "}
+              <a
+                href={`https://search.google.com/test/rich-results?url=${encodeURIComponent(business.website)}`}
+                target="_blank"
+                rel="noopener"
+                className="text-cyan-400 hover:underline"
+              >
+                verifícalo en Rich Results
+              </a>
+              .
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {report && (

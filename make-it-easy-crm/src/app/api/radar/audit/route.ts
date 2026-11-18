@@ -16,7 +16,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Falta la URL a auditar' }, { status: 400 });
     }
 
-    const report = await runAudit(url);
+    const raw = body?.business;
+    const business =
+      raw && typeof raw === 'object'
+        ? {
+            name: typeof raw.name === 'string' ? raw.name.slice(0, 200) : undefined,
+            address: typeof raw.address === 'string' ? raw.address.slice(0, 300) : undefined,
+            phone: typeof raw.phone === 'string' ? raw.phone.slice(0, 60) : undefined,
+            city: typeof raw.city === 'string' ? raw.city.slice(0, 120) : undefined,
+          }
+        : undefined;
+
+    const report = await runAudit(url, { business });
     return NextResponse.json(report);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error auditando la web';
