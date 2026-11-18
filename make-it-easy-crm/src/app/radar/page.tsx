@@ -25,7 +25,7 @@ import { saveBusinessSnapshot } from "@/lib/radar/repository";
 import { radarRepository } from "@/lib/radar/repository";
 import { scoreClasses } from "@/lib/radar/score";
 import { applyScanSummary, isDeficientQuality, qualityClasses, qualityLabel } from "@/lib/radar/siteQuality";
-import type { RadarBusiness, RadarSearchResult, SiteScan } from "@/lib/radar/types";
+import type { RadarBusiness, RadarSearchResult, SiteScan, ZoneSuggestion } from "@/lib/radar/types";
 
 const PAGE_SIZE = 20;
 const SCAN_CHUNK = 10;
@@ -47,6 +47,7 @@ interface RadarUsageInfo {
 
 function RadarPageContent() {
   const [zona, setZona] = useState("");
+  const [zoneSelection, setZoneSelection] = useState<ZoneSuggestion | null>(null);
   const [nicho, setNicho] = useState("talleres");
   const [keyword, setKeyword] = useState("");
   const [libre, setLibre] = useState(false);
@@ -139,6 +140,15 @@ function RadarPageContent() {
           mode: ex ? "exhaustive" : "fast",
           onlyNew,
           force: force || undefined,
+          zoneSelection: zoneSelection
+            ? {
+                displayName: zoneSelection.displayName,
+                label: zoneSelection.label,
+                lat: zoneSelection.lat,
+                lng: zoneSelection.lon,
+                bbox: zoneSelection.bbox,
+              }
+            : undefined,
           filtros: {
             objective,
             onlyWithPhone,
@@ -398,7 +408,16 @@ function RadarPageContent() {
             </label>
             <ZoneAutocomplete
               value={zona}
-              onChange={setZona}
+              onChange={(value) => {
+                setZona(value);
+                setZoneSelection((current) =>
+                  current && current.displayName === value ? current : null
+                );
+              }}
+              onSelect={(suggestion) => {
+                setZona(suggestion.displayName);
+                setZoneSelection(suggestion);
+              }}
               placeholder="Mazurén, Suba, Bogotá · 41701 · Triana"
             />
           </div>

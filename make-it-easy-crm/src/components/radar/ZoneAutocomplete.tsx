@@ -7,6 +7,7 @@ import type { ZoneSuggestion, ZoneSuggestionKind } from "@/lib/radar/types";
 interface ZoneAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
+  onSelect?: (suggestion: ZoneSuggestion) => void;
   placeholder?: string;
 }
 
@@ -22,7 +23,7 @@ const KIND_CLASSES: Record<ZoneSuggestionKind, string> = {
   poi: "bg-amber-500/15 text-amber-300 ring-amber-500/30",
 };
 
-export default function ZoneAutocomplete({ value, onChange, placeholder }: ZoneAutocompleteProps) {
+export default function ZoneAutocomplete({ value, onChange, onSelect, placeholder }: ZoneAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<ZoneSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -82,7 +83,8 @@ export default function ZoneAutocomplete({ value, onChange, placeholder }: ZoneA
 
   function choose(suggestion: ZoneSuggestion) {
     skipFetchRef.current = true;
-    onChange(suggestion.displayName);
+    if (onSelect) onSelect(suggestion);
+    else onChange(suggestion.displayName);
     setOpen(false);
     setSuggestions([]);
     setActive(-1);

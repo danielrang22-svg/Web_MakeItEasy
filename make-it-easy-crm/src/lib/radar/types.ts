@@ -104,6 +104,15 @@ export interface ZoneSuggestion {
   kind: ZoneSuggestionKind;
   lat: number;
   lon: number;
+  bbox: [number, number, number, number]; // south, west, north, east
+}
+
+export interface ZoneSelection {
+  displayName: string;
+  label?: string;
+  lat: number;
+  lng: number;
+  bbox: [number, number, number, number]; // south, west, north, east
 }
 
 export interface RadarFilters {

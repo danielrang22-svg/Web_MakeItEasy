@@ -23,15 +23,17 @@ Sitio público de Make It Easy y CRM interno (leads, cotizaciones, proyectos y R
 - [x] Upsert de negocios también con caché, para que `/api/radar/site-scan` no responda `skipped`.
 - [x] Radar 2.0 + fix de geocodificación desplegado a producción: PR #7, squash `f84165e`, run `44170942042` verde en 1m51s.
 - [x] Verificación de producción: `/login` 200, `/radar` 307→login, `/api/radar/site-scan` 401 (ruta nueva activa) y `/api/radar/search` 401.
+- [x] Cache de búsqueda versionada a `v2` y autocompletado de zonas desplegados: PR #8, run `44173169532` verde en 1m55s; `/api/radar/zones` 401 sin sesión.
+- [x] El fallo reportado en producción era la fila de caché vieja: servía el resultado vacío con la zona de la parada de bus aunque el código nuevo ya estaba desplegado.
 
 ## En curso
 - [ ] Configurar `PAGESPEED_API_KEY` en el VPS (opcional, gratis).
-- [ ] Prueba funcional autenticada en producción (`Mazurén` + `Gimnasios`) por el usuario.
+- [ ] Prueba funcional autenticada en producción (`Mazurén` + `Gimnasios`) por el usuario, con Ctrl+F5 para cargar el JS nuevo.
 
 ## Siguiente paso
-1. Entrar a `crm.makeiteasycol.com`, buscar `Mazurén` + `Gimnasios`; en rápido deben salir ~5 y en exhaustivo ~35.
-2. Pulsar «Analizar webs» en fichas que tengan URL y validar badges/contacto.
-3. Ajustar `RADAR_ZONE_RADIUS_KM` o `RADAR_FAST_FALLBACK_MIN` si hace falta.
+1. Entrar a `crm.makeiteasycol.com` con Ctrl+F5, escribir `mazuren` y elegir una sugerencia de área (Mazuren I/II/IV).
+2. Buscar `Gimnasios`: rápido ~5, exhaustivo ~35. Si sale caché vacía, «Reintentar sin caché».
+3. Pulsar «Analizar webs» en fichas que tengan URL y validar badges/contacto.
 
 ## Decisiones vigentes
 | Fecha | Decisión | Motivo |

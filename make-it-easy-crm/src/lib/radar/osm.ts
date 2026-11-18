@@ -1,6 +1,12 @@
 import { classifyWebsite, normalizeUrl } from "./website";
 import { scoreFromOsm } from "./score";
-import type { RadarBusiness, RadarZone, ZoneSuggestion, ZoneSuggestionKind } from "./types";
+import type {
+  RadarBusiness,
+  RadarZone,
+  ZoneSelection,
+  ZoneSuggestion,
+  ZoneSuggestionKind,
+} from "./types";
 import { findCategory, RADAR_CATEGORIES } from "./categories";
 
 const UA = "MakeItEasy-Radar/1.0 (contacto: daniel.makeiteasy@gmail.com)";
@@ -192,6 +198,10 @@ export function mapZoneSuggestions(list: NominatimZoneResult[]): ZoneSuggestion[
     if (!item.lat || !item.lon || !item.display_name) continue;
     const id = item.osm_type && item.osm_id ? `${item.osm_type}:${item.osm_id}` : item.display_name;
     if (unique.has(id)) continue;
+    const [s, n, w, e] = (item.boundingbox ?? []).map(Number) as [number, number, number, number];
+    const bbox: [number, number, number, number] = [s, w, n, e].every((value) => Number.isFinite(value))
+      ? [s, w, n, e]
+      : [Number(item.lat) - 0.02, Number(item.lon) - 0.02, Number(item.lat) + 0.02, Number(item.lon) + 0.02];
     unique.set(id, {
       id,
       label: shortZoneLabel(item),
@@ -200,6 +210,7 @@ export function mapZoneSuggestions(list: NominatimZoneResult[]): ZoneSuggestion[
       kind: suggestionKind(item),
       lat: Number(item.lat),
       lon: Number(item.lon),
+      bbox,
     });
     if (unique.size >= 8) break;
   }
@@ -223,6 +234,19 @@ export async function suggestZones(query: string): Promise<ZoneSuggestion[]> {
   const data = mapZoneSuggestions(list);
   zoneSuggestCache.set(key, { at: Date.now(), data });
   return data;
+}
+
+export function zoneFromSelection(selection: ZoneSelection): RadarZone {
+  return expandTinyZone(
+    {
+      displayName: selection.displayName,
+      lat: selection.lat,
+      lng: selection.lng,
+      bbox: selection.bbox,
+      polygons: undefined,
+    },
+    selection.label || selection.displayName
+  );
 }
 
 export async function geocodeZone(zona: string): Promise<RadarZone> {
@@ -686,13 +710,14 @@ export async function searchOsm(
   zona: string,
   nicho: string,
   keyword = "",
-  mode: RadarMode = "fast"
+  mode: RadarMode = "fast",
+  zoneOverride?: RadarZone
 ): Promise<SearchOutcome> {
-  const cacheKey = `${zona}|${nicho}|${keyword}|${mode}`.toLowerCase();
+  const cacheKey = `${zona}|${zoneOverride ? zoneOverride.bbox.join(",") : ""}|${nicho}|${keyword}|${mode}`.toLowerCase();
   const hit = searchCache.get(cacheKey);
   if (hit && Date.now() - hit.at < SEARCH_TTL) {
     return {
-      zone: await geocodeZone(zona),
+      zone: zoneOverride ?? (await geocodeZone(zona)),
       businesses: hit.data,
       cached: true,
       provider: hit.provider,
@@ -704,7 +729,7 @@ export async function searchOsm(
   if (running) return running;
 
   const promise = (async (): Promise<SearchOutcome> => {
-    const zone = await geocodeZone(zona);
+    const zone = zoneOverride ?? (await geocodeZone(zona));
     let provider: RadarProvider = "photon";
     let businesses: RadarBusiness[] = [];
     let note: string | undefined;

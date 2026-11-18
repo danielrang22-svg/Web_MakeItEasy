@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuthRole } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-import { searchOsm, RadarUpstreamError } from '@/lib/radar/osm';
+import { searchOsm, zoneFromSelection, RadarUpstreamError } from '@/lib/radar/osm';
 import { assertQuota, getUsage, recordSearch, RadarQuotaError, RADAR_LIMITS } from '@/lib/radar/quota';
 import { readSearchCache, searchCacheKey, writeSearchCache } from '@/lib/radar/searchCache';
 import { applyScanToBusiness, getFreshScans } from '@/lib/radar/siteScanStore';
 import { isDeficientQuality } from '@/lib/radar/siteQuality';
-import type { RadarBusiness, RadarZone } from '@/lib/radar/types';
+import type { RadarBusiness, RadarZone, ZoneSelection } from '@/lib/radar/types';
 
 export const maxDuration = 90;
 
@@ -17,6 +17,7 @@ interface SearchBody {
   mode?: 'fast' | 'exhaustive';
   onlyNew?: boolean;
   force?: boolean;
+  zoneSelection?: unknown;
   filtros?: {
     onlyNoWebsite?: boolean;
     onlyWithPhone?: boolean;
@@ -37,6 +38,29 @@ function zoneIsTiny(zone: RadarZone): boolean {
   const latKm = Math.abs(n - s) * 111.32;
   const lngKm = Math.abs(e - w) * 111.32 * Math.cos((((s + n) / 2) * Math.PI) / 180);
   return latKm * lngKm < 0.3 || Math.max(latKm, lngKm) < 1;
+}
+
+function parseZoneSelection(value: unknown): ZoneSelection | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  const lat = Number(record.lat);
+  const lng = Number(record.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return null;
+  }
+  if (!Array.isArray(record.bbox) || record.bbox.length !== 4) return null;
+  const bbox = record.bbox.map(Number);
+  if (bbox.some((value) => !Number.isFinite(value))) return null;
+  const displayName = typeof record.displayName === 'string' ? record.displayName.trim() : '';
+  if (!displayName) return null;
+  const label = typeof record.label === 'string' ? record.label.trim() : '';
+  return {
+    displayName,
+    label: label || undefined,
+    lat,
+    lng,
+    bbox: bbox as [number, number, number, number],
+  };
 }
 
 function applyFilters(items: RadarBusiness[], body: SearchBody): RadarBusiness[] {
@@ -61,7 +85,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json()) as SearchBody;
-    const zona = (body.zona || '').trim();
+    const selectedZone = parseZoneSelection(body.zoneSelection);
+    const zona = (body.zona || selectedZone?.displayName || '').trim();
     const nicho = (body.nicho || '').trim();
     const keyword = (body.keyword || '').trim();
     const mode = body.mode === 'exhaustive' ? 'exhaustive' : 'fast';
@@ -73,7 +98,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Elige un nicho o escribe una palabra clave.' }, { status: 400 });
     }
 
-    const key = searchCacheKey(zona, nicho, keyword, mode);
+    const key = searchCacheKey(
+      zona,
+      nicho,
+      keyword,
+      mode,
+      selectedZone ? `${selectedZone.lat.toFixed(5)},${selectedZone.lng.toFixed(5)}` : ''
+    );
     let cachedRow = await readSearchCache(key);
     if (body.force) cachedRow = null;
     if (cachedRow && cachedRow.businesses.length === 0 && zoneIsTiny(cachedRow.zone)) {
@@ -95,7 +126,13 @@ export async function POST(request: NextRequest) {
       searchNote = zone.note ?? "";
     } else {
       usage = await assertQuota(auth.email, mode);
-      const outcome = await searchOsm(zona, nicho, keyword, mode);
+      const outcome = await searchOsm(
+        zona,
+        nicho,
+        keyword,
+        mode,
+        selectedZone ? zoneFromSelection(selectedZone) : undefined
+      );
       rawBusinesses = outcome.businesses;
       zone = outcome.zone;
       provider = outcome.provider;
