@@ -148,6 +148,13 @@ export interface RadarAnalysisRecord {
     contacts: { emails: string[]; socials: string[] };
     problems: Array<{ title: string; detail: string }>;
     recommendedService: { type: string; reason: string };
+    eeat?: {
+      experience: number;
+      expertise: number;
+      authoritativeness: number;
+      trust: number;
+      evidence: string[];
+    };
   } | null;
   meta?: Record<string, unknown>;
 }
