@@ -175,6 +175,25 @@ export function detectWhatsApp(html: string, text: string): WhatsAppDetection {
   };
 }
 
+export function whatsappFromTags(
+  tags: Record<string, string> | undefined | null
+): WhatsAppDetection | null {
+  const raw = (tags?.["contact:whatsapp"] || tags?.whatsapp || "").trim();
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, "");
+  const number = digits.length >= 7 && digits.length <= 15 ? digits : "";
+  return {
+    kind: "manual",
+    provider: null,
+    webChatProvider: null,
+    confidence: "medium",
+    evidence: ["etiqueta OSM contact:whatsapp"],
+    number,
+    hasLink: /wa\.me|api\.whatsapp\.com|whatsapp:\/\//i.test(raw),
+    hasBusinessApi: false,
+  };
+}
+
 export function mergeWhatsAppDetections(
   primary: WhatsAppDetection,
   extra: WhatsAppDetection

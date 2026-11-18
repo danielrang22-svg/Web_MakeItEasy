@@ -33,6 +33,7 @@ const PAGE_SIZE = 20;
 const SCAN_CHUNK = 10;
 
 type RadarObjective = "ambos" | "sin_web" | "web_deficiente";
+type RadarWhatsAppFilter = "any" | "sin_agente" | "manual" | "automation" | "unknown";
 
 interface RadarUsageInfo {
   used: number;
@@ -55,6 +56,7 @@ function RadarPageContent() {
   const [libre, setLibre] = useState(false);
 
   const [objective, setObjective] = useState<RadarObjective>("ambos");
+  const [whatsappFilter, setWhatsappFilter] = useState<RadarWhatsAppFilter>("any");
   const [radiusKm, setRadiusKm] = useState<number | null>(null);
   const [onlyWithPhone, setOnlyWithPhone] = useState(false);
   const [hideUnnamed, setHideUnnamed] = useState(true);
@@ -157,6 +159,7 @@ function RadarPageContent() {
             objective,
             onlyWithPhone,
             hideUnnamed,
+            whatsapp: whatsappFilter,
           },
         }),
       });
@@ -520,6 +523,23 @@ function RadarPageContent() {
                   {km} km
                 </option>
               ))}
+            </select>
+          </label>
+          <label
+            className="flex items-center gap-2 text-xs text-muted-foreground"
+            title="Filtra por WhatsApp detectado; se aplica al buscar"
+          >
+            <span>WhatsApp</span>
+            <select
+              value={whatsappFilter}
+              onChange={(e) => setWhatsappFilter(e.target.value as RadarWhatsAppFilter)}
+              className="px-2 py-1 bg-muted rounded-lg ring-1 ring-border outline-none"
+            >
+              <option value="any">Todos</option>
+              <option value="sin_agente">Sin agente</option>
+              <option value="manual">Manual</option>
+              <option value="automation">Automatización</option>
+              <option value="unknown">Sin analizar</option>
             </select>
           </label>
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">

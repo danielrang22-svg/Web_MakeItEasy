@@ -9,6 +9,7 @@ import type {
 } from "./types";
 import { findCategory, RADAR_CATEGORIES } from "./categories";
 import { radiusLabel } from "./radius";
+import { whatsappFromTags } from "./whatsapp";
 
 const UA = "MakeItEasy-Radar/1.0 (contacto: daniel.makeiteasy@gmail.com)";
 const NOMINATIM = "https://nominatim.openstreetmap.org";
@@ -186,6 +187,19 @@ export function expandTinyZone(zone: RadarZone, label: string, radiusKm?: number
 
 export function needsOverpassFallback(count: number): boolean {
   return count < FAST_FALLBACK_MIN;
+}
+
+function applyTagWhatsApp(business: RadarBusiness): RadarBusiness {
+  const whatsapp = whatsappFromTags(business.tags);
+  if (!whatsapp) return business;
+  return {
+    ...business,
+    whatsappKind: whatsapp.kind,
+    whatsappProvider: whatsapp.provider ?? undefined,
+    whatsappConfidence: whatsapp.confidence,
+    whatsappEvidence: whatsapp.evidence,
+    whatsappNumber: whatsapp.number || undefined,
+  };
 }
 
 const zoneSuggestCache = new Map<string, { at: number; data: ZoneSuggestion[] }>();
@@ -787,6 +801,7 @@ export async function searchOsm(
 
     if (zone.note) note = note ? `${zone.note} ${note}` : zone.note;
 
+    businesses = businesses.map(applyTagWhatsApp);
     businesses.sort((a, b) => b.score - a.score);
     searchCache.set(cacheKey, { at: Date.now(), data: businesses, provider, note });
     return { zone, businesses, cached: false, provider, note };
