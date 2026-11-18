@@ -6,6 +6,7 @@ import { assertQuota, getUsage, recordSearch, RadarQuotaError, RADAR_LIMITS } fr
 import { readSearchCache, searchCacheKey, writeSearchCache } from '@/lib/radar/searchCache';
 import { applyScanToBusiness, getFreshScans } from '@/lib/radar/siteScanStore';
 import { isDeficientQuality } from '@/lib/radar/siteQuality';
+import { normalizeRadius } from '@/lib/radar/radius';
 import type { RadarBusiness, RadarZone, ZoneSelection } from '@/lib/radar/types';
 
 export const maxDuration = 90;
@@ -18,6 +19,7 @@ interface SearchBody {
   onlyNew?: boolean;
   force?: boolean;
   zoneSelection?: unknown;
+  radiusKm?: unknown;
   filtros?: {
     onlyNoWebsite?: boolean;
     onlyWithPhone?: boolean;
@@ -86,6 +88,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as SearchBody;
     const selectedZone = parseZoneSelection(body.zoneSelection);
+    const radiusKm = normalizeRadius(body.radiusKm);
     const zona = (body.zona || selectedZone?.displayName || '').trim();
     const nicho = (body.nicho || '').trim();
     const keyword = (body.keyword || '').trim();
@@ -103,7 +106,12 @@ export async function POST(request: NextRequest) {
       nicho,
       keyword,
       mode,
-      selectedZone ? `${selectedZone.lat.toFixed(5)},${selectedZone.lng.toFixed(5)}` : ''
+      [
+        selectedZone ? `${selectedZone.lat.toFixed(5)},${selectedZone.lng.toFixed(5)}` : '',
+        radiusKm ?? '',
+      ]
+        .filter(Boolean)
+        .join('|')
     );
     let cachedRow = await readSearchCache(key);
     if (body.force) cachedRow = null;
@@ -131,7 +139,8 @@ export async function POST(request: NextRequest) {
         nicho,
         keyword,
         mode,
-        selectedZone ? zoneFromSelection(selectedZone) : undefined
+        selectedZone ? zoneFromSelection(selectedZone, radiusKm ?? undefined) : undefined,
+        radiusKm ?? undefined
       );
       rawBusinesses = outcome.businesses;
       zone = outcome.zone;

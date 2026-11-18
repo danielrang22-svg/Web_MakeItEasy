@@ -71,6 +71,7 @@ function BusinessContent() {
   const [copied, setCopied] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [savingLead, setSavingLead] = useState(false);
   const [siteScanning, setSiteScanning] = useState(false);
 
   useEffect(() => {
@@ -262,6 +263,8 @@ function BusinessContent() {
 
   async function saveLead() {
     if (!business) return;
+    const wasSaved = isSaved;
+    setSavingLead(true);
     try {
       await radarRepository.upsert([business]);
       await radarRepository.update(business.id, {
@@ -270,9 +273,11 @@ function BusinessContent() {
         nextActionAt: nextAction ? new Date(nextAction).toISOString() : null,
       });
       setIsSaved(true);
-      setNotice("Guardado en Mis leads.");
+      setNotice(wasSaved ? "Cambios guardados." : "Lead creado en Mis leads.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo guardar en Mis leads");
+    } finally {
+      setSavingLead(false);
     }
   }
 
@@ -371,7 +376,10 @@ function BusinessContent() {
                 <h1 className="text-xl font-bold">{business.name}</h1>
                 <p className="text-xs text-muted-foreground">{business.category}</p>
               </div>
-              <span className={`text-sm font-bold px-3 py-1.5 rounded-xl ring-1 ${scoreClasses(business.score)}`}>
+              <span
+                className={`text-sm font-bold px-3 py-1.5 rounded-xl ring-1 ${scoreClasses(business.score)}`}
+                title="Oportunidad comercial de 0 a 100: prioriza a quién contactar; no mide la calidad del negocio."
+              >
                 {business.score}/100
               </span>
             </div>
@@ -418,6 +426,19 @@ function BusinessContent() {
               <button onClick={printFicha} className="px-3 py-1.5 rounded-lg bg-muted text-xs font-semibold hover:bg-muted/70 flex items-center gap-1">
                 <Download size={13} /> Exportar ficha
               </button>
+              {!isSaved ? (
+                <button
+                  onClick={() => void saveLead()}
+                  disabled={savingLead}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 text-xs font-bold hover:bg-emerald-400 disabled:opacity-40"
+                >
+                  {savingLead ? "Guardando…" : "Convertir en lead"}
+                </button>
+              ) : (
+                <span className="px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30 text-xs font-bold">
+                  En Mis leads
+                </span>
+              )}
               <button onClick={importToCrm} disabled={importing} className="px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 disabled:opacity-40">
                 {importing ? "Importando…" : "Enviar al CRM"}
               </button>
@@ -433,6 +454,9 @@ function BusinessContent() {
                   </li>
                 ))}
               </ul>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Oportunidad = prioridad comercial. La nota Web mide la salud del sitio; son cosas distintas.
+              </p>
             </details>
           </div>
 
@@ -618,8 +642,12 @@ function BusinessContent() {
             <input type="date" value={nextAction} onChange={(e) => setNextAction(e.target.value)} className="w-full mt-1 mb-3 px-2 py-2 bg-muted rounded-lg text-xs ring-1 ring-border outline-none" />
             <label className="text-[10px] uppercase font-bold text-muted-foreground">Notas</label>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} className="w-full mt-1 mb-3 px-2 py-2 bg-muted rounded-lg text-xs ring-1 ring-border outline-none resize-none" placeholder="Qué le dijiste, cuándo volver a llamar…" />
-            <button onClick={() => void saveLead()} className="w-full py-2 rounded-lg bg-muted text-xs font-bold hover:bg-muted/70">
-              Guardar en Mis leads
+            <button
+              onClick={() => void saveLead()}
+              disabled={savingLead}
+              className="w-full py-2 rounded-lg bg-muted text-xs font-bold hover:bg-muted/70 disabled:opacity-50"
+            >
+              {savingLead ? "Guardando…" : isSaved ? "Guardar cambios" : "Convertir en lead"}
             </button>
           </div>
 

@@ -25,6 +25,7 @@ import { saveBusinessSnapshot } from "@/lib/radar/repository";
 import { radarRepository } from "@/lib/radar/repository";
 import { scoreClasses } from "@/lib/radar/score";
 import { applyScanSummary, isDeficientQuality, qualityClasses, qualityLabel } from "@/lib/radar/siteQuality";
+import { RADAR_RADIUS_OPTIONS } from "@/lib/radar/radius";
 import type { RadarBusiness, RadarSearchResult, SiteScan, ZoneSuggestion } from "@/lib/radar/types";
 
 const PAGE_SIZE = 20;
@@ -53,6 +54,7 @@ function RadarPageContent() {
   const [libre, setLibre] = useState(false);
 
   const [objective, setObjective] = useState<RadarObjective>("ambos");
+  const [radiusKm, setRadiusKm] = useState<number | null>(null);
   const [onlyWithPhone, setOnlyWithPhone] = useState(false);
   const [hideUnnamed, setHideUnnamed] = useState(true);
   const [exhaustive, setExhaustive] = useState(false);
@@ -149,6 +151,7 @@ function RadarPageContent() {
                 bbox: zoneSelection.bbox,
               }
             : undefined,
+          radiusKm: radiusKm ?? undefined,
           filtros: {
             objective,
             onlyWithPhone,
@@ -229,17 +232,8 @@ function RadarPageContent() {
     }
   }
 
-  async function openFicha(b: RadarBusiness) {
+  function openFicha(b: RadarBusiness) {
     saveBusinessSnapshot(b);
-    try {
-      const leads = await radarRepository.upsert([b]);
-      setSavedCount(leads.length);
-    } catch (err) {
-      setToast({
-        message: err instanceof Error ? err.message : "No se pudo guardar el negocio",
-        type: "error",
-      });
-    }
     router.push(`/radar/negocio?id=${encodeURIComponent(b.id)}`);
   }
 
@@ -499,6 +493,24 @@ function RadarPageContent() {
               </button>
             ))}
           </div>
+          <label
+            className="flex items-center gap-2 text-xs text-muted-foreground"
+            title="Radio desde el centro de la zona; Zona completa usa el polígono o barrio"
+          >
+            <span>Radio</span>
+            <select
+              value={radiusKm ?? "zona"}
+              onChange={(e) => setRadiusKm(e.target.value === "zona" ? null : Number(e.target.value))}
+              className="px-2 py-1 bg-muted rounded-lg ring-1 ring-border outline-none"
+            >
+              <option value="zona">Zona completa</option>
+              {RADAR_RADIUS_OPTIONS.map((km) => (
+                <option key={km} value={km}>
+                  {km} km
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={onlyWithPhone} onChange={(e) => setOnlyWithPhone(e.target.checked)} className="accent-cyan-500" />
             Solo con teléfono

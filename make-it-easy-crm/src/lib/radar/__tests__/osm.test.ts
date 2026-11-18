@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildOverpassQuery,
+  distanceKm,
   expandTinyZone,
   mapZoneSuggestions,
   needsOverpassFallback,
@@ -9,6 +11,7 @@ import {
   zoneFromSelection,
   type NominatimZoneResult,
 } from "../osm";
+import { normalizeRadius } from "../radius";
 import type { RadarZone } from "../types";
 
 const BUS_STOP: NominatimZoneResult = {
@@ -93,6 +96,53 @@ test("zoneFromSelection usa el bbox de un area grande y expande un punto", () =>
   });
   assert.ok(poi.note?.includes("radio"));
   assert.ok(poi.displayName.includes("radio"));
+});
+
+test("zoneFromSelection aplica un radio explicito de 5 km", () => {
+  const zone = zoneFromSelection(
+    {
+      displayName: "Mazurén, Usaquén, Bogotá",
+      label: "Mazurén · Usaquén",
+      lat: 4.7329371,
+      lng: -74.0494827,
+      bbox: [4.7327086, -74.0495371, 4.7365939, -74.048863],
+    },
+    5
+  );
+  assert.equal(zone.radiusKm, 5);
+  assert.ok(zone.note?.includes("5 km"));
+  assert.ok(Math.abs(zone.bbox[3] - zone.bbox[1]) > 0.08);
+});
+
+test("distanceKm distingue 4.9 km de 5.1 km", () => {
+  const lat = 4.7329371;
+  const lng = -74.0494827;
+  const near = distanceKm(lat, lng, lat + 4.9 / 111.32, lng);
+  const far = distanceKm(lat, lng, lat + 5.1 / 111.32, lng);
+  assert.ok(near < 5);
+  assert.ok(far > 5);
+});
+
+test("buildOverpassQuery usa around cuando hay radio", () => {
+  const query = buildOverpassQuery(
+    {
+      displayName: "Mazurén",
+      lat: 4.7329371,
+      lng: -74.0494827,
+      bbox: [4.71, -74.07, 4.75, -74.03],
+      radiusKm: 5,
+    },
+    "gimnasios",
+    ""
+  );
+  assert.match(query, /around:5000,4\.7329371,-74\.0494827/);
+});
+
+test("normalizeRadius solo acepta las opciones del selector", () => {
+  assert.equal(normalizeRadius(1), 1);
+  assert.equal(normalizeRadius("5"), 5);
+  assert.equal(normalizeRadius(4), null);
+  assert.equal(normalizeRadius(0), null);
 });
 
 test("mapZoneSuggestions prioriza areas y arma etiquetas cortas", () => {

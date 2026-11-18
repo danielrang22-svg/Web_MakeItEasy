@@ -79,7 +79,11 @@ export function scoreFromOsm(input: {
     breakdown.push({ label: "Ficha sin nombre", points: -15 });
   }
 
-  const clamped = Math.max(0, Math.min(100, Math.round(score)));
+  const raw = Math.round(score);
+  const clamped = Math.max(0, Math.min(100, raw));
+  if (clamped !== raw) {
+    breakdown.push({ label: "Ajuste al rango 0–100", points: clamped - raw });
+  }
   return { score: clamped, breakdown };
 }
 
